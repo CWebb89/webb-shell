@@ -31,18 +31,28 @@ runtime.
 
 ## 1. Get the tree onto the new machine
 
-### Option A — just the shell (recommended for a second box)
+### Option A — just the shell, from GitHub (recommended for a second box)
 
-From this machine:
+On the new machine:
+
+```fish
+git clone https://github.com/CWebb89/webb-shell.git ~/dev/webb-shell
+```
+
+That is the whole shell with its history, so later updates are a `git pull`
+(§ 11).
+
+With no git on that box, push the tree from this machine instead:
 
 ```fish
 rsync -a --delete --info=stats2 --exclude '.pi/' ~/dev/webb-shell/ otherpc:~/dev/webb-shell/
 ```
 
-`--delete` keeps the copy honest (there is no git history to diff against — see
-§ 10). `.pi/` is agent scratch state, not part of the shell. `reference/` is an
-inert archive; add `--exclude 'reference/'` if you don't want the old plans,
-audits and the retired scotia source on that box.
+`--delete` keeps the copy honest, and a plain rsync carries no history, so
+updating it means re-syncing rather than pulling. `.pi/` is agent scratch state,
+not part of the shell. `reference/` is an inert archive; add
+`--exclude 'reference/'` if you don't want the old plans, audits and the retired
+scotia source on that box.
 
 ### Option B — the whole personal setup
 
@@ -288,7 +298,8 @@ Then, in order:
 3. `SUPER + G` for the weather/calendar panel (network fetch on open).
 4. `ALT + W` for the Scheme picker. Its preview swatches are generated on first
    open — expect a short pause the first time; it caches per wallpaper + mode.
-5. PowerShell equivalent of the lock screen: `SUPER + SHIFT + L`. PAM auth uses
+5. Lock the screen with `SUPER + SHIFT + L` — it dismisses every other surface
+   first. PAM auth uses
    the `webb-shell` service; if it fails, check § 2 step 4.
 
 ---
@@ -299,16 +310,22 @@ Then, in order:
 written:
 
 ```bash
-bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
-bash -n install.sh portabilize.sh bin/*.sh
-node test/menu-model.js
-node test/find-backend.js
-node test/usb-storage-model.js
-node test/mpris-model.js
+./tools/verify.sh
 ```
 
-Expected: no `qmllint` output, `bash -n` silent, all four node tests print `OK`
-(393 menu items / 96 guard expressions at the time of writing).
+Expected: `verify: OK`. It runs the `qmllint` pass, `bash -n` over every script,
+and **every** `test/*.js` (discovered by glob, not listed), then repeats the
+`qmllint` pass with warnings visible — a `--silent` clean run says nothing about
+warnings, so that second pass is the one to read. The individual commands:
+
+```bash
+bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
+bash -n install.sh portabilize.sh bin/*.sh
+for t in test/*.js; do node "$t"; done
+```
+
+At the time of writing: 8 node tests, the menu model at 419 items and 117 unique
+guard expressions, and a clean advisory pass.
 
 Runtime, without disturbing the live shell — start a second instance, verify it
 mapped, then kill only that run:
@@ -328,19 +345,24 @@ workspaces, so always kill it by run id — never `pkill quickshell`.
 
 ---
 
-## 11. Updating an older copy
+## 11. Updating
 
-This repo is **not** a git repository, so there is no `git pull` and no
-`git status` — the tree on disk is the only truth. Updating means replacing the
-tree and re-running the installer.
+If the box got the shell from GitHub (§ 1 Option A), it is an ordinary git
+checkout:
 
-On the new PC, from the source machine's side, exactly as in § 1 Option A:
+```fish
+cd ~/dev/webb-shell
+git pull
+```
+
+If it was rsynced from this machine there is no history on that box, so re-run
+the same rsync from the source machine, exactly as in § 1 Option A:
 
 ```fish
 rsync -a --delete --info=stats2 --exclude '.pi/' ~/dev/webb-shell/ otherpc:~/dev/webb-shell/
 ```
 
-Then on the other PC:
+Either way, then on the other PC:
 
 ```fish
 cd ~/dev/webb-shell

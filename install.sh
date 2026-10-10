@@ -45,6 +45,22 @@ if [ -n "$MISSING" ]; then
   echo "NOTE — missing tools:$MISSING"
 fi
 
+# ── 1b. Files the repo cannot supply ───────────────────────────────────────
+# Two scripts live only on the machine and are called by absolute path: the
+# launch/kill wrapper the compositor's autostart runs, and the capture tool that
+# bin/screenshot.sh delegates to. Neither is in the repo and neither is a
+# package, so no tool check above can catch them.
+MISSING_FILES=""
+for f in "$HOME/.local/bin/webb-shell" "$HOME/.local/bin/shot"; do
+  [ -x "$f" ] || MISSING_FILES="$MISSING_FILES $f"
+done
+if [ -n "$MISSING_FILES" ]; then
+  echo "NOTE — missing machine-side files:$MISSING_FILES"
+  echo "      ~/.local/bin/webb-shell is the autostart wrapper; ~/.local/bin/shot"
+  echo "      is what the Print binds, the Capture menu rows and the screenshot"
+  echo "      IPC call. Both are outside the repo — see docs/OTHER-PC.md 3-4."
+fi
+
 # ── 2. Per-user config ─────────────────────────────────────────────────────
 mkdir -p "$CFG_DIR"
 
@@ -55,7 +71,9 @@ mkdir -p "$CFG_DIR"
 # and falls back to this file.
 KEY_FILE="$CFG_DIR/openrouter.env"
 if [ ! -f "$KEY_FILE" ]; then
-  ( umask 077; printf '%s\n' '# OPENROUTER_API_KEY=sk-or-v1-...' > "$KEY_FILE" )
+  ( umask 077; printf '%s\n' \
+      '# OPENROUTER_API_KEY=PUT_YOUR_KEY_HERE' \
+      '# get one at https://openrouter.ai/keys' > "$KEY_FILE" )
   echo "  wrote $KEY_FILE (put your key in it for real OpenRouter spend)"
 fi
 
@@ -237,10 +255,10 @@ echo
 echo "Done. Start the shell with:"
 echo "    quickshell -p \"$REPO\""
 echo
-echo "To autostart with Hyprland, add to ~/.config/hypr/hyprland.conf (exec-once):"
-echo "    exec-once = quickshell -p \"$REPO\""
-echo "Keybinds that were bound via this shell's menu ($(grep -c '' "$REPO/src/menu/menu.jsonc" 2>/dev/null || echo '?') lines of config):"
-echo "    binds are triggered from the shell popups; wire window-manager keys however you like."
+echo "The shell binds no compositor keys itself. To autostart it and wire keys,"
+echo "see docs/OTHER-PC.md 3. In a Lua Hyprland config that is:"
+echo "    hl.exec_cmd(os.getenv(\"HOME\") .. \"/.local/bin/webb-shell\")"
+echo "and binds of the form 'qs -p <repo> ipc call <target> <fn>'."
 echo
 echo "First wallpaper pick: set a wallpaper in the picker to have matugen generate the palette."
 if [ "$INSTALL_PACKAGES" -eq 0 ]; then
