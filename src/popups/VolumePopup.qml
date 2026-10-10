@@ -1,11 +1,13 @@
 import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
+import Quickshell.Wayland
 import "../theme"
 import "../components"
 
 PanelWindow {
     id: root
+    WlrLayershell.namespace: "webb-shell:volume"
     exclusionMode: ExclusionMode.Ignore
     anchors { top: true; bottom: true; right: true }
     implicitWidth: 220

@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import "./src/theme"
 import "./src/state"
 import "./src/popups"
@@ -17,6 +18,7 @@ PanelWindow {
         left: true
     }
     implicitHeight: heightNow
+    WlrLayershell.namespace: "webb-shell:bar"
     color: Colors.background
     // focusable REQUIRED: without keyboard interactivity, Hyprland drops
     // pointer events to this layer surface on workspaces with no window under

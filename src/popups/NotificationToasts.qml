@@ -4,6 +4,7 @@ import Quickshell.Io
 import Quickshell.Services.Notifications
 import Quickshell.Wayland
 import "../theme"
+import "../state"
 import "../components"
 import "../services"
 
@@ -22,7 +23,11 @@ PanelWindow {
     implicitWidth: 380
     implicitHeight: Math.max(toastColumn.childrenRect.height, 1)
     color: "transparent"
-    visible: true
+    // Mapped continuously except while locked: a toast card sits on the
+    // Overlay layer, the same one the lock screen occupies, so leaving it up
+    // would both leak notification contents and put its action buttons in the
+    // pointer path ahead of the lock.
+    visible: !Popups.lockOpen
     exclusionMode: ExclusionMode.Ignore
 
     // Only capture input on the actual toast cards; clicks in the rest of the

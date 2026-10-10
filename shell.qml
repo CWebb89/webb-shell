@@ -195,10 +195,13 @@ ShellRoot {
     IpcHandler {
         target: "lock"
         function toggle(): void {
-            Popups.lockOpen = !Popups.lockOpen
+            if (Popups.lockOpen)
+                Popups.lockOpen = false
+            else
+                Popups.engageLock()
         }
         function show(): void {
-            Popups.lockOpen = true
+            Popups.engageLock()
         }
         function hide(): void {
             Popups.lockOpen = false

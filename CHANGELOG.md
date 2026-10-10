@@ -38,6 +38,32 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Fixed
 
+- **Notification toasts drew over the lock screen.** `NotificationToasts` bound
+  `visible: true`, so its surface stayed mapped on the `WlrLayer.Overlay` layer
+  that the lock screen occupies, and it is created immediately after the lock
+  while never consulting `Popups.lockOpen` — notification contents could appear
+  over a locked screen and their action buttons sat in the pointer path ahead of
+  it. It now binds `visible: !Popups.lockOpen`; an unmapped window does not stop
+  `NotificationServer` from recording into history.
+- **Locking left other surfaces open.** Raising the lock now goes through
+  `Popups.engageLock()`, which closes every other surface first. `lockOpen`
+  deliberately stays out of `exclusiveKeys`: `closeAll()` runs on every popup
+  open, so a member `lockOpen` would **unlock** the screen whenever any panel
+  opened.
+- **Three surfaces set no `WlrLayershell.namespace`** — the lock screen, the
+  bar and the always-mapped volume edge strip. All three reported as the default
+  `quickshell`, so no Hyprland layer rule could target them (this shell's own
+  rules match `webb-shell:osd-clock` and `webb-shell:notifications`) and
+  `hyprctl layers` could not tell them apart. They are now `webb-shell:lock`,
+  `webb-shell:bar` and `webb-shell:volume`, so every mapped surface carries a
+  `webb-shell:<name>` namespace. Behaviour-neutral: only two layer rules exist
+  and both match specific namespaces, so nothing was matching `quickshell`.
+- **A password typed for an already-saved network was silently discarded.**
+  The in-range list opened the password bar for any secured network, but nmcli
+  reuses a matching saved profile and never asks the agent, so the typed PSK was
+  never read. The bar now appears only for a secured network with no saved
+  profile; changing a stale stored password is Forget in SAVED NETWORKS, then
+  reconnect from the in-range list.
 - **The Wi-Fi passphrase was readable in `/proc/<pid>/cmdline`.**
   `NmcliService.connectTo` passed it as an `nmcli device wifi connect …
   password <psk>` argument. It now goes to nmcli's stdin with `--ask`, so it

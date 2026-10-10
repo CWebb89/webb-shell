@@ -40,11 +40,13 @@ QtObject {
     property string dmenuSelectionFile: ""
     property string dmenuDoneFile: ""
 
-    // Panels/overlays that must never stack on each other. menuOpen is not a
-    // member because it is both the menu/keybinds/history overlay and the dmenu
-    // palette; closeAll() closes it only when no dmenu session is live, since
-    // dropping a live session here would skip writeResult() and hang the
-    // calling script.
+    // Panels/overlays that must never stack on each other. menuOpen and
+    // lockOpen are not members. closeAll() runs on every popup open, so listing
+    // lockOpen would silently UNLOCK the screen whenever any panel opened;
+    // engageLock() dismisses the others instead. menuOpen is both the
+    // menu/keybinds/history overlay and the dmenu palette; closeAll() closes it
+    // only when no dmenu session is live, since dropping a live session here
+    // would skip writeResult() and hang the calling script.
     readonly property var exclusiveKeys: ["wallpaperOpen", "clockOpen",
                                           "glanceOpen", "audioOpen", "wifiOpen", "btOpen",
                                           "systemMonitorOpen", "findOpen",
@@ -57,6 +59,13 @@ QtObject {
         root.trayMenuOpen = false
         if (root.menuOpen && root.dmenuSelectionFile === "")
             root.menuOpen = false
+    }
+
+    // Raise the lock and dismiss every other surface. The lock itself never
+    // joins exclusiveKeys, so closeAll() can never unlock the screen.
+    function engageLock() {
+        closeAll()
+        root.lockOpen = true
     }
 
     function toggleExclusive(key) {

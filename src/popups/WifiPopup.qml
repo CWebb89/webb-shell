@@ -49,6 +49,10 @@ PanelWindow {
     }
     function forget(name) { forgetProc.command = ["nmcli", "connection", "delete", name]; forgetProc.running = true }
 
+    // A saved profile already holds its PSK, so a password typed here would be
+    // discarded: nmcli reuses the stored secret and never asks the agent.
+    function isSaved(ssid) { return root.savedNetworks.indexOf(ssid) !== -1 }
+
     function strengthColor(s) {
         return s > 70 ? Colors.accentBlue
              : s > 40 ? Colors.accentCyan
@@ -365,7 +369,7 @@ PanelWindow {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     if (modelData.inUse) return
-                                    if (modelData.secured) {
+                                    if (modelData.secured && !root.isSaved(modelData.ssid)) {
                                         NmcliService.connectError = ""
                                         NmcliService._pendingSsid = modelData.ssid
                                         passField.forceActiveFocus()

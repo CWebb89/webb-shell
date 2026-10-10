@@ -20,6 +20,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
 
     WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "webb-shell:lock"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     anchors {
