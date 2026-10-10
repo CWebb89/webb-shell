@@ -218,6 +218,7 @@ ShellRoot {
             if (Popups.menuOpen && Popups.dmenuSelectionFile !== "")
                 return
             BarModules.whenMounted("menu", function() {
+                Popups.closeAll()
                 Popups.dmenuOptions = options
                 Popups.dmenuPrompt = prompt
                 Popups.dmenuSelectionFile = selectionFile
@@ -247,7 +248,10 @@ ShellRoot {
     IpcHandler {
         target: "keybinds"
         function open(): void {
+            if (Popups.menuOpen && Popups.dmenuSelectionFile !== "")
+                return
             BarModules.whenMounted("menu", function() {
+                Popups.closeAll()
                 Popups.menuRoute = "binds"
                 Popups.menuOpen = true
             })
@@ -430,6 +434,7 @@ ShellRoot {
             if (Popups.menuOpen)
                 return
             BarModules.whenMounted("menu", function() {
+                Popups.closeAll()
                 Popups.menuRoute = route
                 Popups.menuOpen = true
             })

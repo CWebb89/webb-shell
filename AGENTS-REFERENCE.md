@@ -16,7 +16,8 @@ the sections below.
 
 - Popup visibility state lives in `Popups`, never in an isolated local boolean.
 - Keys listed in `Popups.exclusiveKeys` open through `Popups.toggleExclusive(key)`, or through `Popups.closeAll()` followed by setting the requested key true. A popup may set its own key false when closing.
-- `menuOpen`, `batteryOpen`, `lockOpen`, and `printAnimRunning` are intentionally non-exclusive. Do not add them to `exclusiveKeys` without resolving their different lifecycle requirements. In particular, forcibly closing a dmenu-backed menu can skip `writeResult()` and hang its caller.
+- `menuOpen` is not a member of `exclusiveKeys` because it is both the menu/keybinds/history overlay and the dmenu palette. `Popups.closeAll()` does close it, but only while `dmenuSelectionFile` is empty — dropping a live dmenu session would skip `writeResult()` and hang its caller. Every IPC path that opens the menu (`keybinds open`, `dmenu select`, `menu summon`) calls `closeAll()` first, so the menu cannot stack over a panel and a panel cannot stay underneath it.
+- `batteryOpen`, `lockOpen`, and `printAnimRunning` are intentionally non-exclusive. Do not add them to `exclusiveKeys` without resolving their different lifecycle requirements.
 - Standard animated windows use a transparent `PanelWindow`, `ExclusionMode.Ignore`, state-bound content opacity, and remain visible through the exit animation (`stateOpen || content.opacity > 0`). Follow the nearest same-category popup for exceptions such as `PrintOverlay` and `NotificationToasts`.
 
 ### Popup input patterns
@@ -39,11 +40,14 @@ There is no single mask/dismissal shape for every window:
 
 ### Wi-Fi passphrase exposure
 
-- `NmcliService.connectTo` passes the PSK as an nmcli argument, because that is the form
-  nmcli documents for `device wifi connect`. The consequence is that the passphrase is
-  visible in `/proc/<pid>/cmdline` for the lifetime of that nmcli run.
-- It is deliberately *not* routed through nmcli's `--passwd-file` / `--ask` options yet:
-  those are documented for connection profiles rather than `device wifi connect`, and
-  `man nmcli` is not installed on the development machine, so the claim is unverified.
-  Check the installed nmcli's own `--help` before changing this — do not assume the
-  option covers `device wifi connect`.
+- `NmcliService.connectTo` writes the PSK to nmcli's **stdin** with `--ask`, never as an argument, so it never reaches `/proc/<pid>/cmdline`. `Process.stdinEnabled` plus `write()` on `onStarted` is the mechanism; the value lives in `NmcliService._pendingPassword` only until the process starts.
+- `nmcli 1.58.1` has **no** `--passwd-file`: `nmcli --passwd-file /dev/null general status` answers `Option '--passwd-file' is unknown`. `man nmcli` is not installed on this machine, so `nmcli --help` is the only local option list — check it before assuming an option exists.
+- `--ask` does read a piped stdin. Verified: with no SSID argument, `printf 'some-ssid\n' | nmcli --ask device wifi connect` consumed the piped value as the SSID. Upstream documents `--ask` as prompting "for any missing required arguments… whether you will be prompted for a password".
+- The prompt only fires once NetworkManager reports that secrets are required, which needs a real access point, so the end-to-end connect has **not** been exercised. If a password-protected network fails to connect, suspect the prompt path first.
+
+### qmllint quirks
+
+- `qmllint` 6.12.0 resolves a file's own directory `qmldir` **only when the path is absolute**. Given a relative path — including a bare filename from inside the directory — every `pragma Singleton` file is reported as `not declared as singleton in qmldir`. `tools/verify.sh` passes absolute paths for this reason; do not tidy them back.
+- A `// qmllint disable <category>` directive is **not** line-scoped. It suppresses from that point to the end of the enclosing scope or file, so it must be paired with `// qmllint enable <category>` or it hides real warnings below it. Prefer a paired directive over disabling a category in `.qmllint.ini`, which is repo-wide.
+- Two suppressions are deliberate, both upstream defects: `AuthFlow` in `PolkitPopup.qml` (Quickshell's `.qmltypes` declares the component as `qs::service::polkit::AuthFlow` while the `flow` property references the unqualified `AuthFlow`, so qmllint cannot match them) and `captureSource` in `LockScreen.qml` (`QObject*` receiving `QuickshellScreenInfo`, whose `.qmltypes` prototype *is* `QObject`, so the assignment is valid). Never suppress `incompatible-type` globally — it is a genuinely useful category.
+- `qmlls` reports `var declaration in block scope` for `for (var i = …)` loop headers that `qmllint` does not. The CLI is the project's gate; those 73 sites are idiomatic and are not to be rewritten.

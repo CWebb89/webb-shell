@@ -39,7 +39,9 @@ PanelWindow {
     ScreencopyView {
         id: background
         anchors.fill: parent
+        // qmllint disable incompatible-type
         captureSource: root.screen
+        // qmllint enable incompatible-type
 
         layer.enabled: true
         layer.effect: MultiEffect {

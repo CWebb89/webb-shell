@@ -97,18 +97,28 @@ QtObject {
         }
     }
 
-    // ── Connection process ───────────────────────────────────
+    // ── Connection process ──────────────────────────────────
+    // The PSK is written to nmcli's stdin, never argv: `nmcli device wifi
+    // connect <ssid> password <psk>` leaves the passphrase readable in
+    // /proc/<pid>/cmdline for the life of the call. --ask is what makes nmcli
+    // read the secret from stdin, and this nmcli has no --passwd-file.
     property string _pendingSsid: ""
+    property string _pendingPassword: ""
 
     property var connectProc: Process {
         command: []
         running: false
+        stdinEnabled: true
         stderr: StdioCollector { onStreamFinished: root._connectErrText = text }
         onStarted: {
             root.connecting = true
             root.connectingSsid = root._pendingSsid
             root.connectError = ""
             root._connectErrText = ""
+            if (root._pendingPassword !== "") {
+                connectProc.write(root._pendingPassword + "\n")
+                root._pendingPassword = ""
+            }
         }
         onExited: function(exitCode) {
             root.connecting = false
@@ -216,10 +226,10 @@ QtObject {
 
     function connectTo(ssid, password) {
         root._pendingSsid = ssid
-        if (password && password.length > 0)
-            connectProc.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
-        else
-            connectProc.command = ["nmcli", "device", "wifi", "connect", ssid]
+        root._pendingPassword = password || ""
+        connectProc.command = root._pendingPassword !== ""
+            ? ["nmcli", "--ask", "device", "wifi", "connect", ssid]
+            : ["nmcli", "device", "wifi", "connect", ssid]
         connectProc.running = false
         connectProc.running = true
     }

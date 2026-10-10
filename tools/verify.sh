@@ -4,10 +4,18 @@
 # test. Advisory: the same qmllint pass with warnings VISIBLE — a --silent
 # clean run says nothing about warnings, so this surfaces them without
 # failing the gate.
+#
+# qmllint is always given ABSOLUTE paths. 6.12.0 fails to resolve a file's own
+# directory qmldir when the path is relative, "${REPO}/src/theme/Type.qml" and
+# "Type.qml" from inside the directory both included, so every `pragma Singleton`
+# file reports "not declared as singleton in qmldir". Absolute paths silence all
+# ten of those false reports and leave only the real warnings. Do not
+# "tidy" the paths below back to relative.
 # Usage: ./tools/verify.sh
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
+export REPO
 
 fail=0
 fail_step() { printf '%s\n' "$1" | sed 's/^/      /'; }
@@ -25,7 +33,7 @@ check() {
   fi
 }
 
-check "qmllint" bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
+check "qmllint" bash -O globstar -c 'qmllint --silent "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml'
 check "shell syntax" bash -c 'bash -n install.sh portabilize.sh bin/*.sh'
 
 for t in test/*.js; do
@@ -34,11 +42,11 @@ done
 
 echo
 echo "--- qmllint warnings (advisory, not a failure) ---"
-warnings="$(bash -O globstar -c 'qmllint shell.qml Bar.qml src/**/*.qml' 2>&1 || true)"
+warnings="$(bash -O globstar -c 'qmllint "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml' 2>&1 || true)"
 summary="$(printf '%s\n' "$warnings" | grep -E '^(Warning|Error):' || true)"
 if [ -n "$summary" ]; then
   printf '%s\n' "$summary" | sed 's/^/      /'
-  printf '      (%s line(s); full output: qmllint shell.qml Bar.qml src/**/*.qml)\n' \
+  printf '      (%s line(s); full output: qmllint "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml)\n' \
     "$(printf '%s\n' "$summary" | wc -l)"
 else
   echo "      none"

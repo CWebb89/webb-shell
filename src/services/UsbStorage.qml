@@ -46,7 +46,7 @@ QtObject {
             Quickshell.execDetached(["notify-send", "-a", "webb-shell", "-u", "low",
                                      title + " ejected", "Safe to remove"])
         } else {
-            var reason = String(errorText || "").trim().split("\n").pop() || "Unknown error"
+            const reason = String(errorText || "").trim().split("\n").pop() || "Unknown error"
             Quickshell.execDetached(["notify-send", "-a", "webb-shell", "-u", "critical",
                                      "Couldn't eject " + title,
                                      reason + " — close anything using the drive, then try again."])

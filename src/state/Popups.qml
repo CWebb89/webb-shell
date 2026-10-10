@@ -40,9 +40,11 @@ QtObject {
     property string dmenuSelectionFile: ""
     property string dmenuDoneFile: ""
 
-    // Panels/overlays that must never stack on each other. menuOpen is
-    // deliberately excluded — closing the dmenu palette from here would
-    // skip writeResult() and hang the calling script.
+    // Panels/overlays that must never stack on each other. menuOpen is not a
+    // member because it is both the menu/keybinds/history overlay and the dmenu
+    // palette; closeAll() closes it only when no dmenu session is live, since
+    // dropping a live session here would skip writeResult() and hang the
+    // calling script.
     readonly property var exclusiveKeys: ["wallpaperOpen", "clockOpen",
                                           "glanceOpen", "audioOpen", "wifiOpen", "btOpen",
                                           "systemMonitorOpen", "findOpen",
@@ -53,6 +55,8 @@ QtObject {
         for (var i = 0; i < exclusiveKeys.length; i++)
             root[exclusiveKeys[i]] = false
         root.trayMenuOpen = false
+        if (root.menuOpen && root.dmenuSelectionFile === "")
+            root.menuOpen = false
     }
 
     function toggleExclusive(key) {

@@ -56,7 +56,7 @@ PanelWindow {
                 root.dismiss()
                 return
             }
-            var m = parseInt(root.filterText)
+            const m = parseInt(root.filterText)
             if (isNaN(m) || m <= 0) {
                 Quickshell.execDetached(["notify-send", "-a", "webb-shell", "-u", "low",
                                          "Invalid reminder", "Enter the number of minutes"])

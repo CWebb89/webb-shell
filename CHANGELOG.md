@@ -5,6 +5,17 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `tools/verify.sh` — the whole verification list as one command, with per-step
+  `PASS`/`FAIL`, a non-zero exit on failure, and an advisory `qmllint` pass so
+  warnings the `--silent` run hides cannot go unnoticed.
+- **Screenshot gallery** — twelve panels captured at 1920x1080 into
+  `docs/screenshots/`, embedded in the README with capture notes and a list of
+  the panels still wanted.
+- `assets/header.svg` — the README banner, drawn in the shell's own Tokyo Night
+  palette rather than a generic accent.
+
 ### Changed
 
 - **Glance panel** rebuilt in the shape of the other panels: square card
@@ -26,6 +37,34 @@ All notable changes to webb-shell, oldest release last. The format follows
   instead of blanking the panel.
 
 ### Fixed
+
+- **The Wi-Fi passphrase was readable in `/proc/<pid>/cmdline`.**
+  `NmcliService.connectTo` passed it as an `nmcli device wifi connect …
+  password <psk>` argument. It now goes to nmcli's stdin with `--ask`, so it
+  never reaches the process table. (This nmcli has no `--passwd-file`; it
+  answers `Option '--passwd-file' is unknown`.)
+- **`keybinds` and `history` stacked over other panels.** Neither is a separate
+  window — both are the menu popup — and `menuOpen` sat outside
+  `Popups.closeAll()`, so opening one over a panel left both on screen. That
+  exclusion exists only so a live dmenu session is not dropped before it calls
+  `writeResult()`, which would hang the calling script, so `closeAll()` now
+  closes the menu whenever no dmenu session is live, and every path that opens
+  it (`keybinds open`, `dmenu select`, `menu summon`) closes the others first.
+- **`qmllint` reported ten singletons as undeclared**, contradicting every
+  `qmldir`. 6.12.0 resolves a file's own directory `qmldir` only when the path
+  is absolute, so `Type`, `Metrics`, `ShellState`, `Weather`, `Delay`,
+  `SysStats`, `Recorder`, `UsbStorage`, `AgentUsage` and `BatteryService` were
+  flagged while `Colors` and `Popups` were not. `tools/verify.sh` now passes
+  absolute paths and the advisory pass is clean.
+- **Two `var` declarations hoisted out of their block**, in `ReminderPopup.qml`
+  and `UsbStorage.qml`; both are now `const`.
+- **Six `AuthFlow` and one `captureSource` warning** from the new advisory pass
+  are upstream type-resolution defects — Quickshell's `.qmltypes` declares
+  `AuthFlow` fully qualified while the `flow` property references it unqualified,
+  and `captureSource` is `QObject*` receiving a `QuickshellScreenInfo` whose
+  prototype *is* `QObject`. Both are suppressed at their sites with paired
+  `qmllint disable`/`enable` directives rather than a category-wide switch, which
+  would hide real type errors.
 
 Audit sweep `reference/audit-2026-10-10.md`; each item below is verified there
 with evidence and a reproduction.

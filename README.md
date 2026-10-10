@@ -345,22 +345,27 @@ identify the new run with `qs list --all`, target **only** that run with
 
 ## ✦ Known issues
 
-- **`qmllint` reports ten "not declared as singleton in qmldir" warnings** for
-  modules whose `qmldir` declares them correctly with the `singleton` keyword, and
-  which demonstrably behave as singletons at runtime. Not root-caused; the
-  advisory pass in `./tools/verify.sh` surfaces them so they cannot hide.
-- **Two `var declaration in block scope is hoisted to function scope` warnings**,
-  in `ReminderPopup.qml` and `UsbStorage.qml`. Harmless, but real.
-- **`keybinds` and `history` are not exclusive popups.** Nothing closes them but
-  `Esc`, so opening one over another panel leaves both on screen.
-- **The Wi-Fi passphrase is passed to `nmcli` as an argument**, which makes it
-  readable in `/proc/<pid>/cmdline` for the life of the call. `nmcli`'s
-  `--passwd-file` and `--ask` are documented for connection profiles rather than
-  `device wifi connect`, and the alternative is unverified, so it is left as an
-  accepted exposure rather than a guessed-at fix.
-- **`reference/scotia/` is not published.** It is a previous shell kept locally as
-  a source of machinery worth porting, and it is gitignored. A clone will not
+- **`reference/scotia/` is not published.** It is a previous shell kept locally
+  as a source of machinery worth porting, and it is gitignored. A clone will not
   have it, and the porting notes inside it point at files that are not here.
+- **The Wi-Fi passphrase is handed to `nmcli` on stdin, not as an argument**, so
+  it never appears in `/proc/<pid>/cmdline`. That handoff is verified as far as
+  the mechanism — `--ask` provably consumes a piped stdin — but the password
+  prompt itself only fires once NetworkManager reports that secrets are
+  required, which needs a real access point to exercise.
+- **Two upstream `qmllint` warnings are suppressed per site**, with paired
+  `// qmllint disable` / `// qmllint enable` directives rather than a
+  category-wide switch, which would hide real type errors. Both are defects in
+  Quickshell's own `.qmltypes`: the Polkit `AuthFlow` type is declared fully
+  qualified while the `flow` property references it unqualified, and
+  `ScreencopyView.captureSource` is typed `QObject*` while receiving a
+  `QuickshellScreenInfo` whose prototype *is* `QObject`, so the assignment is
+  correct.
+- **A paired directive is required because `qmllint disable` is not
+  line-scoped** — it suppresses to the end of the enclosing scope, so an
+  unpaired `disable` would silently hide real warnings below it.
+- **`for (var i …)` in a loop header is reported by `qmlls` but not `qmllint`.**
+  The CLI is what the gate runs; those sites are idiomatic and are untouched.
 
 <br>
 

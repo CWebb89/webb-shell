@@ -66,6 +66,7 @@ PanelWindow {
         passwordInput.text = ""
     }
 
+    // qmllint disable unresolved-type
     function syncFromFlow() {
         var flow = polkitAgent.flow
         if (!flow)
@@ -181,6 +182,7 @@ PanelWindow {
             closeTimer.restart()
         }
     }
+    // qmllint enable unresolved-type
 
     Rectangle {
         anchors.fill: parent
