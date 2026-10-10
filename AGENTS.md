@@ -20,6 +20,9 @@ Personal Quickshell 0.3.1 shell for Hyprland (Arch package `quickshell` 0.3.1-1)
 - `src/popups/`: layer-shell windows and popup-local components.
 - `src/menu/`: the JSONC menu tree and pure-JS menu model.
 - `bin/`: Bash helpers that resolve the repository at runtime.
+- `tools/`: repository-level gates, currently just `verify.sh`, the one-command check below.
+- `test/`: node tests for the pure-JS models and the shell-script pipelines.
+- `docs/`: `OTHER-PC.md` (fresh-machine runbook) and `screenshots/` (the README gallery and how it was captured).
 - `reference/`: inert archive, not part of the shell, listed in `reference/README.md`. `reference/scotia/` is the retired scotia-shell source (including a 37-type C++ Quickshell plugin) kept only because it contains machinery this shell does not have — motion tokens, a settings window, an app launcher, GPU-side visualisers. Nothing under `reference/` is imported, built, or verified; copy a file out to `src/` to use it. See `reference/scotia/README.md` for what is worth porting and what this shell already does better.
 
 Use directory-relative QML imports. Reuse the nearest same-category component or popup before introducing another pattern.
@@ -58,7 +61,15 @@ The theme-token rules, popup exclusivity and input-mask contracts, and the Quick
 
 ## Verification
 
-Run all applicable static checks after edits:
+Run the whole gate in one command after edits:
+
+```bash
+./tools/verify.sh
+```
+
+That wraps the individual checks below with per-step PASS/FAIL, exits non-zero on
+any failure, and finishes with an advisory `qmllint` pass that prints the
+warnings `--silent` hides. Individually:
 
 ```bash
 bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
@@ -66,9 +77,9 @@ bash -n install.sh portabilize.sh bin/*.sh
 bash -c 'for f in test/*.js; do node "$f" || exit 1; done'
 ```
 
-The test line globs rather than listing files: a hand-kept list here and in README.md had already drifted from the seven tests in `test/`.
+The test line globs rather than listing files: a hand-kept list here and in README.md had already drifted from the eight tests in `test/`.
 
-`qmllint -p` does not exist in the installed Quickshell toolchain. Known warnings are documented in project memory; new errors are not acceptable.
+`qmllint -p` does not exist in the installed Quickshell toolchain. Known warnings are documented in project memory; new errors are not acceptable. The advisory pass exists because ten of the current warnings are `not declared as singleton in qmldir` reports that contradict the `qmldir`s — do not "fix" those by removing the `singleton` keyword.
 
 `quickshell -p .` is a nonterminating visual smoke run, not a pass/fail check. It creates a second shell with duplicate layer surfaces. When runtime validation is necessary:
 

@@ -1,157 +1,230 @@
-# webb-shell
+<div align="center">
+  <img src="assets/header.svg" alt="webb-shell" width="700">
+</div>
 
-A personal [Quickshell](https://quickshell.outfoxxed.de) desktop shell for
-Hyprland. Top bar with status-notifier tray icons, popup panels (audio / Wi-Fi
-/ Bluetooth / system monitor), a data-driven command menu, a file search
-overlay, OSD clock and battery, lockscreen, a Polkit agent, a notification
-daemon with DND, toasts and a history panel you can read and prune, reminders,
-an own wallpaper layer with video
-support, a 3D-printing wallpaper transition, USB drive details with safe eject,
-MPRIS media control with player selection inside the audio panel, and a
-coding-agent usage panel showing real OpenRouter account spend alongside the
-local per-model breakdown.
-The theme is
-[matugen](https://github.com/InioX/matugen) driven: picking a wallpaper
-regenerates `~/.cache/matugen/webb-shell-colors.json`, which the shell watches
-and applies live.
+<br>
 
-The desktop background is drawn by the shell itself (`src/popups/Background.qml`)
-on the Wayland background layer — still images, animated GIFs and looping
-videos via QtMultimedia, with playback paused whenever nothing can see it.
-There is no `swww`/`awww` daemon in the stack.
+<div align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/Quickshell-0.3.1-7aa2f7?style=for-the-badge" alt="Quickshell">
+  <img src="https://img.shields.io/badge/Qt_6-QML-41cd52?style=for-the-badge&logo=qt&logoColor=white" alt="Qt 6">
+  <img src="https://img.shields.io/badge/bar_modules-19-7dcfff?style=for-the-badge" alt="19 bar modules">
+  <img src="https://img.shields.io/badge/IPC_targets-22-bb9af7?style=for-the-badge" alt="22 IPC targets">
+  <img src="https://img.shields.io/badge/Hyprland-Wayland-58e1ff?style=for-the-badge" alt="Hyprland">
+  <img src="https://img.shields.io/github/last-commit/CWebb89/webb-shell?style=for-the-badge&color=teal" alt="Last commit">
+</div>
 
-No fixed paths and no symlinks: every script and QML component resolves the
-repo at runtime, and per-machine values (wallpaper folder, hardware names,
-matugen colors file) live in `~/.config/webb-shell/config.json`.
+<br>
 
-## Requirements
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="150"><a href="#-screenshots">Screenshots</a></td>
+      <td align="center" width="150"><a href="#-what-it-puts-on-screen">What's in it</a></td>
+      <td align="center" width="150"><a href="#-the-menu">The menu</a></td>
+      <td align="center" width="150"><a href="#-install">Install</a></td>
+      <td align="center" width="150"><a href="#-ipc">IPC</a></td>
+      <td align="center" width="150"><a href="#-development">Development</a></td>
+    </tr>
+  </table>
+</div>
 
-- **Arch Linux + Hyprland** — uses `hyprctl`, layer-shell and screencopy
-- **quickshell** 0.3.1 (developed and verified against Arch's `quickshell
-  0.3.1-1`) plus the `qs` IPC client
-- **matugen** for live theming
-- **qt6-multimedia** and **qt6-multimedia-ffmpeg** for video wallpapers
-- **grim** / **slurp** / **wl-clipboard** for region capture, OCR and QR
-  decoding. Full-screen capture via the menu or `super+Print` delegates to the
-  global `shot` helper (`~/.local/bin/shot`); on a machine without it, use
-  grim/slurp directly or point `bin/screenshot.sh` at your own tool
-- **NetworkManager** (`nmcli`), **wireplumber** (`pactl`), **bluez**
-  (`bluetoothctl`)
-- **Quickshell.Services.Mpris** for now-playing (ships with quickshell).
-  Media control lives in the audio panel, which also lets you pick which player
-  is controlled when several are present
-- **mpv-mpris** (`sudo pacman -S mpv-mpris`) if you want video watched through
-  mpv to be controllable — it installs `/etc/mpv/scripts/mpris.so`, which mpv
-  loads automatically with no configuration. **Browsers cannot do this**:
-  Chromium exposes no MPRIS player at all (its `MediaSessionService` opt-in
-  flag was removed upstream), so YouTube in a browser is invisible to the shell
-- **udisks2** (`udisksctl`) for USB safe-eject, on top of `util-linux`
-  (`lsblk`) and `systemd` (`udevadm`, `coredumpctl`), which Arch already has
-- **jq** for the agent-usage summary, the OpenRouter account figures, the
-  launcher's default-agent lookup and the `config.json` writes
-- **`OPENROUTER_API_KEY` for the real account spend figure**
-  (`bin/openrouter-usage.sh`), taken from the environment when the shell has it
-  and otherwise from `~/.config/webb-shell/openrouter.env` (0600, seeded by
-  `install.sh`). The file is what keeps the figure there across a reload: a
-  shell relaunched by the compositor inherits none of an interactive shell's
-  exports. Without either the panel still shows the local pi log totals and
-  states why the account number is unavailable
-- **pavucontrol-qt** for the mixer button, **fd** for file search, **fzf** for
-  the package install/remove pickers (the clipboard and history pickers reuse
-  the shell's own menu popup via `bin/menu-select.sh` instead)
-- **tesseract**, **zbar**, **gpu-screen-recorder**, **cliphist** for the
-  optional capture / OCR / recording features
-- **hyprpicker** and **localsend** for the optional
-  Pick Colour and Share Files menu rows, plus **zbar** (`zbarimg`) for the QR
-  decode row. `hyprpicker` is in `extra`
-  (`sudo pacman -S hyprpicker`); **localsend is AUR-only**
-  (`yay -S localsend-bin`), which is why its row is guarded on
-  `command -v localsend`. The DNS and Speed Test rows need nothing beyond
-  `nmcli` and `curl`
-- **playerctl** and **brightnessctl** are *not* used by the shell — they back
-  the hardware media and brightness keys in the Hyprland config
+<br>
 
-The shell degrades gracefully: missing optional tools just hide or fail that
-feature. Wi-Fi QR sharing is deliberately absent — NetworkManager will not
-hand a PSK to an unprivileged process, and a QR without the password is not
-worth a menu row. **Pi and Herdr are optional** — their menu rows (launch, keybinds,
-docs) only appear when installed, and the menu's *Software → Install* section
-has **Install Pi Agent** / **Install Herdr** rows to bootstrap them on a fresh
-machine (`curl -fsSL https://pi.dev/install.sh | sh` /
-`herdr.dev/install.sh`). Nothing here requires the pi agent harness.
+---
 
-## Install
+webb-shell is a desktop shell for [Hyprland](https://hyprland.org/). One bar, 19
+modules you can drag anywhere in it, and 24 popup panels: a command menu, file
+search, audio and media, Wi-Fi, Bluetooth, a system monitor, a calendar, a
+wallpaper carousel, a theme picker, a notification daemon, a lock screen, a
+Polkit agent and a coding-agent spend panel.
 
-```sh
+It is QML on [Quickshell](https://quickshell.org/), so there is no Electron, no
+web view and no compiled plugin. The desktop background is drawn by the shell
+itself on the Wayland background layer — stills, animated GIFs and looping video
+through QtMultimedia — so there is no `swww`/`awww`/`hyprpaper` in the stack.
+
+Colours come from [matugen](https://github.com/InioX/matugen). Picking a
+wallpaper regenerates a palette the shell watches and applies live, so every
+panel, the bar and the background follow the wallpaper.
+
+No fixed paths and no symlinks: every script and component resolves the
+repository at runtime, and per-machine values live in one config file.
+
+<br>
+
+---
+
+## ✦ Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><a href="docs/screenshots/menu.png"><img src="docs/screenshots/menu.png" alt="Command menu"></a></td>
+    <td width="50%"><a href="docs/screenshots/find.png"><img src="docs/screenshots/find.png" alt="File search"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/audio.png"><img src="docs/screenshots/audio.png" alt="Audio panel"></a></td>
+    <td><a href="docs/screenshots/wifi.png"><img src="docs/screenshots/wifi.png" alt="Wi-Fi panel"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/system.png"><img src="docs/screenshots/system.png" alt="System monitor"></a></td>
+    <td><a href="docs/screenshots/usage.png"><img src="docs/screenshots/usage.png" alt="Agent usage"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/glance.png"><img src="docs/screenshots/glance.png" alt="Calendar and weather"></a></td>
+    <td><a href="docs/screenshots/wallpaper.png"><img src="docs/screenshots/wallpaper.png" alt="Wallpaper carousel"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/scheme.png"><img src="docs/screenshots/scheme.png" alt="Theme scheme picker"></a></td>
+    <td><a href="docs/screenshots/bar-settings.png"><img src="docs/screenshots/bar-settings.png" alt="Bar settings"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/keybinds.png"><img src="docs/screenshots/keybinds.png" alt="Keybind browser"></a></td>
+    <td><a href="docs/screenshots/history.png"><img src="docs/screenshots/history.png" alt="Command history"></a></td>
+  </tr>
+</table>
+
+Twelve panels, captured at 1920×1080. Click any shot for full resolution;
+`docs/screenshots/README.md` records how they were taken and which panels are
+still missing.
+
+<br>
+
+---
+
+## ✦ What it puts on screen
+
+The bar is a catalogue of 19 modules. Each one is either always visible, or hides
+itself when it has nothing to say — and the whole arrangement is yours to change
+from Bar Settings, including per-module placement and which section of the bar it
+belongs to.
+
+| Module | What it does |
+| --- | --- |
+| **Workspaces** | Hyprland workspace digits, click to switch |
+| **Media** | Now-playing art, title and transport controls |
+| **Tray** | Status-notifier icons, with a filter for entries you never want |
+| **Recording** | A pulsing dot while `gpu-screen-recorder` is running |
+| **Find** | File search over `fd`, scoped to indexed folders |
+| **Audio** | Volume, output and input devices, and the media card |
+| **Wi-Fi** | Scan, connect, forget, saved networks |
+| **Bluetooth** | Paired devices, scan, adapter power |
+| **System** | CPU and GPU temperature, load, fan, memory, disk, per-core |
+| **USB Storage** | Mounted drives with safe eject — hidden when there are none |
+| **Agent Usage** | Coding-agent limits and spend — hidden when unavailable |
+| **Battery** | Charge card, and it raises itself when the battery is low |
+| **Clock** | The clock OSD |
+| **Glance** | Month calendar and weather, hourly and daily |
+| **Notifications** | Notification history you can read and prune |
+| **Wallpaper** | Full-screen carousel over your wallpaper directory |
+| **Theme Scheme** | matugen scheme picker: tints, variants, base16 palettes |
+| **Menu** | The `SUPER+D` command menu |
+| **Bar Settings** | Drag-and-drop bar layout, module palette, tray filter |
+
+Not everything is a bar module. There is also a lock screen, a Polkit agent, a
+notification daemon with toasts and Do-Not-Disturb, reminders, a tray menu, and a
+3D-printing wallpaper transition that plays when a print starts.
+
+<br>
+
+---
+
+## ✦ The menu
+
+`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 419
+rows, and the logic that reads them is a pure JS module with no QML in it.
+
+Hierarchy comes from dotted IDs (`system.lock` is a child of `system`), and the
+kind of a row is inferred from which key it carries: `action` runs something,
+`open` hands off to a panel the shell already has, `toggle` flips state, and
+children make it a submenu. `@shellDir@` expands to the repository path at load
+time, so entries stay portable.
+
+Three conditions shape what you see:
+
+- `when` hides a row, and prunes a submenu that ends up empty
+- `disabled` dims a row and excludes it from selection and search
+- `checked` renders evaluated state, so toggles read as on or off
+
+All of a row's guard expressions batch into **one** Bash process per evaluation
+rather than forking per row, and they re-evaluate on every open — without that,
+state went stale and an installed application kept offering to install itself.
+
+Search is global across the whole tree and ranks label matches above section,
+description and alias matches. Hand-off rows open the panel that already exists
+instead of rebuilding it, and an app row is ranked by how often you have launched
+it.
+
+<br>
+
+---
+
+## ✦ Install
+
+Needs Quickshell 0.3.1+, a Hyprland session, and **JetBrainsMono Nerd Font
+Mono** — most icons are Nerd Font glyphs. matugen is optional; without it the
+shell falls back to a baked-in palette.
+
+```fish
+git clone https://github.com/CWebb89/webb-shell.git
+cd webb-shell
 ./install.sh              # tool check + config + matugen template + PAM
-./install.sh --packages   # also install the runtime + desktop package sets
+./install.sh --packages   # also install the runtime and desktop package sets
 ```
 
-`install.sh --packages` installs the shell's runtime deps plus a curated
-desktop package set (nvim, chromium, thunar, kitty, fish, gimp, discord,
-spotify, the fonts, etc). It is a **hand-maintained list, not a `pacman -Qqe`
-dump** — kernels, bootloaders and vendor GPU drivers are deliberately omitted
-because they would be wrong on other hardware, and the AUR-only
-`orca-slicer-bin`/`yay` need `yay -S` after. No prompts; `--needed` no-ops
-anything already installed. `install.sh --packages` is the only mode that
-touches pacman.
+Then add one line to your Hyprland config:
 
-Plain `install.sh` (without the flag) only checks tools + writes config and is
-fully idempotent. For a second machine — and for bringing an older copy of this
-shell up to date — follow `docs/OTHER-PC.md`, which covers the parts
-`install.sh` deliberately does not touch (Hyprland autostart and keybinds, the
-`shot` helper, fonts, the notification daemon, and the wallpaper record). It:
-
-1. Checks for the required tools and prints the missing ones by category
-   (core / optional / compositor-bound).
-2. Writes `~/.config/webb-shell/config.json` — wallpaper directory (default
-   `~/Pictures/Wallpapers`, override with `WEBBSHELL_WALLPAPERS`), CPU/GPU
-   labels auto-detected for the system monitor, GTK icon theme seeded from the
-   desktop's current choice. Existing keys are preserved.
-3. Registers the matugen **quickshell** color template additively (backs up
-   your `~/.config/matugen/config.toml` once; never rewrites your other
-   template blocks), plus the scheme-preview swatch template. Run
-   `matugen image <wallpaper>` once to generate the palette.
-4. Installs the lock-screen PAM service `/etc/pam.d/webb-shell` (sudo prompt;
-   skipped if you decline or sudo is unavailable).
-5. Prints the autostart line: `exec-once = quickshell -p /path/to/webb-shell`
-
-Re-running is safe and idempotent.
-
-> Lock-screen tip: the screen uses `ScreencopyView` under a systemd-style
-> service-free PAM context; if the compositor session doesn't allow
-> `quickshell` to use the layer shell while locked, rely on your normal
-> screen-lock workflow (e.g. `hyprlock`) instead — the shell's lock is a thin
-> alternative, not a requirement for the rest of the shell.
-
-## Layout
-
-```text
-shell.qml            ShellRoot: window instances, shared processes, IPC handlers
-Bar.qml              Top bar: workspaces, tray, live status buttons
-src/theme/           Singletons: Colors, Metrics, Type (+ qmldir)
-src/state/           Singletons: ShellState, Popups, ShellConfig (+ qmldir)
-src/services/        Singletons: Weather, SysStats, NmcliService, BtService,
-                     PulseService, Recorder, Battery, Reminders, UsbStorage,
-                     AgentUsage (+ qmldir, plus the pure-JS MprisModel and
-                     UsbStorageModel helpers)
-src/components/      Reusable visual controls (+ qmldir)
-src/popups/          PanelWindow overlays: menu, find, audio, wifi, bt, system,
-                     usb, agent usage, glance, wallpaper, scheme,
-                     background, lockscreen, toasts, polkit, reminders, tray
-                     menu, print overlay
-src/menu/            menu.jsonc (content) + MenuModel.js (pure model logic)
-bin/                 Helper scripts, all resolving the repo at runtime
-assets/              Icons, printer animation frames, matugen templates
-test/                Node tests: menu model, find backend, USB storage model,
-                     MPRIS model, popup anchor, bar layout, bar config
-docs/                Runbook for installing on and updating another machine
-reference/           Inert archive. Nothing here is imported or built.
+```ini
+exec-once = quickshell -p /path/to/webb-shell
 ```
 
-## Configuration
+`install.sh` writes `~/.config/webb-shell/config.json`, registers the matugen
+**quickshell** colour template additively (backing up your `matugen/config.toml`
+once and never rewriting your other template blocks), installs the lock-screen
+PAM service to `/etc/pam.d/webb-shell`, and prints the autostart line. It is
+idempotent — re-running is safe, and unknown keys in your config are preserved.
 
-`~/.config/webb-shell/config.json`:
+`install.sh --packages` is the only mode that touches pacman. It installs the
+runtime dependencies plus a curated desktop package set. That list is
+**hand-maintained, not a `pacman -Qqe` dump**: kernels, bootloaders and vendor
+GPU drivers are deliberately omitted because they would be wrong on other
+hardware, and the AUR-only entries need `yay -S` afterwards.
+
+For a second machine — and for bringing an older copy of this shell up to date —
+follow [`docs/OTHER-PC.md`](docs/OTHER-PC.md), which covers what `install.sh`
+deliberately does not touch: autostart and keybinds, capture tooling, fonts, the
+notification daemon, and the wallpaper record.
+
+### What you need
+
+| | |
+| --- | --- |
+| **Required** | `quickshell` 0.3.1, `matugen`, `jq`, `NetworkManager`, `wireplumber`, `bluez`, `udisks2`, `grim`, `slurp`, `wl-clipboard` |
+| **Video wallpapers** | `qt6-multimedia`, `qt6-multimedia-ffmpeg` |
+| **Media control** | `Quickshell.Services.Mpris` (ships with Quickshell), and `mpv-mpris` for video played through mpv |
+| **Optional** | `pavucontrol-qt`, `fd`, `fzf`, `tesseract`, `zbar`, `gpu-screen-recorder`, `cliphist`, `hyprpicker`, `localsend` |
+
+Everything optional degrades: a missing tool hides or fails only its own feature.
+The shell deliberately has no Wi-Fi QR row — NetworkManager will not hand a PSK
+to an unprivileged process, and a QR without the password is not worth a menu
+entry.
+
+`mpv-mpris` is worth calling out, because browser media is not: Chromium exposes
+no MPRIS player at all, so a YouTube tab is invisible to the shell no matter what
+you install. Video played through mpv is controllable as soon as
+`/etc/mpv/scripts/mpris.so` exists, which is what that package installs.
+
+> **Lock screen:** if your compositor session does not allow Quickshell to take
+> the layer shell while locked, keep using your normal lock workflow. The shell's
+> lock is a thin alternative, not a requirement for anything else here.
+
+<br>
+
+---
+
+## ✦ Configuration
+
+One file, `~/.config/webb-shell/config.json`:
 
 ```json
 {
@@ -164,36 +237,32 @@ reference/           Inert archive. Nothing here is imported or built.
 }
 ```
 
-`wallpaperDir` can stay unset — the shell falls back to
-`$HOME/Pictures/Wallpapers`. `cpuName`/`gpuName` are labels in the system
-monitor; `install.sh` writes detected values. `matugenColorsFile` is what
-`Colors.qml` watches, with a built-in fallback palette.
+`wallpaperDir` may be unset, in which case the shell falls back to
+`$HOME/Pictures/Wallpapers`. `cpuName` and `gpuName` are labels in the system
+monitor. `matugenColorsFile` is what the theme watches, with a built-in fallback
+palette if it is missing.
 
-`defaultAgent` is the coding agent the shell launches (menu *Shell → Agents*,
-`bin/agent-launch.sh`). It is optional: with no key set, the first of
+`defaultAgent` is the coding agent the shell launches. With no value, the first of
 pi/claude/codex/opencode/gemini/copilot/crush/grok/omp found on `PATH` wins.
-`bin/agent-default.sh <name>` writes it with a jq merge, so hand-edited keys
+`bin/agent-default.sh <name>` writes it with a merge, so your hand-edited keys
 survive.
 
-`iconTheme` maps a matugen mode to a GTK icon theme; `bin/matugen-apply.sh`
-sets it with `gsettings` on every theme change, so GTK apps follow the
-shell's dark/light choice. A mode with no entry (including `smart`, where
-matugen picks the brightness itself) leaves the icons alone. Qt apps only
-follow this when a Qt platform theme maps GTK settings.
+`iconTheme` maps a theme mode to a GTK icon theme, applied with `gsettings` on
+every theme change so GTK applications follow the shell's dark/light choice. A
+mode with no entry leaves your icons alone. Qt applications only follow this when
+a Qt platform theme maps GTK settings.
 
-### Menu
+The bar's own layout lives in a `bar` block in the same file, and
+**`bin/bar-config.sh` is its only writer** — the menu rows, the Bar Settings drag
+and the IPC passthrough all go through it, so there is one code path to trust.
 
-`src/menu/menu.jsonc` defines the menu tree; hierarchy comes from dotted IDs
-and the kind is inferred from `action`, `open`, `toggle` or submenu children.
-`@shellDir@` tokens expand to the repo's absolute path at load, so entries
-stay portable. `when` hides rows, `disabled` dims them and excludes them from
-selection/search, and `checked` renders evaluated state — all guard
-expressions for one evaluation batch into a single Bash process.
+<br>
 
-## IPC targets
+---
 
-`shell.qml` is the authoritative IPC surface. External scripts address the
-running instance with:
+## ✦ IPC
+
+`shell.qml` is the authoritative surface. Address the running instance with:
 
 ```sh
 qs -p /path/to/webb-shell ipc call <target> <fn> [args]
@@ -219,33 +288,90 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 | `notify` | `dnd` `toggle` `state` `history` `clear` `dismissAll` `center` `centerHide` |
 | `reminder` | `set` `show` `list` `clear` |
 | `screenshot` | `full` `region` `window` |
-| `print` | `start <path>` — run the 3D-printing wallpaper transition |
+| `print` | `start <path>` |
 | `keybinds` | `open` |
 | `history` | `open` |
 | `dmenu` | `select <options> <selection-file> <done-file> <prompt>` |
 
-`show` is defined on most targets but is not reachable from `qs ipc`: the CLI
-parses a trailing `show` as its own subcommand, so `ipc call <target> show`
-prints that target's function list, changes nothing and still exits 0. Use
-`toggle`.
+`show` is declared on most targets but is **not reachable from `qs ipc`**: the CLI
+parses a trailing `show` as its own "print the function list" subcommand, so
+`ipc call <target> show` prints that table entry, changes nothing, and still exits
+0. Use `toggle`. This is upstream behaviour, not something the shell can work
+around.
 
-`bin/menu-select.sh` uses the `dmenu` target to reuse the menu popup as a
-picker from arbitrary scripts (clipboard history, Wi-Fi connect, audio device
-select, default coding agent). It writes the options to a private temp file,
-then blocks until the popup touches `<done-file>` — so `selection-file` is only
-read once that marker exists, and cancel is an empty `selection-file`.
+`bin/menu-select.sh` uses the `dmenu` target to reuse the menu popup as a picker
+from arbitrary scripts — clipboard history, Wi-Fi connect, audio device select,
+default agent. It writes the options to a private temp file and blocks until the
+popup touches `<done-file>`, so `selection-file` is only read once that marker
+exists, and cancelling leaves it empty.
 
-## Verification
+<br>
 
-```sh
+---
+
+## ✦ Development
+
+```fish
+./tools/verify.sh
+```
+
+The whole gate in one command: `qmllint`, shell syntax, and every test, with
+per-step PASS/FAIL. It exits non-zero on any failure, and finishes with an
+advisory pass that prints the `qmllint` warnings `--silent` hides. Individually:
+
+```bash
 bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
 bash -n install.sh portabilize.sh bin/*.sh
-bash -c 'for f in test/*.js; do node "$f" || exit 1; done'
+node test/menu-model.js          # menu tree, guards, search ranking, JSONC
+node test/bar-config.js          # bar config writer
+node test/bar-layout.js          # drag/drop index maths
+node test/popup-anchor.js        # 3x3 anchor grid
+node test/mpris-model.js         # which player is active
+node test/usb-storage-model.js   # udev event to drive list
+node test/find-backend.js        # file search parsing
+node test/clipboard-script.js    # clipboard history pipeline
 ```
 
 `qmllint -p` does not exist in the installed toolchain.
 
 `quickshell -p .` is a nonterminating visual smoke run, not a pass/fail check —
-it creates a second shell with duplicate layer surfaces. For runtime
-validation, identify the new run with `qs list --all`, target it with
-`qs ipc -i <run-id> ...`, and stop only that run with `qs kill -i <run-id>`.
+it creates a second shell with duplicate layer surfaces. For runtime validation,
+identify the new run with `qs list --all`, target **only** that run with
+`qs ipc -i <run-id> ...`, and stop only it with `qs kill -i <run-id>`.
+
+<br>
+
+---
+
+## ✦ Known issues
+
+- **`qmllint` reports ten "not declared as singleton in qmldir" warnings** for
+  modules whose `qmldir` declares them correctly with the `singleton` keyword, and
+  which demonstrably behave as singletons at runtime. Not root-caused; the
+  advisory pass in `./tools/verify.sh` surfaces them so they cannot hide.
+- **Two `var declaration in block scope is hoisted to function scope` warnings**,
+  in `ReminderPopup.qml` and `UsbStorage.qml`. Harmless, but real.
+- **`keybinds` and `history` are not exclusive popups.** Nothing closes them but
+  `Esc`, so opening one over another panel leaves both on screen.
+- **The Wi-Fi passphrase is passed to `nmcli` as an argument**, which makes it
+  readable in `/proc/<pid>/cmdline` for the life of the call. `nmcli`'s
+  `--passwd-file` and `--ask` are documented for connection profiles rather than
+  `device wifi connect`, and the alternative is unverified, so it is left as an
+  accepted exposure rather than a guessed-at fix.
+- **`reference/scotia/` is not published.** It is a previous shell kept locally as
+  a source of machinery worth porting, and it is gitignored. A clone will not
+  have it, and the porting notes inside it point at files that are not here.
+
+<br>
+
+---
+
+## ✦ License
+
+MIT. See [LICENSE](LICENSE).
+
+<br>
+
+<div align="center">
+  <sub>A personal shell, built for one machine and published in case it is useful on yours.</sub>
+</div>
