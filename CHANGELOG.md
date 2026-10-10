@@ -58,12 +58,14 @@ All notable changes to webb-shell, oldest release last. The format follows
   `webb-shell:bar` and `webb-shell:volume`, so every mapped surface carries a
   `webb-shell:<name>` namespace. Behaviour-neutral: only two layer rules exist
   and both match specific namespaces, so nothing was matching `quickshell`.
-- **A password typed for an already-saved network was silently discarded.**
-  The in-range list opened the password bar for any secured network, but nmcli
-  reuses a matching saved profile and never asks the agent, so the typed PSK was
-  never read. The bar now appears only for a secured network with no saved
-  profile; changing a stale stored password is Forget in SAVED NETWORKS, then
-  reconnect from the in-range list.
+- **A saved network asked for a password it would not use, and the two lists
+  disagreed.** IN RANGE opened the password bar for *any* secured network, while
+  clicking the same network in SAVED NETWORKS connected with no prompt at all.
+  When a matching profile already holds a correct PSK, nmcli activates it with
+  the stored secret and never asks its agent for one, so nothing read the typed
+  value. The bar now appears only for a secured network with no saved profile,
+  so both lists behave identically. Changing a stale stored PSK is Forget in
+  SAVED NETWORKS, then reconnect from either list.
 - **The Wi-Fi passphrase was readable in `/proc/<pid>/cmdline`.**
   `NmcliService.connectTo` passed it as an `nmcli device wifi connect …
   password <psk>` argument. It now goes to nmcli's stdin with `--ask`, so it
