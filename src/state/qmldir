@@ -1,0 +1,4 @@
+singleton ShellState 1.0 ShellState.qml
+singleton Popups 1.0 Popups.qml
+singleton ShellConfig 1.0 ShellConfig.qml
+singleton BarModules 1.0 BarModules.qml

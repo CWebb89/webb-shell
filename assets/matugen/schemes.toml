@@ -1,0 +1,62 @@
+# webb-shell scheme preview config.
+# Renders one swatch per matugen scheme type from the current wallpaper into
+# ~/.cache/matugen/swatches/ — nothing else. Used by SchemeSwitcher.qml to
+# draw the palette cards. set_wallpaper/reload_apps are off so previewing
+# never touches the system theme; only the picker's apply runs the real
+# ~/.config/matugen/config.toml.
+#
+# Per-template `type` is PascalCase (SchemeVibrant), the global `[config]`
+# default accepts kebab too. SchemeSmart auto-picks a variant for the image.
+[config]
+set_wallpaper = false
+reload_apps = false
+
+[templates.scheme_tonal_spot]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/tonal-spot.json'
+type = "SchemeTonalSpot"
+
+[templates.scheme_vibrant]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/vibrant.json'
+type = "SchemeVibrant"
+
+[templates.scheme_neutral]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/neutral.json'
+type = "SchemeNeutral"
+
+[templates.scheme_monochrome]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/monochrome.json'
+type = "SchemeMonochrome"
+
+[templates.scheme_expressive]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/expressive.json'
+type = "SchemeExpressive"
+
+[templates.scheme_fruit_salad]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/fruit-salad.json'
+type = "SchemeFruitSalad"
+
+[templates.scheme_rainbow]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/rainbow.json'
+type = "SchemeRainbow"
+
+[templates.scheme_content]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/content.json'
+type = "SchemeContent"
+
+[templates.scheme_fidelity]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/fidelity.json'
+type = "SchemeFidelity"
+
+[templates.scheme_smart]
+input_path = '~/.config/matugen/templates/swatch.json'
+output_path = '~/.cache/matugen/swatches/smart.json'
+type = "SchemeSmart"

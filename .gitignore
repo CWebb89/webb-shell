@@ -1,0 +1,8 @@
+# Agent planning artifacts: process, not product, and they carry machine-specific
+# paths. Nothing shipped or documented depends on them.
+.pi/
+
+# The retired scotia-shell source — a different project, and 2.1M of the tree.
+# Kept on disk as a source of machinery to port (see reference/README.md);
+# deliberately not published.
+reference/scotia/

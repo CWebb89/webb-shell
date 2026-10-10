@@ -1,0 +1,525 @@
+{
+  // webb-shell menu definition.
+  // Dotted ids define the tree: "system.lock" sits under "system".
+  // Kind is inferred: "action" -> runs the command detached,
+  // "open"/"toggle" -> hands off to an existing shell popup,
+  // otherwise -> submenu.
+  //
+  // Fields:
+  //   icon        Nerd Font glyph as \uXXXX escape
+  //   label       Visible row title (defaults to id)
+  //   description Subtitle shown in rows; also searched
+  //   aliases     Extra search terms / IPC routes
+  //   action      Shell command run detached on select
+  //   open        Set Popups.<name>Open = true (hand-off)
+  //   toggle      Flip Popups.<name>Open (or bar visibility)
+  //
+  // Icons are \uXXXX escapes so this file stays plain ASCII.
+  // Browse glyphs with any Nerd Font cheat sheet and swap the escapes.
+
+  // Apps — dynamic. MenuPopup.qml injects every installed app from
+  // DesktopEntries (real icon, app name + genericName) as a provider row on
+  // each open, so new installs appear automatically. Static rows below (web
+  // apps, agent rows) coexist with the generated list.
+  "apps":              {"icon":"\uf00a","label":"Apps","description":"Launch applications","aliases":["applications"],"provider":"apps"},
+
+  // Learn — documentation links, opened in Chromium app mode.
+  "learn":             {"icon":"\uf02d","label":"Learn","description":"Docs and references","aliases":["docs","documentation"]},
+  "learn.hyprland":    {"icon":"\uf1de","label":"Hyprland Wiki","action":"chromium --app=https://wiki.hypr.land/"},
+  "learn.arch":        {"icon":"\uf08c","label":"Arch Wiki","action":"chromium --app=https://wiki.archlinux.org/title/Main_page"},
+  "learn.lazyvim":     {"icon":"\uf121","label":"LazyVim Keymaps","action":"chromium --app=https://www.lazyvim.org/keymaps"},
+  "learn.bash":        {"icon":"\uf120","label":"Bash Cheatsheet","action":"chromium --app=https://devhints.io/bash"},
+  "learn.pi":          {"icon":"\uf544","label":"Pi Docs","description":"pi.dev","when":"command -v pi >/dev/null","action":"chromium --app=https://pi.dev/docs"},
+  "learn.pi-pkgs":     {"icon":"\uf02d","label":"Pi Packages","description":"pi.dev/packages","when":"command -v pi >/dev/null","action":"chromium --app=https://pi.dev/packages"},
+  "learn.herdr":       {"icon":"\uf0c9","label":"Herdr Docs","description":"herdr.dev","when":"command -v herdr >/dev/null","action":"chromium --app=https://herdr.dev/docs/"},
+
+  // System
+  "system":            {"icon":"\uf013","label":"System","description":"Power and session"},
+  "system.reload":     {"icon":"\uf2f1","label":"Reload","description":"Lock, logout, reboot, shutdown, reload"},
+  "system.reload.lock":{"icon":"\uf023","label":"Lock","action":"qs -p @shellDir@ ipc call lock toggle","confirm":true},
+  "system.reload.logout":{"icon":"\uf08b","label":"Logout","action":"hyprctl dispatch 'hl.dsp.exit()'","confirm":true},
+  "system.reload.reboot":{"icon":"\uf021","label":"Reboot","action":"systemctl reboot","confirm":true},
+  "system.reload.shutdown":{"icon":"\uf011","label":"Shutdown","action":"systemctl poweroff","confirm":true},
+  "system.reload.suspend":{"icon":"\uf186","label":"Suspend","description":"Sleep the machine","action":"systemctl suspend"},
+  "system.reload.hyprland": {"icon":"\uf021","label":"Reload Hyprland","description":"Re-read the Hyprland config","action":"hyprctl reload"},
+  "system.reload.shell":    {"icon":"\uf21d","label":"Reload Shell","description":"Restart webb-shell","action":"hyprctl dispatch 'hl.dsp.exec_cmd(\"@shellDir@/bin/restart.sh\")'"},
+
+  // Active window controls
+  "system.windows":    {"icon":"\uf2d0","label":"Windows","description":"Active window controls"},
+  "system.windows.float":     {"icon":"\uf077","label":"Toggle Float","action":"hyprctl dispatch 'hl.dsp.window.float({action=\"toggle\"})'"},
+  "system.windows.fullscreen": {"icon":"\uf065","label":"Toggle Fullscreen","action":"hyprctl dispatch 'hl.dsp.window.fullscreen({mode=\"fullscreen\", action=\"toggle\"})'"},
+  "system.windows.close":     {"icon":"\uf00d","label":"Close Window","action":"hyprctl dispatch 'hl.dsp.window.close()'"},
+  "system.windows.layout":    {"icon":"\uf0db","label":"Toggle Layout","description":"master / dwindle","action":"@shellDir@/bin/layout-toggle.sh"},
+  "system.windows.gaps":      {"icon":"\uf07e","label":"Toggle Gaps","description":"hide / show window gaps","action":"@shellDir@/bin/gaps-toggle.sh"},
+
+  "system.usb":          {"icon":"\uf287","label":"USB Drives","description":"View and eject attached USB drives"},
+  "system.usb.show":     {"icon":"\uf287","label":"Show USB Drives","description":"Details, usage and safe eject for each drive","action":"qs -p @shellDir@ ipc call usb toggle"},
+  "system.usb.refresh":  {"icon":"\uf021","label":"Rescan USB Drives","action":"qs -p @shellDir@ ipc call usb refresh"},
+
+  "system.update":      {"icon":"\uf021","label":"Update","description":"System updates and restarts"},
+  "system.update.sys":  {"icon":"\uf019","label":"System Update · pacman -Syu","action":"kitty --hold -e bash -lc 'sudo pacman -Syu'"},
+  "system.update.audio":{"icon":"\uf001","label":"Restart Audio","description":"pipewire + wireplumber","action":"systemctl --user restart pipewire pipewire-pulse wireplumber"},
+  "system.update.wifi": {"icon":"\uDB81\uDDDC","label":"Restart Wi-Fi","description":"NetworkManager + iwd","action":"systemctl restart NetworkManager iwd"},
+  "system.update.bt":   {"icon":"\uf294","label":"Restart Bluetooth","description":"bluetoothd","action":"systemctl restart bluetooth"},
+
+  "system.power":       {"icon":"\uf0e7","label":"Power Profile","description":"performance / balanced / saver"},
+  "system.power.perf":  {"icon":"\uf067","label":"Performance","action":"powerprofilesctl set performance"},
+  "system.power.bal":   {"icon":"\uf021","label":"Balanced","action":"powerprofilesctl set balanced"},
+  "system.power.saver": {"icon":"\uf064","label":"Power Saver","action":"powerprofilesctl set power-saver"},
+
+  "system.account":      {"icon":"\uf084","label":"Account","description":"Password and credentials"},
+  "system.account.passwd": {"icon":"\uf084","label":"Change Password","description":"passwd — current Linux account","action":"kitty --hold -e passwd"},
+
+  "system.defaults":     {"icon":"\uf2bb","label":"Default Apps","description":"Set default applications"},
+  "system.defaults.web": {"icon":"\uf0ac","label":"Web Browser","description":"Choose your default browser"},
+  "system.defaults.web.firefox": {"icon":"\uf269","label":"Firefox","when":"command -v firefox >/dev/null","checked":"[[ \"$(xdg-settings get default-web-browser 2>/dev/null)\" == \"firefox.desktop\" ]]","action":"@shellDir@/bin/xdg-default.sh set web firefox.desktop && hyprctl reload"},
+  "system.defaults.web.chromium": {"icon":"\uf1b6","label":"Chromium","when":"command -v chromium >/dev/null","checked":"[[ \"$(xdg-settings get default-web-browser 2>/dev/null)\" == \"chromium.desktop\" ]]","action":"@shellDir@/bin/xdg-default.sh set web chromium.desktop && hyprctl reload"},
+  "system.defaults.web.brave": {"icon":"\uf268","label":"Brave","when":"command -v brave >/dev/null","checked":"[[ \"$(xdg-settings get default-web-browser 2>/dev/null)\" == \"brave-browser.desktop\" ]]","action":"@shellDir@/bin/xdg-default.sh set web brave-browser.desktop && hyprctl reload"},
+  "system.defaults.web.vivaldi": {"icon":"\uf267","label":"Vivaldi","when":"command -v vivaldi >/dev/null","checked":"[[ \"$(xdg-settings get default-web-browser 2>/dev/null)\" == \"vivaldi.desktop\" ]]","action":"@shellDir@/bin/xdg-default.sh set web vivaldi.desktop && hyprctl reload"},
+  "system.defaults.term":  {"icon":"\uf120","label":"Terminal","description":"Choose your default terminal emulator"},
+  "system.defaults.term.kitty": {"icon":"\uf120","label":"Kitty","when":"command -v kitty >/dev/null","checked":"[[ \"$(gio mime x-scheme-handler/terminal 2>/dev/null | head -2 | awk '{print $NF}' | grep -F '.desktop' | head -1)\" == \"kitty.desktop\" ]]","action":"@shellDir@/bin/xdg-default.sh set term kitty.desktop && hyprctl reload"},
+  "system.defaults.files": {"icon":"\uf07c","label":"File Manager","description":"Choose your default file manager"},
+  "system.defaults.files.thunar": {"icon":"\uf07c","label":"Thunar","when":"command -v thunar >/dev/null","checked":"[[ \"$(gio mime inode/directory 2>/dev/null | head -2 | awk '{print $NF}' | grep -F '.desktop' | head -1)\" == \"thunar.desktop\" ]]","action":"@shellDir@/bin/xdg-default.sh set file thunar.desktop && hyprctl reload"},
+
+  // Theme
+  "system.theme":       {"icon":"\uf1fc","label":"Theme","description":"matugen color scheme and mode"},
+  "system.theme.scheme": {"icon":"\uf53f","label":"Scheme & Mode","description":"Pick a matugen palette variant","open":"scheme","aliases":["colors","palette","matugen"]},
+
+  "shell":             {"icon":"\uf0c9","label":"Shell","description":"webb-shell controls"},
+  "shell.glance":      {"icon":"\uf06e","label":"Glance","open":"glance","description":"Calendar and weather panel"},
+  "shell.clock":       {"icon":"\uf017","label":"OSD Clock","toggle":"clock","description":"Toggle the corner clock"},
+  "shell.bar":         {"icon":"\uf412","label":"Bar","description":"Modules, order, popup placement and tray visibility"},
+  "shell.bar.visibility": {"icon":"\uf412","label":"Toggle Bar","toggle":"bar","description":"Show or hide the top bar strip"},
+  "shell.bar.settings": {"icon":"\uf013","label":"Bar Settings","open":"barSettings","aliases":["bar","modules","layout","anchor"],"description":"Add, remove, reorder and re-anchor bar modules in one panel"},
+  "shell.bar.modules": {"icon":"\uf0c9","label":"Modules","description":"Tick to put a module in the bar, untick to take it out"},
+  "shell.bar.modules.workspaces": {"icon":"\uf009","label":"Workspaces","aliases":["bar"],"checked":"bar_in workspaces","action":"@shellDir@/bin/bar-config.sh toggle workspaces left"},
+  "shell.bar.modules.recording": {"icon":"\uf03d","label":"Recording","aliases":["bar"],"checked":"bar_in recording","action":"@shellDir@/bin/bar-config.sh toggle recording right"},
+  "shell.bar.modules.tray": {"icon":"\uf00a","label":"System Tray","aliases":["bar","tray"],"checked":"bar_in tray","action":"@shellDir@/bin/bar-config.sh toggle tray right"},
+  "shell.bar.modules.media": {"icon":"\uf001","label":"Media","aliases":["bar"],"checked":"bar_in media","action":"@shellDir@/bin/bar-config.sh toggle media center"},
+  "shell.bar.modules.find": {"icon":"\uf002","label":"Search","aliases":["bar"],"checked":"bar_in find","action":"@shellDir@/bin/bar-config.sh toggle find right"},
+  "shell.bar.modules.audio": {"icon":"\uf028","label":"Audio","aliases":["bar"],"checked":"bar_in audio","action":"@shellDir@/bin/bar-config.sh toggle audio right"},
+  "shell.bar.modules.wifi": {"icon":"\uf1eb","label":"Wi-Fi","aliases":["bar"],"checked":"bar_in wifi","action":"@shellDir@/bin/bar-config.sh toggle wifi right"},
+  "shell.bar.modules.bluetooth": {"icon":"\uf294","label":"Bluetooth","aliases":["bar"],"checked":"bar_in bluetooth","action":"@shellDir@/bin/bar-config.sh toggle bluetooth right"},
+  "shell.bar.modules.system": {"icon":"\udb80\ude10","label":"System Monitor","aliases":["bar"],"checked":"bar_in system","action":"@shellDir@/bin/bar-config.sh toggle system right"},
+  "shell.bar.modules.usb": {"icon":"\uf287","label":"USB Storage","aliases":["bar"],"checked":"bar_in usb","action":"@shellDir@/bin/bar-config.sh toggle usb right"},
+  "shell.bar.modules.agents": {"icon":"\uf080","label":"Agent Usage","aliases":["bar"],"checked":"bar_in agents","action":"@shellDir@/bin/bar-config.sh toggle agents right"},
+  "shell.bar.modules.battery": {"icon":"\uf240","label":"Battery","aliases":["bar"],"checked":"bar_in battery","action":"@shellDir@/bin/bar-config.sh toggle battery right"},
+  "shell.bar.modules.clock": {"icon":"\uf017","label":"Clock","aliases":["bar"],"checked":"bar_in clock","action":"@shellDir@/bin/bar-config.sh toggle clock center"},
+  "shell.bar.modules.glance": {"icon":"\uf06e","label":"Glance","aliases":["bar"],"checked":"bar_in glance","action":"@shellDir@/bin/bar-config.sh toggle glance right"},
+  "shell.bar.modules.notif": {"icon":"\uf0f3","label":"Notifications","aliases":["bar"],"checked":"bar_in notif","action":"@shellDir@/bin/bar-config.sh toggle notif right"},
+  "shell.bar.modules.wallpaper": {"icon":"\uf03e","label":"Wallpaper","aliases":["bar"],"checked":"bar_in wallpaper","action":"@shellDir@/bin/bar-config.sh toggle wallpaper right"},
+  "shell.bar.modules.scheme": {"icon":"\uf53f","label":"Theme Scheme","aliases":["bar"],"checked":"bar_in scheme","action":"@shellDir@/bin/bar-config.sh toggle scheme right"},
+  "shell.bar.modules.menu": {"icon":"\uf0c9","label":"Menu","aliases":["bar"],"checked":"bar_in menu","action":"@shellDir@/bin/bar-config.sh toggle menu right"},
+  "shell.bar.modules.settings": {"icon":"\uf013","label":"Bar Settings Button","aliases":["bar"],"checked":"bar_in settings","action":"@shellDir@/bin/bar-config.sh toggle settings right"},
+  "shell.history":     {"icon":"\uf120","label":"History","description":"Clipboard, command and notification history"},
+  "shell.history.clip": {"icon":"\uf0ea","label":"Clipboard History","description":"Pick a past copy to paste","action":"@shellDir@/bin/clipboard.sh"},
+  "shell.history.cmd":  {"icon":"\uf120","label":"Command History","description":"Pick a past terminal command","action":"@shellDir@/bin/history.sh"},
+  "shell.history.notifs": {"icon":"\uf1da","label":"Notification History","description":"Replay the last notifications as toasts","action":"qs -p @shellDir@ ipc call notify history"},
+  "shell.notifs":      {"icon":"\uf0f3","label":"Notification Center","open":"notif","description":"Persistent history — read and dismiss entries one at a time","aliases":["notifications","notif history","inbox"]},
+  "shell.find":        {"icon":"\uf002","label":"Find Files","open":"find","description":"Search files, folders and paths (fd)","aliases":["search","files"]},
+  "shell.media":       {"icon":"\uf001","label":"Media Player","description":"Art, transport, seek and player selection — lives in the Audio panel","action":"qs -p @shellDir@ ipc call audio toggle"},
+  "shell.agents":      {"icon":"\uf544","label":"Agents","description":"Coding agents and local usage"},
+  "shell.agents.usage":{"icon":"\uf080","label":"Agent Usage","description":"Spend and tokens from the local session logs","action":"qs -p @shellDir@ ipc call usage toggle"},
+  "shell.agents.launch":{"icon":"\uf544","label":"Launch Agent","description":"Open the default coding agent in a terminal","action":"hyprctl dispatch 'hl.dsp.exec_cmd(\"@shellDir@/bin/agent-launch.sh\")'"},
+  "shell.agents.default":{"icon":"\uf544","label":"Default Agent","description":"Which coding agent the shell launches"},
+  "shell.agents.default.pi":{"icon":"\uf544","label":"pi","when":"command -v pi >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"pi\" ]]","action":"@shellDir@/bin/agent-default.sh pi"},
+  "shell.agents.default.claude":{"icon":"\uf544","label":"Claude Code","when":"command -v claude >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"claude\" ]]","action":"@shellDir@/bin/agent-default.sh claude"},
+  "shell.agents.default.codex":{"icon":"\uf544","label":"Codex","when":"command -v codex >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"codex\" ]]","action":"@shellDir@/bin/agent-default.sh codex"},
+  "shell.agents.default.opencode":{"icon":"\uf544","label":"opencode","when":"command -v opencode >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"opencode\" ]]","action":"@shellDir@/bin/agent-default.sh opencode"},
+  "shell.agents.default.gemini":{"icon":"\uf544","label":"Gemini CLI","when":"command -v gemini >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"gemini\" ]]","action":"@shellDir@/bin/agent-default.sh gemini"},
+  "shell.agents.default.copilot":{"icon":"\uf544","label":"Copilot CLI","when":"command -v copilot >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"copilot\" ]]","action":"@shellDir@/bin/agent-default.sh copilot"},
+  "shell.agents.default.crush":{"icon":"\uf544","label":"crush","when":"command -v crush >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"crush\" ]]","action":"@shellDir@/bin/agent-default.sh crush"},
+  "shell.agents.default.grok":{"icon":"\uf544","label":"grok","when":"command -v grok >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"grok\" ]]","action":"@shellDir@/bin/agent-default.sh grok"},
+  "shell.agents.default.omp":{"icon":"\uf544","label":"omp","when":"command -v omp >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"omp\" ]]","action":"@shellDir@/bin/agent-default.sh omp"},
+  "shell.agents.crash":{"icon":"\uf188","label":"Diagnose Last Crash","description":"Hand the most recent coredump to the agent","action":"hyprctl dispatch 'hl.dsp.exec_cmd(\"@shellDir@/bin/crash-diagnose.sh\")'"},
+  "shell.dnd":         {"icon":"\uf0f3","label":"Do Not Disturb","description":"Silence toasts into notification history","checked":"[[ \"$(jq -r '.dnd // false' \"$HOME/.local/state/webb-shell/notifications.json\" 2>/dev/null)\" == \"true\" ]]","action":"qs -p @shellDir@ ipc call notify toggle"},
+  "shell.reminders":   {"icon":"\uf017","label":"Reminders","description":"Set, list and clear desktop reminders"},
+  "shell.reminders.set":  {"icon":"\uf017","label":"Set Reminder","description":"Remind me in N minutes","open":"reminder"},
+  "shell.reminders.show": {"icon":"\uf06e","label":"Show Reminders","description":"List active reminders","action":"qs -p @shellDir@ ipc call reminder list"},
+  "shell.reminders.clear":{"icon":"\uf00d","label":"Clear Reminders","description":"Forget all active reminders","action":"qs -p @shellDir@ ipc call reminder clear"},
+  "shell.solidwall":   {"icon":"\uf0c8","label":"Solid Color Wallpaper","description":"No wallpaper \u2014 themed flat color","checked":"[[ ! -s \"$HOME/.local/state/webb-shell/background\" ]]","action":"printf '' > \"$HOME/.local/state/webb-shell/background\""},
+
+  // ── Keybinds ── Catalog of useful shortcuts by tool. Selecting a row
+  // copies the key combination to the clipboard; opening config files
+  // belongs in Edit Config, so each category is a pure key reference.
+  "binds":              {"icon":"\uf11c","label":"Keybinds","description":"Shortcuts by tool","aliases":["keys","shortcuts"]},
+
+  "binds.hyprland":     {"icon":"\uf11c","label":"Hyprland"},
+  "binds.hyprland.term":   {"icon":"\uf120","label":"SUPER + Space · Launch terminal","action":"printf '%s' 'SUPER + Space' | wl-copy"},
+  "binds.hyprland.browser":{"icon":"\uf35f","label":"SUPER + B · Open Chromium","action":"printf '%s' 'SUPER + B' | wl-copy"},
+  "binds.hyprland.files":  {"icon":"\uf07c","label":"SUPER + T · File manager","action":"printf '%s' 'SUPER + T' | wl-copy"},
+  "binds.hyprland.float":  {"icon":"\uf2d2","label":"SUPER + F · Toggle floating","action":"printf '%s' 'SUPER + F' | wl-copy"},
+  "binds.hyprland.fs":     {"icon":"\uf065","label":"SUPER + SHIFT + F · Toggle fullscreen","action":"printf '%s' 'SUPER + SHIFT + F' | wl-copy"},
+  "binds.hyprland.close":  {"icon":"\uf00d","label":"SUPER + Esc · Close window","action":"printf '%s' 'SUPER + Esc' | wl-copy"},
+  "binds.hyprland.focus":  {"icon":"\uf0b2","label":"SUPER + arrows · Move focus","action":"printf '%s' 'SUPER + arrow keys' | wl-copy"},
+  "binds.hyprland.resize": {"icon":"\uf0de","label":"SUPER + SHIFT + arrows · Resize window","action":"printf '%s' 'SUPER + SHIFT + arrows' | wl-copy"},
+  "binds.hyprland.cyclenext": {"icon":"\uf0b2","label":"SUPER + J · Focus next in stack","action":"printf '%s' 'SUPER + J' | wl-copy"},
+  "binds.hyprland.focusmaster":{"icon":"\uf0b2","label":"SUPER + P · Focus master window","action":"printf '%s' 'SUPER + P' | wl-copy"},
+  "binds.hyprland.promote":{"icon":"\uf067","label":"SUPER + Enter · Promote to master","action":"printf '%s' 'SUPER + Enter' | wl-copy"},
+  "binds.hyprland.wsscroll":{"icon":"\uf0ec","label":"SUPER + wheel · Cycle workspaces","action":"printf '%s' 'SUPER + mouse wheel' | wl-copy"},
+  "binds.hyprland.drag":{"icon":"\uf245","label":"SUPER + LMB · Drag floating window","action":"printf '%s' 'SUPER + left click' | wl-copy"},
+  "binds.hyprland.resizemouse":{"icon":"\uf245","label":"SUPER + RMB · Resize window","action":"printf '%s' 'SUPER + right click' | wl-copy"},
+  "binds.hyprland.nvim":{"icon":"\uf010","label":"SUPER + N · Launch Neovim","action":"printf '%s' 'SUPER + N' | wl-copy"},
+  "binds.hyprland.efind":{"icon":"\uf002","label":"SUPER + E · Neovim find files","action":"printf '%s' 'SUPER + E' | wl-copy"},
+  "binds.hyprland.micmute":{"icon":"\uf131","label":"XF86AudioMicMute · Mute microphone","action":"printf '%s' 'XF86AudioMicMute' | wl-copy"},
+  "binds.hyprland.scratch":{"icon":"\uf2d0","label":"SUPER + SHIFT + S · Move window to scratchpad","action":"printf '%s' 'SUPER + SHIFT + S' | wl-copy"},
+  "binds.hyprland.ws":     {"icon":"\uf268","label":"SUPER + [1-0] · Switch workspace","action":"printf '%s' 'SUPER + [1-0]' | wl-copy"},
+  "binds.hyprland.mvws":   {"icon":"\uf21d","label":"SUPER + SHIFT + [1-0] · Move window to workspace","action":"printf '%s' 'SUPER + SHIFT + [1-0]' | wl-copy"},
+  "binds.hyprland.shot":   {"icon":"\uf030","label":"Print · Fullscreen screenshot","action":"printf '%s' 'Print' | wl-copy"},
+  "binds.hyprland.btop":   {"icon":"\uf17c","label":"SUPER + L · Workspace 4 + btop","action":"printf '%s' 'SUPER + L' | wl-copy"},
+  "binds.hyprland.vol":    {"icon":"\uf028","label":"XF86Audio* · Volume / media keys","action":"printf '%s' 'XF86Audio* volume/media' | wl-copy"},
+  "binds.hyprland.bright": {"icon":"\uf185","label":"XF86MonBrightness · Screen ±5%","action":"printf '%s' 'XF86MonBrightnessUp/Down' | wl-copy"},
+  "binds.hyprland.region": {"icon":"\uf047","label":"Shift + Print · Region screenshot","action":"printf '%s' 'Shift + Print' | wl-copy"},
+  "binds.hyprland.logout": {"icon":"\uf08b","label":"SUPER + SHIFT + E · Logout / shutdown","action":"printf '%s' 'SUPER + SHIFT + E' | wl-copy"},
+
+  "binds.webb":        {"icon":"\uf0c9","label":"Webb Shell"},
+  "binds.webb.bar":    {"icon":"\uf412","label":"SUPER + ; · Toggle bar","action":"printf '%s' 'SUPER + ;' | wl-copy"},
+  "binds.webb.barsettings": {"icon":"\uf013","label":"SUPER + SHIFT + B · Bar settings","action":"printf '%s' 'SUPER + SHIFT + B' | wl-copy","description":"Add, remove, reorder and re-anchor bar modules"},
+  "binds.webb.paper":  {"icon":"\uf03e","label":"SUPER + W · Cycle wallpaper","action":"printf '%s' 'SUPER + W' | wl-copy"},
+  "binds.webb.scheme": {"icon":"\uf53f","label":"ALT + W · Theme scheme picker","action":"qs -p @shellDir@ ipc call scheme toggle","description":"matugen scheme + dark/light/smart mode"},
+  "binds.webb.find":   {"icon":"\uf002","label":"ALT + SPACE · File search (fd)","action":"printf '%s' 'ALT + SPACE' | wl-copy"},
+  "binds.webb.clock":  {"icon":"\uf017","label":"SUPER + C · OSD clock","action":"printf '%s' 'SUPER + C' | wl-copy"},
+  "binds.webb.glance": {"icon":"\uf06e","label":"SUPER + G · Glance panel","action":"printf '%s' 'SUPER + G' | wl-copy"},
+  "binds.webb.open":   {"icon":"\uf0c9","label":"SUPER + D · Open this menu","action":"printf '%s' 'SUPER + D' | wl-copy"},
+  "binds.webb.monitor": {"icon":"\udb80\ude10","label":"SUPER + F2 · System monitor","action":"qs -p @shellDir@ ipc call system toggle","description":"CPU/GPU mem/disk temps + fans"},
+  "binds.webb.battery": {"icon":"\uf240","label":"SUPER + H · Battery OSD","action":"printf '%s' 'SUPER + H' | wl-copy"},
+  "binds.webb.lock":   {"icon":"\uf023","label":"SUPER + SHIFT + L · Lock screen","action":"printf '%s' 'SUPER + SHIFT + L' | wl-copy"},
+  "binds.webb.clip":   {"icon":"\uf0ea","label":"SUPER + V · Clipboard history","action":"printf '%s' 'SUPER + V' | wl-copy"},
+  "binds.webb.usb":    {"icon":"\uf287","label":"SUPER + U · USB drives","action":"printf '%s' 'SUPER + U' | wl-copy"},
+  "binds.webb.audio":  {"icon":"\uf028","label":"SUPER + M · Audio panel","action":"printf '%s' 'SUPER + M' | wl-copy"},
+  "binds.webb.agents": {"icon":"\uf080","label":"SUPER + A · Agent usage","action":"printf '%s' 'SUPER + A' | wl-copy"},
+
+  "binds.nvim":        {"icon":"\uf010","label":"Neovim"},
+  "binds.nvim.leader": {"icon":"\uf067","label":"SPACE · Leader key","action":"printf '%s' 'SPACE' | wl-copy"},
+  "binds.nvim.tree":   {"icon":"\uf07b","label":"<Space>e · Toggle file tree","action":"printf '%s' '<Space>e' | wl-copy"},
+  "binds.nvim.explore":{"icon":"\uf00a","label":"<Space>cd · Explore (Netrw)","action":"printf '%s' '<Space>cd' | wl-copy"},
+  "binds.nvim.qfix":   {"icon":"\uf071","label":"<C-j> / <C-k> · Next / prev quickfix","action":"printf '%s' '<C-j>/<C-k>' | wl-copy"},
+  "binds.nvim.loc":    {"icon":"\uf0a9","label":"<Space>j / <Space>k · Next / prev location","action":"printf '%s' '<Space>j / <Space>k' | wl-copy"},
+  "binds.nvim.win":    {"icon":"\uf0b2","label":"<S-Tab> · Switch windows","action":"printf '%s' '<S-Tab>' | wl-copy"},
+  "binds.nvim.buft":   {"icon":"\uf0c8","label":"<A-,> / <A-.> · Prev / next buffer","action":"printf '%s' '<A-,>,<A-.>' | wl-copy"},
+  "binds.nvim.closeb": {"icon":"\uf00d","label":"<A-c> · Close buffer","action":"printf '%s' '<A-c>' | wl-copy"},
+  "binds.nvim.make":   {"icon":"\uf121","label":"<Space>mm · Run make","action":"printf '%s' '<Space>mm' | wl-copy"},
+  "binds.nvim.flash":  {"icon":"\uf05b","label":"s / S · Flash jump / Treesitter","action":"printf '%s' 's / S (flash)' | wl-copy"},
+  "binds.nvim.harp":   {"icon":"\uf02d","label":"<Space>a · Harpoon add file","action":"printf '%s' '<Space>a' | wl-copy"},
+  "binds.nvim.harpm":  {"icon":"\uf0c9","label":"<C-e> · Harpoon menu","action":"printf '%s' '<C-e>' | wl-copy"},
+  "binds.nvim.harpt":  {"icon":"\uf0a9","label":"<Space>hp/hn · Harpoon prev/next","action":"printf '%s' '<Space>hp / <Space>hn' | wl-copy"},
+  "binds.nvim.telf":   {"icon":"\uf002","label":"<Space>ff/fg · Find files / grep","action":"printf '%s' '<Space>ff / <Space>fg' | wl-copy"},
+  "binds.nvim.telb":   {"icon":"\uf0c8","label":"<Space>fb/fh · Buffers / help","action":"printf '%s' '<Space>fb / <Space>fh' | wl-copy"},
+  "binds.nvim.gd":     {"icon":"\uf121","label":"gd/gD · Definition / declaration","action":"printf '%s' 'gd / gD' | wl-copy"},
+  "binds.nvim.gr":     {"icon":"\uf002","label":"gr/gi · References / impl","action":"printf '%s' 'gr / gi' | wl-copy"},
+  "binds.nvim.hover":  {"icon":"\uf05a","label":"K/<C-k> · Hover / signature","action":"printf '%s' 'K / <C-k>' | wl-copy"},
+  "binds.nvim.rn":     {"icon":"\uf044","label":"<Space>rn/ca · Rename / code action","action":"printf '%s' '<Space>rn / <Space>ca' | wl-copy"},
+  "binds.nvim.fmt":    {"icon":"\uf074","label":"<Space>f · Format buffer","action":"printf '%s' '<Space>f' | wl-copy"},
+  "binds.nvim.diag":   {"icon":"\uf071","label":"[d/]d · Prev / next diagnostic","action":"printf '%s' '[d / ]d' | wl-copy"},
+  "binds.nvim.page":   {"icon":"\uf063","label":"<C-d>/<C-u> · Page down/up, centered","action":"printf '%s' '<C-d> / <C-u>' | wl-copy"},
+  "binds.nvim.srch":   {"icon":"\uf002","label":"n/N · Next / prev search, centered","action":"printf '%s' 'n / N' | wl-copy"},
+  "binds.nvim.join":   {"icon":"\uf062","label":"J · Join lines, keep cursor","action":"printf '%s' 'J' | wl-copy"},
+  "binds.nvim.sub":    {"icon":"\uf044","label":"<Space>s · Substitute cursor word","action":"printf '%s' '<Space>s' | wl-copy"},
+  "binds.nvim.chmod":  {"icon":"\uf0fe","label":"<Space>x · Make file executable","action":"printf '%s' '<Space>x' | wl-copy"},
+  "binds.nvim.rl":     {"icon":"\uf021","label":"<Space>rl · Reload nvim config","action":"printf '%s' '<Space>rl' | wl-copy"},
+  "binds.nvim.void":   {"icon":"\uf0c7","label":"<Space>d/p · Delete/paste void register","action":"printf '%s' '<Space>d / <Space>p' | wl-copy"},
+  "binds.nvim.treeo":  {"icon":"\uf07b","label":"Enter · Open (NvimTree)","action":"printf '%s' 'Enter (NvimTree)' | wl-copy"},
+  "binds.nvim.trees":  {"icon":"\uf07c","label":"<C-v>/<C-x>/<C-t> · Split / tab (NvimTree)","action":"printf '%s' '<C-v> <C-x> <C-t>' | wl-copy"},
+  "binds.nvim.treecd": {"icon":"\uf121","label":"<C-]> · CD into dir (NvimTree)","action":"printf '%s' '<C-]>' | wl-copy"},
+  "binds.nvim.telh":   {"icon":"\uf0b3","label":"<Space>fF/fG · Find/grep home+hidden","action":"printf '%s' '<Space>fF / <Space>fG' | wl-copy"},
+  "binds.nvim.telc":   {"icon":"\uf00d","label":"<Space>tc · Force close buffer","action":"printf '%s' '<Space>tc' | wl-copy"},
+  "binds.nvim.bufmv":  {"icon":"\uf07e","label":"<A-</> / <A->> · Move buffer left/right","action":"printf '%s' '<A-< / <A->>' | wl-copy"},
+  "binds.nvim.bufgo":  {"icon":"\uf268","label":"<Space>1-9/0 · Go to buffer N","action":"printf '%s' '<Space>[1-0]' | wl-copy"},
+  "binds.nvim.bufpin": {"icon":"\uf08d","label":"<A-p> · Pin buffer","action":"printf '%s' '<A-p>' | wl-copy"},
+  "binds.nvim.bufrst": {"icon":"\uf0e2","label":"<A-S-c> · Restore closed buffer","action":"printf '%s' '<A-S-c>' | wl-copy"},
+  "binds.nvim.pickb":  {"icon":"\uf00a","label":"<Space>bp · Buffer picker","action":"printf '%s' '<Space>bp' | wl-copy"},
+  "binds.nvim.gt":     {"icon":"\uf121","label":"gt · Go to type definition","action":"printf '%s' 'gt' | wl-copy"},
+  "binds.nvim.diagf":  {"icon":"\uf188","label":"<Space>D · Line diagnostic float","action":"printf '%s' '<Space>D' | wl-copy"},
+  "binds.nvim.lsp":    {"icon":"\uf013","label":"<Space>li · LSP info","action":"printf '%s' '<Space>li' | wl-copy"},
+  "binds.nvim.term":   {"icon":"\uf120","label":"<C-\\> · Toggle floating terminal","action":"printf '%s' '<C-\\>' | wl-copy"},
+  "binds.nvim.termesc":{"icon":"\ue00a","label":"ESC (term) · Exit terminal insert","action":"printf '%s' 'Esc in terminal' | wl-copy"},
+  "binds.nvim.termnav":{"icon":"\uf0b2","label":"<C-h/j/k/l> (term) · Focus window","action":"printf '%s' '<C-h/j/k/l> term mode' | wl-copy"},
+
+  "binds.pi":          {"icon":"\uf120","label":"Pi","when":"command -v pi >/dev/null"},
+  "binds.pi.interrupt":{"icon":"\uf05e","label":"Esc · Cancel / interrupt","when":"command -v pi >/dev/null","action":"printf '%s' 'escape' | wl-copy"},
+  "binds.pi.model":    {"icon":"\uf013","label":"Ctrl+L · Open model selector","when":"command -v pi >/dev/null","action":"printf '%s' 'ctrl+l' | wl-copy"},
+  "binds.pi.rename":   {"icon":"\uf120","label":"Ctrl+R · Rename session","when":"command -v pi >/dev/null","action":"printf '%s' 'ctrl+r' | wl-copy"},
+  "binds.pi.search":   {"icon":"\uf002","label":"Ctrl+Shift+F · Search transcript","when":"command -v pi >/dev/null","action":"printf '%s' 'ctrl+shift+f' | wl-copy"},
+  "binds.pi.follow":   {"icon":"\uf064","label":"Alt+Enter · Queue follow-up","when":"command -v pi >/dev/null","action":"printf '%s' 'alt+enter' | wl-copy"},
+  "binds.pi.think":    {"icon":"\uf0b2","label":"Ctrl+T · Toggle thinking blocks","when":"command -v pi >/dev/null","action":"printf '%s' 'ctrl+t' | wl-copy"},
+
+  "binds.herdr":       {"icon":"\uf0c0","label":"Herdr","when":"command -v herdr >/dev/null"},
+  "binds.herdr.help":  {"icon":"\uf059","when":"command -v herdr >/dev/null","label":"Alt+S ? · Help / keybindings","action":"printf '%s' 'alt+s ?' | wl-copy"},
+  "binds.herdr.ws":    {"icon":"\uf268","when":"command -v herdr >/dev/null","label":"Alt+S W · Workspace picker","action":"printf '%s' 'alt+s w' | wl-copy"},
+  "binds.herdr.newws": {"icon":"\uf21d","when":"command -v herdr >/dev/null","label":"Alt+S Shift+N · New workspace","action":"printf '%s' 'alt+s shift+n' | wl-copy"},
+  "binds.herdr.tab":   {"icon":"\uf0c8","when":"command -v herdr >/dev/null","label":"Alt+S C · New tab","action":"printf '%s' 'alt+s c' | wl-copy"},
+  "binds.herdr.detach":{"icon":"\uf08b","when":"command -v herdr >/dev/null","label":"Alt+S Q · Detach to background","action":"printf '%s' 'alt+s q' | wl-copy"},
+  "binds.herdr.ren":   {"icon":"\uf044","when":"command -v herdr >/dev/null","label":"Alt+S Shift+T · Rename tab","action":"printf '%s' 'alt+s shift+t' | wl-copy"},
+  "binds.herdr.cls":   {"icon":"\uf00d","when":"command -v herdr >/dev/null","label":"Alt+S Shift+D · Close workspace","action":"printf '%s' 'alt+s shift+d' | wl-copy"},
+  "binds.herdr.goto":  {"icon":"\uf124","when":"command -v herdr >/dev/null","label":"Alt+S G · Goto workspace","action":"printf '%s' 'alt+s g' | wl-copy"},
+  "binds.herdr.rl":    {"icon":"\uf021","when":"command -v herdr >/dev/null","label":"Alt+S Shift+R · Reload config","action":"printf '%s' 'alt+s shift+r' | wl-copy"},
+  "binds.herdr.set":   {"icon":"\uf013","when":"command -v herdr >/dev/null","label":"Alt+S S · Settings","action":"printf '%s' 'alt+s s' | wl-copy"},
+  "binds.herdr.notif": {"icon":"\uf0a1","when":"command -v herdr >/dev/null","label":"Alt+S O · Open notification target","action":"printf '%s' 'alt+s o' | wl-copy"},
+  "binds.herdr.wt":    {"icon":"\uf1d3","when":"command -v herdr >/dev/null","label":"Alt+S Shift+G · New worktree","action":"printf '%s' 'alt+s shift+g' | wl-copy"},
+
+  "binds.kitty":       {"icon":"\uf120","label":"Kitty","description":"Terminal"},
+  "binds.kitty.copy":  {"icon":"\uf0c5","label":"Ctrl+Shift+C · Copy to clipboard","action":"printf '%s' 'ctrl+shift+c' | wl-copy"},
+  "binds.kitty.paste": {"icon":"\uf0ea","label":"Ctrl+Shift+V · Paste from clipboard","action":"printf '%s' 'ctrl+shift+v' | wl-copy"},
+  "binds.kitty.nav":   {"icon":"\uf0b2","label":"Ctrl+Alt+H/J/K/L · Focus window left/down/up/right","action":"printf '%s' 'ctrl+alt+h/j/k/l' | wl-copy"},
+  "binds.kitty.next":  {"icon":"\uf061","label":"Ctrl+Alt+[/] · Prev / next window","action":"printf '%s' 'ctrl+alt+[ / ]' | wl-copy"},
+  "binds.kitty.new":   {"icon":"\uf067","label":"Ctrl+Alt+Enter · New window","action":"printf '%s' 'ctrl+alt+enter' | wl-copy"},
+  "binds.kitty.split": {"icon":"\uf07e","label":"Ctrl+Alt+B/V · Horizontal / vertical split","action":"printf '%s' 'ctrl+alt+b / v' | wl-copy"},
+  "binds.kitty.closew":{"icon":"\uf00d","label":"Ctrl+Alt+W · Close window","action":"printf '%s' 'ctrl+alt+w' | wl-copy"},
+  "binds.kitty.resize":{"icon":"\uf0de","label":"Ctrl+Alt+R · Start resize (arrows)","action":"printf '%s' 'ctrl+alt+r' | wl-copy"},
+  "binds.kitty.movew": {"icon":"\uf07e","label":"Ctrl+Alt+Shift+H/J/K/L · Move window","action":"printf '%s' 'ctrl+alt+shift+h/j/k/l' | wl-copy"},
+  "binds.kitty.layout":{"icon":"\uf0db","label":"Ctrl+Alt+Space · Next layout","action":"printf '%s' 'ctrl+alt+space' | wl-copy"},
+  "binds.kitty.tabnew":{"icon":"\uf0fe","label":"Ctrl+Shift+T · New tab","action":"printf '%s' 'ctrl+shift+t' | wl-copy"},
+  "binds.kitty.tabcls":{"icon":"\uf00d","label":"Ctrl+Shift+Q · Close tab","action":"printf '%s' 'ctrl+shift+q' | wl-copy"},
+  "binds.kitty.tabnav":{"icon":"\uf061","label":"Ctrl+Shift+Left/Right · Prev / next tab","action":"printf '%s' 'ctrl+shift+left / right' | wl-copy"},
+  "binds.kitty.fontin":{"icon":"\uf00e","label":"Ctrl+= / Ctrl+- · Font size ±","action":"printf '%s' 'ctrl+= / ctrl+-' | wl-copy"},
+  "binds.kitty.fontrst":{"icon":"\uf021","label":"Ctrl+Backspace · Reset font size","action":"printf '%s' 'ctrl+backspace' | wl-copy"},
+  "binds.kitty.hints": {"icon":"\uf002","label":"Ctrl+Shift+U/P · URL / path hints","action":"printf '%s' 'ctrl+shift+u / p' | wl-copy"},
+  "binds.kitty.marks": {"icon":"\uf02b","label":"Ctrl+Shift+M · Toggle marks","action":"printf '%s' 'ctrl+shift+m' | wl-copy"},
+  "binds.kitty.scroll":{"icon":"\uf07d","label":"Ctrl+Shift+Up/Down/K/J · Scroll line/page","action":"printf '%s' 'ctrl+shift+up/down/k/j' | wl-copy"},
+
+  "binds.yazi":        {"icon":"\uf07b","label":"Yazi","description":"File manager","when":"command -v yazi >/dev/null"},
+  "binds.yazi.nav":    {"icon":"\uf0b2","label":"k/j/h/l · Up / down / parent / enter","action":"printf '%s' 'k j h l' | wl-copy"},
+  "binds.yazi.hl":     {"icon":"\uf0a9","label":"H/L · Back / forward directory","action":"printf '%s' 'H / L' | wl-copy"},
+  "binds.yazi.gg":     {"icon":"\uf102","label":"gg/G · Top / bottom","action":"printf '%s' 'gg / G' | wl-copy"},
+  "binds.yazi.page":  {"icon":"\uf063","label":"<C-u>/<C-d>/<C-b>/<C-f> · Half/page scroll","action":"printf '%s' '<C-u> <C-d> <C-b> <C-f>' | wl-copy"},
+  "binds.yazi.open":   {"icon":"\uf105","label":"o/Enter/O · Open / open interactively","action":"printf '%s' 'o / O' | wl-copy"},
+  "binds.yazi.copy":   {"icon":"\uf0c5","label":"y/x/p · Copy / cut / paste","action":"printf '%s' 'y x p' | wl-copy"},
+  "binds.yazi.del":    {"icon":"\uf014","label":"d/D · Trash / delete","action":"printf '%s' 'd / D' | wl-copy"},
+  "binds.yazi.new":    {"icon":"\uf0fe","label":"a/r · Create / rename","action":"printf '%s' 'a / r' | wl-copy"},
+  "binds.yazi.link":   {"icon":"\uf0c1","label":"-/_ · Symlink abs / rel","action":"printf '%s' '- / _' | wl-copy"},
+  "binds.yazi.shell":  {"icon":"\uf120","label":"; · Run shell command","action":"printf '%s' ';' | wl-copy"},
+  "binds.yazi.sel":    {"icon":"\uf046","label":"Space/v/<C-a>/<C-r> · Selection modes","action":"printf '%s' 'space v <C-a> <C-r>' | wl-copy"},
+  "binds.yazi.spot":   {"icon":"\uf06e","label":"Tab · Spot hovered file","action":"printf '%s' 'tab' | wl-copy"},
+  "binds.yazi.search": {"icon":"\uf002","label":"s/S · Search names (fd) / contents (rg)","action":"printf '%s' 's / S' | wl-copy"},
+  "binds.yazi.jump":   {"icon":"\uf124","label":"z/Z · Jump via fzf / zoxide","action":"printf '%s' 'z / Z' | wl-copy"},
+  "binds.yazi.filter": {"icon":"\uf0b0","label":"f · Filter files","action":"printf '%s' 'f' | wl-copy"},
+  "binds.yazi.hidden": {"icon":"\uf070","label":". · Toggle hidden files","action":"printf '%s' '.' | wl-copy"},
+  "binds.yazi.tabs":   {"icon":"\uf00a","label":"t, [/], 1-9 · Tabs","action":"printf '%s' 't [ ] 1-9' | wl-copy"},
+  "binds.yazi.tasks":  {"icon":"\uf0ad","label":"w · Task manager","action":"printf '%s' 'w' | wl-copy"},
+
+  "binds.lazygit":     {"icon":"\uf1d3","label":"Lazygit","description":"Git TUI","when":"command -v lazygit >/dev/null"},
+  "binds.lazygit.stage":{"icon":"\uf046","label":"Space/a · Stage file / all","action":"printf '%s' 'space / a' | wl-copy"},
+  "binds.lazygit.cmt": {"icon":"\uf044","label":"c/C · Commit menu / with editor","action":"printf '%s' 'c / C' | wl-copy"},
+  "binds.lazygit.open":{"icon":"\uf105","label":"o/e · Open / edit file","action":"printf '%s' 'o / e' | wl-copy"},
+  "binds.lazygit.dis": {"icon":"\uf014","label":"d · Discard changes","action":"printf '%s' 'd' | wl-copy"},
+  "binds.lazygit.sync":{"icon":"\uf021","label":"p/P/f · Pull / push / fetch","action":"printf '%s' 'p P f' | wl-copy"},
+  "binds.lazygit.log": {"icon":"\uf1da","label":"l · Commit log","action":"printf '%s' 'l' | wl-copy"},
+  "binds.lazygit.help":{"icon":"\uf059","label":"? · Help","action":"printf '%s' '?' | wl-copy"},
+
+
+  // Wi-Fi / Bluetooth / Audio — real popups (scotia-style panels)
+  "services":           {"icon":"\uf085","label":"Services","description":"Wi-Fi, Bluetooth, Audio"},
+  "services.wifi":              {"icon":"\uDB81\uDDDC","label":"Wi-Fi","description":"networks, status, power","open":"wifi","aliases":["wifi"]},
+  "services.bluetooth":         {"icon":"\uf294","label":"Bluetooth","description":"devices, scan, radio","open":"bt","aliases":["bluetooth"]},
+  "services.audio":             {"icon":"\uf001","label":"Audio","description":"volume, devices, streams","open":"audio","aliases":["audio"]},
+
+  // DNS — a radio over the active connection's resolver. Each `checked` guard
+  // resolves the active connection itself; the four share one batched bash
+  // process and measure at ~130 ms for the whole set.
+  "services.dns":              {"icon":"\uf233","label":"DNS","description":"Resolver for the active connection","aliases":["resolver","nameserver"]},
+  "services.dns.auto":         {"icon":"\uf021","label":"Automatic","description":"Use the DHCP-provided resolver","checked":"c=$(nmcli -t -f NAME,DEVICE,TYPE connection show --active 2>/dev/null | awk -F: '$3==\"802-11-wireless\"||$3==\"802-3-ethernet\"{print $1;exit}'); [ -n \"$c\" ] && [ \"$(nmcli -g ipv4.ignore-auto-dns connection show \"$c\" 2>/dev/null)\" = no ]","action":"@shellDir@/bin/dns-set.sh auto"},
+  "services.dns.cloudflare":   {"icon":"\uf233","label":"Cloudflare","description":"1.1.1.1 · 1.0.0.1","checked":"c=$(nmcli -t -f NAME,DEVICE,TYPE connection show --active 2>/dev/null | awk -F: '$3==\"802-11-wireless\"||$3==\"802-3-ethernet\"{print $1;exit}'); [ -n \"$c\" ] && nmcli -g ipv4.dns connection show \"$c\" 2>/dev/null | grep -q 1\\.1\\.1\\.1","action":"@shellDir@/bin/dns-set.sh cloudflare"},
+  "services.dns.google":       {"icon":"\uf233","label":"Google","description":"8.8.8.8 · 8.8.4.4","checked":"c=$(nmcli -t -f NAME,DEVICE,TYPE connection show --active 2>/dev/null | awk -F: '$3==\"802-11-wireless\"||$3==\"802-3-ethernet\"{print $1;exit}'); [ -n \"$c\" ] && nmcli -g ipv4.dns connection show \"$c\" 2>/dev/null | grep -q 8\\.8\\.8\\.8","action":"@shellDir@/bin/dns-set.sh google"},
+  "services.dns.quad9":        {"icon":"\uf233","label":"Quad9","description":"9.9.9.9 · 149.112.112.112","checked":"c=$(nmcli -t -f NAME,DEVICE,TYPE connection show --active 2>/dev/null | awk -F: '$3==\"802-11-wireless\"||$3==\"802-3-ethernet\"{print $1;exit}'); [ -n \"$c\" ] && nmcli -g ipv4.dns connection show \"$c\" 2>/dev/null | grep -q 9\\.9\\.9\\.9","action":"@shellDir@/bin/dns-set.sh quad9"},
+
+  // Network helpers. Detached with setsid: MenuPopup runs actions through one
+  // shared Process, so a long action would block the next menu selection.
+  "services.speedtest":        {"icon":"\uf0e4","label":"Speed Test","description":"Download throughput via Cloudflare","action":"setsid @shellDir@/bin/speedtest.sh >/dev/null 2>&1 &"},
+  "services.share":            {"icon":"\uf1e0","label":"Share Files","description":"Send and receive with LocalSend","when":"command -v localsend >/dev/null","action":"setsid localsend >/dev/null 2>&1 &"},
+
+
+  // Capture (shell IPC -> bin/screenshot.sh)
+  "capture":           {"icon":"\uf030","label":"Capture","description":"Screenshots"},
+  "capture.screen":    {"icon":"\uf030","label":"Screenshot","action":"qs -p @shellDir@ ipc call screenshot full","description":"Fullscreen capture"},
+  "capture.region":    {"icon":"\uf047","label":"Region","action":"qs -p @shellDir@ ipc call screenshot region","description":"Pick an area with the mouse"},
+  "capture.window":    {"icon":"\uf2d0","label":"Window","action":"qs -p @shellDir@ ipc call screenshot window","description":"Active window"},
+  "capture.copy":      {"icon":"\uf0c5","label":"Copy Last","action":"f=$(ls -t $HOME/Pictures/screenshots/*.png 2>/dev/null | head -1); [ -n \"$f\" ] && wl-copy --type image/png < \"$f\"","description":"Copy most recent screenshot to clipboard"},
+  "capture.color":     {"icon":"\uf1fb","label":"Pick Colour","description":"Copy a hex value from the screen (needs hyprpicker)","when":"command -v hyprpicker >/dev/null","action":"setsid @shellDir@/bin/pick-color.sh >/dev/null 2>&1 &"},
+
+  // Screen recording (bin/screenrecord.sh; needs gpu-screen-recorder)
+  "capture.record":       {"icon":"\uf111","label":"Screenrecord","description":"gpu-screen-recorder"},
+  "capture.record.start": {"icon":"\uf03d","label":"Start · with audio","action":"@shellDir@/bin/screenrecord.sh start"},
+  "capture.record.video": {"icon":"\uf03d","label":"Start · video only","action":"@shellDir@/bin/screenrecord.sh start video"},
+  "capture.record.stop":  {"icon":"\uf04d","label":"Stop Recording","when":"pgrep -f 'gpu[-]screen-recorder|wf[-]recorder' >/dev/null","action":"@shellDir@/bin/screenrecord.sh stop"},
+  "capture.record.compress": {"icon":"\uf066","label":"Compress Newest","description":"Newest recording → streamable MP4 with ffmpeg","action":"setsid @shellDir@/bin/transcode.sh >/dev/null 2>&1 &"},
+
+  // OCR + QR capture (need tesseract / zbar)
+  "capture.ocr":          {"icon":"\uf15c","label":"OCR Text","description":"region → clipboard (needs tesseract)","action":"@shellDir@/bin/ocr.sh"},
+  "capture.qr":           {"icon":"\uf029","label":"QR Decode","description":"region → clipboard (needs zbar)","action":"@shellDir@/bin/qr-capture.sh"},
+
+  // Edit config files — single home for opening any config in nvim.
+  "edit":              {"icon":"\uf044","label":"Edit Config","description":"Open config files in nvim"},
+  "edit.hypr":         {"icon":"\uf11c","label":"Hyprland · Binds","action":"kitty -e nvim $HOME/.config/hypr/modules/binds.lua"},
+  "edit.decorations":  {"icon":"\uf1fc","label":"Hyprland · Decorations","action":"kitty -e nvim $HOME/.config/hypr/modules/decorations.lua"},
+  "edit.monitors":     {"icon":"\uf108","label":"Hyprland · Monitors","action":"kitty -e nvim $HOME/.config/hypr/modules/monitors.lua"},
+  "edit.input":        {"icon":"\uf11c","label":"Hyprland · Input","action":"kitty -e nvim $HOME/.config/hypr/modules/input.lua"},
+  "edit.nvim":         {"icon":"\uf010","label":"Neovim · keymaps.lua","action":"kitty -e nvim $HOME/.config/nvim/lua/config/keymaps.lua"},
+  "edit.kitty":        {"icon":"\uf120","label":"Kitty · kitty.conf","action":"kitty -e nvim $HOME/.config/kitty/kitty.conf"},
+  "edit.fish":         {"icon":"\uf120","label":"Fish · config.fish","action":"kitty -e nvim $HOME/.config/fish/config.fish"},
+  "edit.pi":           {"icon":"\uf544","label":"Pi · keybindings.json","when":"command -v pi >/dev/null","action":"kitty -e nvim $HOME/.pi/agent/keybindings.json"},
+  "edit.herdr":        {"icon":"\uf0c0","label":"Herdr · config.toml","when":"command -v herdr >/dev/null","action":"kitty -e nvim $HOME/.config/herdr/config.toml"},
+  "edit.menu":         {"icon":"\uf0c9","label":"This Menu · menu.jsonc","description":"webb-shell src/menu/menu.jsonc","aliases":["menu.jsonc"],"action":"kitty -e nvim @shellDir@/src/menu/menu.jsonc"},
+  "edit.shell":        {"icon":"\uf0c9","label":"Shell · shell.qml","action":"kitty -e nvim @shellDir@/shell.qml"},
+  "edit.theme":        {"icon":"\uf042","label":"Theme · Colors.qml","action":"kitty -e nvim @shellDir@/src/theme/Colors.qml"},
+
+  // Software management — nested under System. panel-style catalog of
+  // packages verified against the official repos (no AUR helper installed).
+  // Install rows dim + take a ✓ once installed (disabled/checked share one
+  // guard expr → single batch eval); Uninstall rows hide unless installed
+  // (when guard) and mirror Install 1:1. Guards use pkg_has, the cached
+  // pacman -Qq prelude in MenuModel.guardPrelude, so the bigger catalog stays
+  // as fast as the old per-row `pacman -Q` checks.
+  "system.software":        {"icon":"\uf019","label":"Software","description":"Package management"},
+  "system.software.install":   {"icon":"\uf019","label":"Install","description":"Add software via pacman"},
+  "system.software.install.pacman": {"icon":"\uf02d","label":"Pacman","description":"Browse repo packages (fzf picker)","action":"kitty -e @shellDir@/bin/pkg-install.sh"},
+  "system.software.install.aur":    {"icon":"\uf09c","label":"AUR","description":"fzf picker (needs yay)","action":"kitty -e @shellDir@/bin/pkg-aur-install.sh"},
+  "system.software.install.pi":     {"icon":"\uf544","label":"Install Pi Agent","description":"Coding agent · pi.dev/install.sh","when":"! command -v pi >/dev/null","action":"kitty --hold -e bash -lc 'curl -fsSL https://pi.dev/install.sh | sh'"},
+  "system.software.install.herdr":  {"icon":"\uf0c0","label":"Install Herdr","description":"Agent workspace supervisor · herdr.dev/install.sh","when":"! command -v herdr >/dev/null","action":"kitty --hold -e bash -lc 'curl -fsSL https://herdr.dev/install.sh | sh'"},
+  "system.software.install.webapp":   {"icon":"\uf108","label":"Web App","description":"Standalone site in its own window (chromium)","action":"kitty -e @shellDir@/bin/webapp-install.sh"},
+
+  "system.software.install.browsers": {"icon":"\uf0ac","label":"Browsers"},
+  "system.software.install.browsers.chromium": {"icon":"\uf35f","label":"Chromium","disabled":"pkg_has chromium","checked":"pkg_has chromium","action":"kitty --hold -e sudo pacman -S --needed chromium"},
+  "system.software.install.browsers.firefox":  {"icon":"\uf269","label":"Firefox","disabled":"pkg_has firefox","checked":"pkg_has firefox","action":"kitty --hold -e sudo pacman -S --needed firefox"},
+
+  "system.software.install.editors": {"icon":"\uf121","label":"Editors"},
+  "system.software.install.editors.vim":     {"icon":"\uf121","label":"Vim","disabled":"pkg_has vim","checked":"pkg_has vim","action":"kitty --hold -e sudo pacman -S --needed vim"},
+  "system.software.install.editors.emacs":   {"icon":"\uf121","label":"Emacs","disabled":"pkg_has emacs","checked":"pkg_has emacs","action":"kitty --hold -e sudo pacman -S --needed emacs"},
+  "system.software.install.editors.helix":   {"icon":"\uf121","label":"Helix","disabled":"pkg_has helix","checked":"pkg_has helix","action":"kitty --hold -e sudo pacman -S --needed helix"},
+  "system.software.install.editors.micro":   {"icon":"\uf121","label":"Micro","disabled":"pkg_has micro","checked":"pkg_has micro","action":"kitty --hold -e sudo pacman -S --needed micro"},
+  "system.software.install.editors.code":    {"icon":"\uf121","label":"VS Code","aliases":["vscode"],"disabled":"pkg_has code","checked":"pkg_has code","action":"kitty --hold -e sudo pacman -S --needed code"},
+
+  "system.software.install.terminals": {"icon":"\uf120","label":"Terminals"},
+  "system.software.install.terminals.kitty":     {"icon":"\uf120","label":"Kitty","disabled":"pkg_has kitty","checked":"pkg_has kitty","action":"kitty --hold -e sudo pacman -S --needed kitty"},
+  "system.software.install.terminals.foot":      {"icon":"\uf120","label":"Foot","disabled":"pkg_has foot","checked":"pkg_has foot","action":"kitty --hold -e sudo pacman -S --needed foot"},
+  "system.software.install.terminals.alacritty": {"icon":"\uf120","label":"Alacritty","disabled":"pkg_has alacritty","checked":"pkg_has alacritty","action":"kitty --hold -e sudo pacman -S --needed alacritty"},
+  "system.software.install.terminals.ghostty":   {"icon":"\uf120","label":"Ghostty","disabled":"pkg_has ghostty","checked":"pkg_has ghostty","action":"kitty --hold -e sudo pacman -S --needed ghostty"},
+
+  "system.software.install.tui": {"icon":"\uf120","label":"TUIs","description":"Terminal utilities"},
+  "system.software.install.tui.btop":    {"icon":"\uf17c","label":"Btop","disabled":"pkg_has btop","checked":"pkg_has btop","action":"kitty --hold -e sudo pacman -S --needed btop"},
+  "system.software.install.tui.fzf":     {"icon":"\uf002","label":"Fzf","disabled":"pkg_has fzf","checked":"pkg_has fzf","action":"kitty --hold -e sudo pacman -S --needed fzf"},
+  "system.software.install.tui.ripgrep": {"icon":"\uf002","label":"Ripgrep","disabled":"pkg_has ripgrep","checked":"pkg_has ripgrep","action":"kitty --hold -e sudo pacman -S --needed ripgrep"},
+  "system.software.install.tui.fd":      {"icon":"\uf002","label":"Fd","disabled":"pkg_has fd","checked":"pkg_has fd","action":"kitty --hold -e sudo pacman -S --needed fd"},
+  "system.software.install.tui.zoxide":  {"icon":"\uf124","label":"Zoxide","disabled":"pkg_has zoxide","checked":"pkg_has zoxide","action":"kitty --hold -e sudo pacman -S --needed zoxide"},
+  "system.software.install.tui.tmux":    {"icon":"\uf120","label":"Tmux","disabled":"pkg_has tmux","checked":"pkg_has tmux","action":"kitty --hold -e sudo pacman -S --needed tmux"},
+  "system.software.install.tui.lazygit": {"icon":"\uf1d3","label":"Lazygit","disabled":"pkg_has lazygit","checked":"pkg_has lazygit","action":"kitty --hold -e sudo pacman -S --needed lazygit"},
+  "system.software.install.tui.yazi":    {"icon":"\uf07b","label":"Yazi","disabled":"pkg_has yazi","checked":"pkg_has yazi","action":"kitty --hold -e sudo pacman -S --needed yazi"},
+
+  "system.software.install.gaming": {"icon":"\uf11b","label":"Gaming"},
+  "system.software.install.gaming.steam":     {"icon":"\uf1b6","label":"Steam","aliases":["steam"],"disabled":"pkg_has steam","checked":"pkg_has steam","action":"kitty --hold -e sudo pacman -S --needed steam"},
+  "system.software.install.gaming.retroarch": {"icon":"\uf11b","label":"RetroArch","disabled":"pkg_has retroarch","checked":"pkg_has retroarch","action":"kitty --hold -e sudo pacman -S --needed retroarch"},
+  "system.software.install.gaming.lutris":    {"icon":"\uf11b","label":"Lutris","disabled":"pkg_has lutris","checked":"pkg_has lutris","action":"kitty --hold -e sudo pacman -S --needed lutris"},
+
+  "system.software.install.services": {"icon":"\uf0c0","label":"Services"},
+  "system.software.install.services.discord":   {"icon":"\uf39f","label":"Discord","aliases":["discord"],"disabled":"pkg_has discord","checked":"pkg_has discord","action":"kitty --hold -e sudo pacman -S --needed discord"},
+  "system.software.install.services.signal":    {"icon":"\uf0c0","label":"Signal","disabled":"pkg_has signal-desktop","checked":"pkg_has signal-desktop","action":"kitty --hold -e sudo pacman -S --needed signal-desktop"},
+  "system.software.install.services.bitwarden": {"icon":"\uf023","label":"Bitwarden","disabled":"pkg_has bitwarden","checked":"pkg_has bitwarden","action":"kitty --hold -e sudo pacman -S --needed bitwarden"},
+  "system.software.install.services.tailscale": {"icon":"\uf56f","label":"Tailscale","aliases":["tailscale"],"disabled":"pkg_has tailscale","checked":"pkg_has tailscale","action":"kitty --hold -e sudo pacman -S --needed tailscale"},
+  "system.software.install.services.spotify":   {"icon":"\uf1bc","label":"Spotify","aliases":["spotify"],"disabled":"pkg_has spotify-launcher","checked":"pkg_has spotify-launcher","action":"kitty --hold -e sudo pacman -S --needed spotify-launcher"},
+
+  "system.software.install.media": {"icon":"\uf1fc","label":"Media"},
+  "system.software.install.media.obs":  {"icon":"\uf03d","label":"OBS Studio","aliases":["obs-studio","obs"],"disabled":"pkg_has obs-studio","checked":"pkg_has obs-studio","action":"kitty --hold -e sudo pacman -S --needed obs-studio"},
+  "system.software.install.media.gimp": {"icon":"\uf1fc","label":"GIMP","aliases":["gimp"],"disabled":"pkg_has gimp","checked":"pkg_has gimp","action":"kitty --hold -e sudo pacman -S --needed gimp"},
+
+  "system.software.install.ai": {"icon":"\uf0eb","label":"AI"},
+  "system.software.install.ai.ollama": {"icon":"\uf0eb","label":"Ollama","disabled":"pkg_has ollama","checked":"pkg_has ollama","action":"kitty --hold -e sudo pacman -S --needed ollama"},
+
+  // Dev environments: rows dim when the tool is mise-managed OR pacman-
+  // installed, so we never offer to shadow an existing toolchain. Uninstall
+  // only removes the pacman package (mise-managed ones stay out of that list).
+  "system.software.install.dev": {"icon":"\uf121","label":"Development"},
+  "system.software.install.dev.go":     {"icon":"\uf121","label":"Go","disabled":"[[ -d $HOME/.local/share/mise/installs/go ]] || pkg_has go","checked":"[[ -d $HOME/.local/share/mise/installs/go ]] || pkg_has go","action":"kitty --hold -e sudo pacman -S --needed go"},
+  "system.software.install.dev.python": {"icon":"\uf121","label":"Python","disabled":"[[ -d $HOME/.local/share/mise/installs/python ]] || pkg_has python","checked":"[[ -d $HOME/.local/share/mise/installs/python ]] || pkg_has python","action":"kitty --hold -e sudo pacman -S --needed python"},
+  "system.software.install.dev.node":   {"icon":"\uf121","label":"Node.js","disabled":"[[ -d $HOME/.local/share/mise/installs/node ]] || pkg_has nodejs","checked":"[[ -d $HOME/.local/share/mise/installs/node ]] || pkg_has nodejs","action":"kitty --hold -e sudo pacman -S --needed nodejs"},
+  "system.software.install.dev.rust":   {"icon":"\uf121","label":"Rust","disabled":"[[ -d $HOME/.rustup ]] || pkg_has rust","checked":"[[ -d $HOME/.rustup ]] || pkg_has rust","action":"kitty --hold -e sudo pacman -S --needed rust"},
+  "system.software.install.dev.zig":    {"icon":"\uf121","label":"Zig","disabled":"[[ -d $HOME/.local/share/mise/installs/zig ]] || pkg_has zig","checked":"[[ -d $HOME/.local/share/mise/installs/zig ]] || pkg_has zig","action":"kitty --hold -e sudo pacman -S --needed zig"},
+  "system.software.install.dev.java":   {"icon":"\uf121","label":"Java","disabled":"[[ -d $HOME/.local/share/mise/installs/java ]] || pkg_has jdk-openjdk","checked":"[[ -d $HOME/.local/share/mise/installs/java ]] || pkg_has jdk-openjdk","action":"kitty --hold -e sudo pacman -S --needed jdk-openjdk"},
+  "system.software.install.dev.ruby":   {"icon":"\uf121","label":"Ruby","disabled":"[[ -d $HOME/.local/share/mise/installs/ruby ]] || pkg_has ruby","checked":"[[ -d $HOME/.local/share/mise/installs/ruby ]] || pkg_has ruby","action":"kitty --hold -e sudo pacman -S --needed ruby"},
+  "system.software.install.dev.elixir": {"icon":"\uf121","label":"Elixir","disabled":"[[ -d $HOME/.local/share/mise/installs/elixir ]] || pkg_has elixir","checked":"[[ -d $HOME/.local/share/mise/installs/elixir ]] || pkg_has elixir","action":"kitty --hold -e sudo pacman -S --needed elixir"},
+  "system.software.install.dev.php":    {"icon":"\uf121","label":"PHP","disabled":"[[ -d $HOME/.local/share/mise/installs/php ]] || pkg_has php","checked":"[[ -d $HOME/.local/share/mise/installs/php ]] || pkg_has php","action":"kitty --hold -e sudo pacman -S --needed php"},
+  "system.software.install.dev.dotnet": {"icon":"\uf121","label":".NET","disabled":"[[ -d $HOME/.local/share/mise/installs/dotnet ]] || pkg_has dotnet-sdk","checked":"[[ -d $HOME/.local/share/mise/installs/dotnet ]] || pkg_has dotnet-sdk","action":"kitty --hold -e sudo pacman -S --needed dotnet-sdk"},
+  "system.software.install.dev.ocaml":  {"icon":"\uf121","label":"OCaml","disabled":"[[ -d $HOME/.local/share/mise/installs/ocaml ]] || pkg_has ocaml","checked":"[[ -d $HOME/.local/share/mise/installs/ocaml ]] || pkg_has ocaml","action":"kitty --hold -e sudo pacman -S --needed ocaml"},
+  "system.software.install.dev.clojure":{"icon":"\uf121","label":"Clojure","disabled":"[[ -d $HOME/.local/share/mise/installs/clojure ]] || pkg_has clojure","checked":"[[ -d $HOME/.local/share/mise/installs/clojure ]] || pkg_has clojure","action":"kitty --hold -e sudo pacman -S --needed clojure"},
+
+  "system.software.uninstall":    {"icon":"\uf014","label":"Uninstall","description":"Remove software"},
+  "system.software.uninstall.pacman": {"icon":"\uf02d","label":"Pacman","description":"Browse installed packages (fzf picker)","action":"kitty -e @shellDir@/bin/pkg-remove.sh"},
+  "system.software.uninstall.aur":    {"icon":"\uf09c","label":"AUR","description":"fzf picker (needs yay)","action":"kitty -e @shellDir@/bin/pkg-aur-remove.sh"},
+
+  "system.software.uninstall.browsers": {"icon":"\uf0ac","label":"Browsers"},
+  "system.software.uninstall.browsers.chromium": {"icon":"\uf35f","label":"Chromium","when":"pkg_has chromium","action":"kitty --hold -e sudo pacman -Rns chromium"},
+  "system.software.uninstall.browsers.firefox":  {"icon":"\uf269","label":"Firefox","when":"pkg_has firefox","action":"kitty --hold -e sudo pacman -Rns firefox"},
+
+  "system.software.uninstall.editors": {"icon":"\uf121","label":"Editors"},
+  "system.software.uninstall.editors.vim":     {"icon":"\uf121","label":"Vim","when":"pkg_has vim","action":"kitty --hold -e sudo pacman -Rns vim"},
+  "system.software.uninstall.editors.emacs":   {"icon":"\uf121","label":"Emacs","when":"pkg_has emacs","action":"kitty --hold -e sudo pacman -Rns emacs"},
+  "system.software.uninstall.editors.helix":   {"icon":"\uf121","label":"Helix","when":"pkg_has helix","action":"kitty --hold -e sudo pacman -Rns helix"},
+  "system.software.uninstall.editors.micro":   {"icon":"\uf121","label":"Micro","when":"pkg_has micro","action":"kitty --hold -e sudo pacman -Rns micro"},
+  "system.software.uninstall.editors.code":    {"icon":"\uf121","label":"VS Code","aliases":["vscode"],"when":"pkg_has code","action":"kitty --hold -e sudo pacman -Rns code"},
+
+  "system.software.uninstall.terminals": {"icon":"\uf120","label":"Terminals"},
+  "system.software.uninstall.terminals.kitty":     {"icon":"\uf120","label":"Kitty","when":"pkg_has kitty","action":"kitty --hold -e sudo pacman -Rns kitty"},
+  "system.software.uninstall.terminals.foot":      {"icon":"\uf120","label":"Foot","when":"pkg_has foot","action":"kitty --hold -e sudo pacman -Rns foot"},
+  "system.software.uninstall.terminals.alacritty": {"icon":"\uf120","label":"Alacritty","when":"pkg_has alacritty","action":"kitty --hold -e sudo pacman -Rns alacritty"},
+  "system.software.uninstall.terminals.ghostty":   {"icon":"\uf120","label":"Ghostty","when":"pkg_has ghostty","action":"kitty --hold -e sudo pacman -Rns ghostty"},
+
+  "system.software.uninstall.tui": {"icon":"\uf120","label":"TUIs","description":"Terminal utilities"},
+  "system.software.uninstall.tui.btop":    {"icon":"\uf17c","label":"Btop","when":"pkg_has btop","action":"kitty --hold -e sudo pacman -Rns btop"},
+  "system.software.uninstall.tui.fzf":     {"icon":"\uf002","label":"Fzf","when":"pkg_has fzf","action":"kitty --hold -e sudo pacman -Rns fzf"},
+  "system.software.uninstall.tui.ripgrep": {"icon":"\uf002","label":"Ripgrep","when":"pkg_has ripgrep","action":"kitty --hold -e sudo pacman -Rns ripgrep"},
+  "system.software.uninstall.tui.fd":      {"icon":"\uf002","label":"Fd","when":"pkg_has fd","action":"kitty --hold -e sudo pacman -Rns fd"},
+  "system.software.uninstall.tui.zoxide":  {"icon":"\uf124","label":"Zoxide","when":"pkg_has zoxide","action":"kitty --hold -e sudo pacman -Rns zoxide"},
+  "system.software.uninstall.tui.tmux":    {"icon":"\uf120","label":"Tmux","when":"pkg_has tmux","action":"kitty --hold -e sudo pacman -Rns tmux"},
+  "system.software.uninstall.tui.lazygit": {"icon":"\uf1d3","label":"Lazygit","when":"pkg_has lazygit","action":"kitty --hold -e sudo pacman -Rns lazygit"},
+  "system.software.uninstall.tui.yazi":    {"icon":"\uf07b","label":"Yazi","when":"pkg_has yazi","action":"kitty --hold -e sudo pacman -Rns yazi"},
+
+  "system.software.uninstall.gaming": {"icon":"\uf11b","label":"Gaming"},
+  "system.software.uninstall.gaming.steam":     {"icon":"\uf1b6","label":"Steam","aliases":["steam"],"when":"pkg_has steam","action":"kitty --hold -e sudo pacman -Rns steam"},
+  "system.software.uninstall.gaming.retroarch": {"icon":"\uf11b","label":"RetroArch","when":"pkg_has retroarch","action":"kitty --hold -e sudo pacman -Rns retroarch"},
+  "system.software.uninstall.gaming.lutris":    {"icon":"\uf11b","label":"Lutris","when":"pkg_has lutris","action":"kitty --hold -e sudo pacman -Rns lutris"},
+
+  "system.software.uninstall.services": {"icon":"\uf0c0","label":"Services"},
+  "system.software.uninstall.services.discord":   {"icon":"\uf39f","label":"Discord","aliases":["discord"],"when":"pkg_has discord","action":"kitty --hold -e sudo pacman -Rns discord"},
+  "system.software.uninstall.services.signal":    {"icon":"\uf0c0","label":"Signal","when":"pkg_has signal-desktop","action":"kitty --hold -e sudo pacman -Rns signal-desktop"},
+  "system.software.uninstall.services.bitwarden": {"icon":"\uf023","label":"Bitwarden","when":"pkg_has bitwarden","action":"kitty --hold -e sudo pacman -Rns bitwarden"},
+  "system.software.uninstall.services.tailscale": {"icon":"\uf56f","label":"Tailscale","aliases":["tailscale"],"when":"pkg_has tailscale","action":"kitty --hold -e sudo pacman -Rns tailscale"},
+  "system.software.uninstall.services.spotify":   {"icon":"\uf1bc","label":"Spotify","aliases":["spotify"],"when":"pkg_has spotify-launcher","action":"kitty --hold -e sudo pacman -Rns spotify-launcher"},
+
+  "system.software.uninstall.media": {"icon":"\uf1fc","label":"Media"},
+  "system.software.uninstall.media.obs":  {"icon":"\uf03d","label":"OBS Studio","aliases":["obs-studio","obs"],"when":"pkg_has obs-studio","action":"kitty --hold -e sudo pacman -Rns obs-studio"},
+  "system.software.uninstall.media.gimp": {"icon":"\uf1fc","label":"GIMP","aliases":["gimp"],"when":"pkg_has gimp","action":"kitty --hold -e sudo pacman -Rns gimp"},
+
+  "system.software.uninstall.ai": {"icon":"\uf0eb","label":"AI"},
+  "system.software.uninstall.ai.ollama": {"icon":"\uf0eb","label":"Ollama","when":"pkg_has ollama","action":"kitty --hold -e sudo pacman -Rns ollama"},
+
+  "system.software.uninstall.dev": {"icon":"\uf121","label":"Development"},
+  "system.software.uninstall.dev.go":     {"icon":"\uf121","label":"Go","when":"pkg_has go","action":"kitty --hold -e sudo pacman -Rns go"},
+  "system.software.uninstall.dev.python": {"icon":"\uf121","label":"Python","when":"pkg_has python","action":"kitty --hold -e sudo pacman -Rns python"},
+  "system.software.uninstall.dev.node":   {"icon":"\uf121","label":"Node.js","when":"pkg_has nodejs","action":"kitty --hold -e sudo pacman -Rns nodejs"},
+  "system.software.uninstall.dev.rust":   {"icon":"\uf121","label":"Rust","when":"pkg_has rust","action":"kitty --hold -e sudo pacman -Rns rust"},
+  "system.software.uninstall.dev.zig":    {"icon":"\uf121","label":"Zig","when":"pkg_has zig","action":"kitty --hold -e sudo pacman -Rns zig"},
+  "system.software.uninstall.dev.java":   {"icon":"\uf121","label":"Java","when":"pkg_has jdk-openjdk","action":"kitty --hold -e sudo pacman -Rns jdk-openjdk"},
+  "system.software.uninstall.dev.ruby":   {"icon":"\uf121","label":"Ruby","when":"pkg_has ruby","action":"kitty --hold -e sudo pacman -Rns ruby"},
+  "system.software.uninstall.dev.elixir": {"icon":"\uf121","label":"Elixir","when":"pkg_has elixir","action":"kitty --hold -e sudo pacman -Rns elixir"},
+  "system.software.uninstall.dev.php":    {"icon":"\uf121","label":"PHP","when":"pkg_has php","action":"kitty --hold -e sudo pacman -Rns php"},
+  "system.software.uninstall.dev.dotnet": {"icon":"\uf121","label":".NET","when":"pkg_has dotnet-sdk","action":"kitty --hold -e sudo pacman -Rns dotnet-sdk"},
+  "system.software.uninstall.dev.ocaml":  {"icon":"\uf121","label":"OCaml","when":"pkg_has ocaml","action":"kitty --hold -e sudo pacman -Rns ocaml"},
+  "system.software.uninstall.dev.clojure":{"icon":"\uf121","label":"Clojure","when":"pkg_has clojure","action":"kitty --hold -e sudo pacman -Rns clojure"},
+
+  // Apps — installed applications + web apps, flat list with real SVG/PNG
+  // icons. iconUrl is an absolute file: path; the row renders an Image when
+  // set and falls back to the icon glyph otherwise.
+  "apps.pi":           {"icon":"","iconUrl":"file://@shellDir@/assets/apps/pi.svg","label":"Pi","description":"Coding agent (new session)","when":"command -v pi >/dev/null","action":"kitty -e bash -lc 'cd $HOME && pi'"},
+  "apps.herdr":        {"icon":"","iconUrl":"file://@shellDir@/assets/apps/herdr.svg","label":"Herdr","description":"Agent workspace supervisor","when":"command -v herdr >/dev/null","action":"kitty -e herdr"},
+
+  // Web apps — flat in Apps, real brand SVGs from assets/apps.
+  "apps.claude":        {"icon":"","iconUrl":"file://@shellDir@/assets/apps/claude.svg","label":"Claude","description":"claude.ai","action":"chromium --app=https://claude.ai"},
+  "apps.chatgpt":       {"icon":"","iconUrl":"file://@shellDir@/assets/apps/chatgpt.svg","label":"ChatGPT","description":"chatgpt.com","action":"chromium --app=https://chatgpt.com"},
+  "apps.youtube":       {"icon":"","iconUrl":"file://@shellDir@/assets/apps/youtube.svg","label":"YouTube","description":"youtube.com","action":"chromium --app=https://youtube.com"},
+  "apps.instagram":     {"icon":"","iconUrl":"file://@shellDir@/assets/apps/instagram.svg","label":"Instagram","description":"instagram.com","action":"chromium --app=https://instagram.com"},
+  "apps.facebook":      {"icon":"","iconUrl":"file://@shellDir@/assets/apps/facebook.svg","label":"Facebook","description":"facebook.com","action":"chromium --app=https://facebook.com"},
+  "apps.github":        {"icon":"","iconUrl":"file://@shellDir@/assets/apps/github.svg","label":"GitHub","description":"github.com","action":"chromium --app=https://github.com"},
+  "apps.gmail":         {"icon":"","iconUrl":"file://@shellDir@/assets/apps/gmail.svg","label":"Gmail","description":"mail.google.com","action":"chromium --app=https://mail.google.com"},
+  "apps.outlook":       {"icon":"","iconUrl":"file://@shellDir@/assets/apps/outlook.svg","label":"Outlook","description":"outlook.live.com","action":"chromium --app=https://outlook.live.com"},
+  "apps.makerworld":    {"icon":"","iconUrl":"file://@shellDir@/assets/apps/makerworld.svg","label":"MakerWorld","description":"makerworld.com","action":"chromium --app=https://makerworld.com"},
+  "apps.printables":    {"icon":"","iconUrl":"file://@shellDir@/assets/apps/printables.svg","label":"Printables","description":"printables.com","action":"chromium --app=https://printables.com"}
+}
+

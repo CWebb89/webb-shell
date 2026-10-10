@@ -1,0 +1,9 @@
+AppText 1.0 AppText.qml
+AppIcon 1.0 AppIcon.qml
+VerticalSlider 1.0 VerticalSlider.qml
+SectionLabel 1.0 SectionLabel.qml
+AppSwitch 1.0 AppSwitch.qml
+VolumeSlider 1.0 VolumeSlider.qml
+PillButton 1.0 PillButton.qml
+ToggleSetting 1.0 ToggleSetting.qml
+BarButton 1.0 BarButton.qml
