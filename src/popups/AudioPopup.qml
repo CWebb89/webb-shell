@@ -9,7 +9,7 @@ import "../services"
 import "../services/MprisModel.js" as MprisModel
 import "../components"
 
-// Audio panel (upstream-inspired): hero with master mute + volume mood, then
+// Audio panel: hero with master mute + volume mood, then
 // OUTPUT and INPUT sections each with a big slider, port chips and an
 // always-visible device list. Playing streams and Now Playing below.
 // Device data via PulseService (pactl polling); the mic peak meter uses the

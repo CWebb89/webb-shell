@@ -365,7 +365,7 @@
   "edit.shell":        {"icon":"\uf0c9","label":"Shell · shell.qml","action":"kitty -e nvim @shellDir@/shell.qml"},
   "edit.theme":        {"icon":"\uf042","label":"Theme · Colors.qml","action":"kitty -e nvim @shellDir@/src/theme/Colors.qml"},
 
-  // Software management — nested under System. panel-style catalog of
+  // Software management — nested under System. Curated catalog of
   // packages verified against the official repos (no AUR helper installed).
   // Install rows dim + take a ✓ once installed (disabled/checked share one
   // guard expr → single batch eval); Uninstall rows hide unless installed

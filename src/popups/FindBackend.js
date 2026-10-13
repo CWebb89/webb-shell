@@ -1,6 +1,5 @@
 .pragma library
 
-// Ported from the file-search tool (MIT): fd-powered file search backend.
 // Pure JS, no QML imports. English-only strings.
 
 var MAX_RESULTS = 500

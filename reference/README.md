@@ -21,6 +21,6 @@ repository**: it is a separate project, kept locally as a source of machinery to
 port. A fresh clone will not have it, and nothing outside this directory
 references it.
 
-The planning notes that used to live here (`PLANS.md`, `the menu planning notes`) were
+The planning notes that used to live here (`PLANS.md`, the menu-system notes) were
 deleted 2026-10-12: most of the backlog had shipped and the remainder was either
 re-derivable from the code or already stale. Git history has them.

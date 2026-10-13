@@ -7,7 +7,7 @@ import "../state"
 import "../components"
 import "../menu/MenuModel.js" as MenuModel
 
-// panel-style command palette: data-driven menu tree, type-to-search,
+// Command palette: data-driven menu tree, type-to-search,
 // keyboard-first navigation, submenu drill-down. Content: src/menu/menu.jsonc.
 PanelWindow {
     id: root
@@ -212,7 +212,8 @@ PanelWindow {
     }
 
     // All `when`/`disabled` conditions batch into ONE bash process per
-    // (re)load — the upstream trick for instant opens with live rows.
+    // (re)load — one bash process per cycle, so opens stay instant with
+    // live rows.
     Process {
         id: guardProc
         stdout: StdioCollector {

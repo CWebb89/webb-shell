@@ -85,7 +85,7 @@ Item {
         onCanceled: sliderRoot.dragValue = -1
     }
 
-    // Right-click anywhere mutes/unmutes (upstream parity); sits above dragArea
+    // Right-click anywhere mutes/unmutes; sits above dragArea
     // so left-drag is untouched.
     MouseArea {
         anchors.fill: parent

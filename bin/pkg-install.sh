@@ -1,6 +1,5 @@
 #!/bin/bash
 # fzf picker over every repo package -> pacman install.
-# Adapted from pkg-install (upstream).
 set -euo pipefail
 
 sel=$(pacman -Slq | sort -u | fzf --multi \

@@ -8,7 +8,7 @@ import "../state"
 import "../components"
 import "FindBackend.js" as Backend
 
-// Spotlight-style file search overlay, ported from the file-search tool (MIT).
+// Spotlight-style file search overlay.
 // fd-powered live search with type filters, sort modes, web search ("go ..."),
 // and Clipboard/terminal/folder actions.
 PanelWindow {

@@ -1,6 +1,5 @@
 #!/bin/bash
 # fzf picker over installed packages -> pacman remove.
-# Adapted from pkg-remove (upstream).
 set -euo pipefail
 
 sel=$(pacman -Qqe | fzf --multi \

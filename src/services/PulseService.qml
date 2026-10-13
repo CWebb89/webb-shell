@@ -164,7 +164,6 @@ QtObject {
     }
 
     // ── Device labels, glyphs & ghost dedupe (pactl properties) ──
-    // Mirrors the upstream audio Model.js, adapted to pactl -f json fields.
     function friendlyDeviceLabel(text) {
         var label = String(text || "").trim()
         label = label.replace(/^sof-soundwire\s+/i, "")

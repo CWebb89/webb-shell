@@ -7,8 +7,8 @@ import "../../services/MprisModel.js" as MprisModel
 
 // Media widget: art, a capped title and transport, only while a player is
 // showable. Fixed width with a hard character cap — webb-shell's bar has no
-// overlap budget, so this is deliberately not adaptively sized the way
-// the upstream bar geometry is. The title opens the audio popup, which owns the
+// overlap budget, so this is deliberately fixed rather than adaptively sized.
+// The title opens the audio popup, which owns the
 // full transport and the player picker.
 Row {
     id: root
