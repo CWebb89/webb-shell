@@ -56,7 +56,7 @@ QtObject {
     // while a new derived token missing here only logs.
     readonly property var derivedTokens: [
         "textPrimary", "accent", "rowHover", "divider", "accentDim", "secondaryDim",
-        "errorDim", "tertiaryDim", "tempCool", "tempWarm", "tempHot",
+        "errorDim", "tertiaryDim", "tempRamp", "usageRamp", "tempRampMin", "tempRampMax",
         "accentBlue", "accentCyan", "accentPurple", "accentRose"
     ]
 
@@ -68,13 +68,55 @@ QtObject {
     readonly property color errorDim: Qt.rgba(error.r, error.g, error.b, 0.16)
     readonly property color tertiaryDim: Qt.rgba(tertiary.r, tertiary.g, tertiary.b, 0.16)
 
-    // thermal ramp: cool = matugen primary (theme-reactive), then through a
-    // fixed amber to vivid red as temp rises. primary adapts to the wallpaper
-    // on every apply; the mid/hot stops need to read unmistakably yellow→red
-    // (matugen has no yellow role and its error is salmon), so they're fixed.
-    readonly property color tempCool: primary
-    readonly property color tempWarm: "#f59e0b"
-    readonly property color tempHot: "#dc2626"
+    // Trace ramps: [position 0..1, color] pairs sampled along a plot's own
+    // value axis, so a trace is tinted by the reading it is drawing rather
+    // than by elapsed time. Every stop is a matugen role — a wallpaper change
+    // re-tints both ramps, and no fixed hex survives in the heat ramp.
+    //
+    // The ramps deliberately share no stop: temperature owns the saturated
+    // primary/error family and usage the muted secondary/outline family, which
+    // is what keeps two overlaid traces separable.
+    //
+    // Stop positions are tuned to the range this hardware actually reaches,
+    // not to the top of the scale — an idle-to-load swing of 45..75 °C has to
+    // cross most of the ramp, so the vivid stops sit near the middle and the
+    // deep end is left to genuine thermal stress.
+    readonly property var tempRamp: [
+        [0.00, secondary],
+        [0.28, tertiary],
+        [0.52, inversePrimary],
+        [0.76, primaryContainer],
+        [1.00, errorContainer]
+    ]
+    readonly property var usageRamp: [
+        [0.00, secondaryContainer],
+        [0.35, outline],
+        [0.70, surfaceVariantText],
+        [1.00, secondaryContainerText]
+    ]
+
+    // Domain the temperature ramp is read over; usage spans 0..100 %.
+    readonly property real tempRampMin: 35
+    readonly property real tempRampMax: 95
+
+    function rampColor(ramp, f) {
+        f = Math.max(0, Math.min(1, f))
+        var i = 1
+        while (i < ramp.length - 1 && f > ramp[i][0])
+            i++
+        var lo = ramp[i - 1], hi = ramp[i]
+        var span = hi[0] - lo[0]
+        var k = span > 0 ? (f - lo[0]) / span : 0
+        return Qt.rgba(lo[1].r + (hi[1].r - lo[1].r) * k,
+                       lo[1].g + (hi[1].g - lo[1].g) * k,
+                       lo[1].b + (hi[1].b - lo[1].b) * k, 1)
+    }
+    function tempColorAt(t) {
+        return rampColor(tempRamp, (t - tempRampMin) / (tempRampMax - tempRampMin))
+    }
+    function usageColorAt(u) {
+        return rampColor(usageRamp, u / 100)
+    }
 
     // category accent hues: alias the themed MD3 roles so file-type/filter
     // colors update with matugen.

@@ -23,6 +23,19 @@ ShellRoot {
     PrintOverlay {}
     VolumePopup {}
     ReminderPopup {}
+    DimOverlay {}
+
+    // The reader half of SleepMonitor. A sleep cycle means the screen is locked
+    // both going in and coming back: the first so nothing is on screen for the
+    // moment before the panel is off, the second as the net for a sleep this
+    // process never saw the signal for.
+    Connections {
+        target: SleepMonitor
+
+        function onPrepareForSleep(): void {
+            Popups.engageLock()
+        }
+    }
 
     // One bar module's popup. Mounted while the module sits in the bar, while
     // its config asks for it to stay loaded, or while a force-load from a
@@ -200,11 +213,34 @@ ShellRoot {
             else
                 Popups.engageLock()
         }
+        // `show` is the name the CLI swallows — `qs ipc call lock show` prints
+        // this target's function list and exits 0 without calling anything — so
+        // the idempotent lock has to be reachable under another name. Toggle is
+        // not a substitute: it UNLOCKS an already-locked screen.
+        function engage(): void {
+            Popups.engageLock()
+        }
         function show(): void {
             Popups.engageLock()
         }
         function hide(): void {
             Popups.lockOpen = false
+        }
+    }
+
+    IpcHandler {
+        target: "idle"
+        function toggle(): string {
+            return IdleState.toggle()
+        }
+        function state(): string {
+            return IdleState.state()
+        }
+        function stay(): string {
+            return IdleState.setStayAwake(true)
+        }
+        function awake(): string {
+            return IdleState.setStayAwake(false)
         }
     }
 
@@ -380,13 +416,13 @@ ShellRoot {
     IpcHandler {
         target: "notify"
         function dnd(state: string): string {
-            return notificationToasts.setDnd(state)
+            return NotificationState.setDnd(state)
         }
         function toggle(): string {
-            return notificationToasts.toggleDnd()
+            return NotificationState.toggle()
         }
         function state(): string {
-            return notificationToasts.dndState()
+            return NotificationState.state()
         }
         function history(): string {
             return notificationToasts.showHistory()

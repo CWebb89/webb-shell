@@ -10,6 +10,26 @@ QtObject {
     property int percentage: -1
     property bool charging: false
     readonly property bool hasBattery: percentage >= 0
+    // Display threshold, shared by the lock screen and the charge OSD card.
+    // Distinct from `lowThreshold` below, which is the 10% that warrants an
+    // interrupting notification.
+    readonly property bool low: hasBattery && percentage <= 25
+
+    // One ladder for all three consumers — the bar icon, the lock screen and the
+    // charge OSD — so the thresholds cannot drift apart between them.
+    readonly property string levelGlyph: {
+        if (!hasBattery)
+            return "\uf244"
+        if (percentage > 80)
+            return "\uf240"
+        if (percentage > 60)
+            return "\uf241"
+        if (percentage > 40)
+            return "\uf242"
+        if (percentage > 20)
+            return "\uf243"
+        return "\uf244"
+    }
 
     // Warn once per discharge cycle below 10% (critical urgency -> shows
     // through Do Not Disturb); the flag resets when charging or back above.

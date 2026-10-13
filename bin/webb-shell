@@ -1,0 +1,23 @@
+#!/bin/bash
+# Start or stop the webb-shell systemd user unit. The compositor's autostart
+# calls this with no arguments, and docs/OTHER-PC.md's keybind section refers
+# to it at ~/.local/bin/webb-shell — install.sh copies it there.
+#
+# It delegates to systemd so the unit owns the process: this used to nohup
+# quickshell directly, which worked but gave nothing to restart it when it
+# died. Running `quickshell -p` by hand now starts a shell systemd knows
+# nothing about, so the unit's Restart=on-failure never applies to it.
+set -u
+
+case "${1:-start}" in
+  -k | -d | --kill | stop)
+    exec systemctl --user stop webb-shell.service
+    ;;
+  start | restart | status)
+    exec systemctl --user "$1" webb-shell.service
+    ;;
+  *)
+    echo "usage: webb-shell [start|stop|restart|status|-k]" >&2
+    exit 1
+    ;;
+esac

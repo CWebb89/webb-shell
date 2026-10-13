@@ -39,8 +39,6 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "webb-shell:notifications"
 
-    readonly property string settingsPath: NotificationHistory.stateDir + "/notifications.json"
-
     // Live Notification objects by history stem, kept OUT of the ListModel: a
     // QObject stored in a model role becomes a dangling C++ pointer when the
     // server destroys it, and the next model read segfaults. The JS map holds
@@ -52,40 +50,26 @@ PanelWindow {
     // the model never holds a server object.
     ListModel {
         id: popupModel
+
+        onCountChanged: NotificationState.liveToasts = root.countOnScreen()
+    }
+
+    // Replayed history rows and the "nothing to replay" placeholder fill the
+    // screen without being new, so the bar badge counts only rows that arrived
+    // now; `fromHistory` is what separates the two.
+    function countOnScreen() {
+        var n = 0
+        for (var i = 0; i < popupModel.count; i++)
+            if (!popupModel.get(i).fromHistory)
+                n++
+        return n
     }
 
     // ---------------------------------------------------------------- DND
 
-    property bool dndActive: false
-    property bool settingsLoaded: false
-
-    FileView {
-        id: settingsFile
-        path: root.settingsPath
-        watchChanges: false
-        atomicWrites: true
-        onLoaded: root.loadSettings(text())
-        onLoadFailed: root.loadSettings("")
-    }
-
-    function loadSettings(raw) {
-        if (root.settingsLoaded)
-            return
-        var parsed = ({})
-        try {
-            parsed = JSON.parse(String(raw || "").trim() || "{}")
-        } catch (e) {
-        }
-        root.dndActive = parsed.dnd === true
-        root.settingsLoaded = true
-    }
-
-    function setDndOn(value) {
-        if (!root.settingsLoaded)
-            return
-        root.dndActive = !!value
-        settingsFile.setText(JSON.stringify({ dnd: root.dndActive }, null, 2) + "\n")
-    }
+    // The flag itself lives in NotificationState, because the bar reflects it
+    // and this window only routes by it. What stays here is the bypass rule,
+    // which needs this server's view of an arriving notification.
 
     // Only notifications we trust to be intentional and rare get past DND:
     // webb-shell's own action toasts (battery warnings, reminder due — the
@@ -146,7 +130,7 @@ PanelWindow {
                 delete root.liveRefs[snap.stem]
         })
 
-        if (root.dndActive && !root.shouldBypassDnd(notification)) {
+        if (NotificationState.dnd && !root.shouldBypassDnd(notification)) {
             // The toast never shows, so the only record it can leave is a
             // history entry — "what did I miss while silenced" is exactly
             // what history is for.
@@ -355,21 +339,6 @@ PanelWindow {
 
     // ---------------------------------------------------------------- IPC
 
-    function dndState(): string {
-        return root.dndActive ? "on" : "off"
-    }
-
-    function toggleDnd(): string {
-        root.setDndOn(!root.dndActive)
-        return root.dndState()
-    }
-
-    function setDnd(value: string): string {
-        var v = String(value || "").toLowerCase()
-        root.setDndOn(v === "true" || v === "1" || v === "on" || v === "yes")
-        return root.dndState()
-    }
-
     function showHistory(): string {
         return root.showRecentHistory()
     }
@@ -474,10 +443,5 @@ PanelWindow {
         }
     }
 
-    Component.onCompleted: {
-        ensureDirsProc.running = true
-        Qt.callLater(function() {
-            settingsFile.reload()
-        })
-    }
+    Component.onCompleted: ensureDirsProc.running = true
 }

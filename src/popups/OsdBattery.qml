@@ -17,7 +17,7 @@ PanelWindow {
     readonly property int cardWidth: 300
     readonly property int cardHeight: 120
 
-    readonly property bool low: Battery.hasBattery && Battery.percentage <= 25
+    readonly property bool low: Battery.low
     readonly property bool shouldClose: !Battery.hasBattery || Battery.percentage > 95
 
     color: "transparent"
@@ -99,24 +99,9 @@ PanelWindow {
                     horizontalCenter: parent.horizontalCenter
                     horizontalCenterOffset: -root.cardWidth / 4
                 }
-                text: batteryGlyph()
+                text: Battery.levelGlyph
                 font.pixelSize: Type.sizeClock
                 color: root.low ? Colors.error : Colors.accent
-
-                function batteryGlyph() {
-                    if (!Battery.hasBattery)
-                        return "\uf244"
-                    var p = Battery.percentage
-                    if (p > 80)
-                        return "\uf240"
-                    if (p > 60)
-                        return "\uf241"
-                    if (p > 40)
-                        return "\uf242"
-                    if (p > 20)
-                        return "\uf243"
-                    return "\uf244"
-                }
             }
 
             Rectangle {

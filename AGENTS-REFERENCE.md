@@ -27,7 +27,23 @@ the sections below.
 There is no single mask/dismissal shape for every window:
 
 - Centered panels such as Audio, Wi-Fi, Bluetooth, System Monitor, and Scheme use a full-window transparent scrim in the input mask and dismiss on outside click or Esc.
-- Keyboard overlays such as Menu, Find, and Wallpaper intentionally take exclusive keyboard focus; preserve their proven focus-catcher pattern.
+- Keyboard overlays such as Menu, Find, and Wallpaper take exclusive keyboard focus; preserve their proven focus-catcher pattern.
+- **Any window with a `Keys` handler needs `WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive`.** `focusable: true` on its own gets a wlr-layer surface nothing: the compositor routes no keys to it, so Escape and arrow navigation silently do nothing, and the window only ever receives keys after a click puts it in `OnDemand` focus — which is exactly the state nine of these panels were in. The key catcher needs both lines, and this is the shape every popup here already has:
+
+  ```qml
+  WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+
+  Item {
+      id: keyCatcher
+      anchors.fill: parent
+      focus: root.visible
+      onFocusChanged: if (focus) forceActiveFocus()
+      Keys.onPressed: function(event) { … }
+  }
+  ```
+
+  A popup with a text field is unaffected: layer-shell focus is per-surface, and Qt still routes keys to whichever item has active focus inside it. The lock screen takes exclusive focus and must **not** handle Escape — no key may dismiss it short of authentication.
+- A dim or blanking overlay is the opposite case: `WlrKeyboardFocus.None`, `focusable: false`, `visible` gated on the state, and an **empty** `mask: Region {}` so the click that wakes the machine also reaches the window underneath.
 - Edge panels and notification windows use masks where empty space must pass through. OSDs rely on their layer and card geometry; follow the nearest OSD rather than assuming the centered-panel pattern.
 - `mask: Region` defines pointer input, not drawing. If outside clicks should dismiss, the scrim must be in the mask.
 
@@ -40,6 +56,9 @@ There is no single mask/dismissal shape for every window:
 - Assigning to a bound QML property from JavaScript destroys that binding. Change the source state instead.
 - Component inheritance works within a directory module; `AppIcon` intentionally inherits `AppText`.
 - `hl.dsp.focus({workspace=N})` accepts a number as well as the string form the archived scotia code used — verified against the live Lua bridge. `hyprctl eval '<expr>'` evaluates a Lua expression **without** dispatching, so it is the safe way to test a dispatcher form without moving the user to another workspace.
+- `hl.dsp.dpms` takes a table with a **string** action, not a boolean: `hl.dsp.dpms({ action = "disable" })` and `{ action = "enable" }`. `hl.dsp.dpms(true)` is not a boolean overload — the argument is ignored and the default `toggle` applies, which is the opposite of what a reader assumes, and it fails silently. Dump a dispatcher's real shape before building one: `hyprctl eval 'error(tostring(hl.dsp.dpms))'`. Omitting `monitor` applies the dispatch to every output.
+- `qs ipc call <target> show` prints the target's function list and exits 0 **without calling anything**, because the CLI parses that function name as one of its own subcommands. Verified both ways: `qs ipc call notify state` answers `off`, `qs ipc call bar show` answers with the listing. Any function a script or keybind must reach therefore needs a name that is not `show`/`call`/`wait`/`listen`/`prop` — the lock target's idempotent lock is `engage` for this reason, and `toggle` is not a substitute because it *unlocks* an already-locked screen.
+- `Quickshell.iconPath(name)` resolves through Qt's icon theme, which is unset here, so it only ever reaches hicolor — where a 22px tray entry usually does not exist. Status-notifier icon names go through `bin/icon-resolve.sh` via the `IconResolver` singleton instead (theme read from gsettings, `index.theme` `Directories`, size closest to what the widget draws). Do not reintroduce `Quickshell.iconPath` for tray icons; the `AppIcon` glyph behind the `Image` is the intended fallback.
 
 ### Wi-Fi passphrase exposure
 
@@ -49,6 +68,12 @@ There is no single mask/dismissal shape for every window:
 - The reason `--ask` is the flag that matters: `nmc_secrets_requested` answers the agent only when `in_editor || nmc->ask`, and the agent reads through `nmc_readline_helper`, which installs libreadline on `STDIN_FILENO` with no `isatty()` check. One newline-terminated line is correct — `get_secrets_from_user` iterates once.
 - A saved profile already carries its PSK, and when that PSK is correct nmcli activates the profile with the stored secret instead of asking its agent for one, so a PSK typed for an already-saved network is never read. `WifiPopup` therefore opens the password bar only for a secured network that is not in `savedNetworks`, which is also what the SAVED NETWORKS row already did — the two lists used to disagree about the same network. Changing a stale stored PSK means Forget in SAVED NETWORKS, then reconnect. Note `savedNetworks` holds connection **names**, not SSIDs, so `isSaved` can miss a renamed profile; that errs toward prompting, which is the safe direction.
 - The real 4-way handshake remains **unexercised**: it needs a live access point, and a wrong-key probe against a real network was declined to avoid dropping the current link. Every layer above it is verified — the popup argument, the argv-free command, `write()` reaching the child's stdin, and nmcli's own read path — so if a password-protected connect fails, suspect prompt sequencing first.
+
+### Hardware telemetry
+
+- **i915 exposes no temperature of its own.** The iGPU is on the CPU die, so `SysStats` fills the Intel GPU card's temperature from the same package sensor the CPU card reads, and reports 0 for power — Gen9 has no unprivileged energy counter. Load is the RC6 residency complement, `100 * (1 - Δrc6 / Δwall)`, with rc6 from `/sys/class/drm/cardN/power/rc6_residency_ms` (0444, world-readable) and Δwall from the poll interval; frequency is `gt_act_freq_mhz` / `gt_max_freq_mhz`, falling back to `/sys/class/drm/cardN/gt/gt0/rps_act_freq_mhz` on the newer layout. Source: the i915 driver itself (`drivers/gpu/drm/i915/gt/intel_gt_sysfs_pm.c`, which shows the legacy `gt_*` names on the card device and the `rps_*` names on the GT kobject).
+- Skip the RC6 delta when the interval is long — a closed panel or a resume. The residency counter stops while the machine is suspended and the wall clock does not, so a naive delta reads as 100 % load.
+- Intel telemetry has been verified against a synthetic sysfs tree and the driver source, never against an Intel GPU: this machine has none. On a real ThinkPad, check the files exist before believing the card.
 
 ### qmllint quirks
 

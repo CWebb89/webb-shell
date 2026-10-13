@@ -48,6 +48,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "webb-shell:usb"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     mask: Region { item: scrim }
 
@@ -55,6 +56,7 @@ PanelWindow {
         id: keyCatcher
         anchors.fill: parent
         focus: root.visible
+        onFocusChanged: if (focus) forceActiveFocus()
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) { Popups.usbOpen = false; event.accepted = true }
         }

@@ -34,7 +34,40 @@ check() {
 }
 
 check "qmllint" bash -O globstar -c 'qmllint --silent "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml'
-check "shell syntax" bash -c 'bash -n install.sh portabilize.sh bin/*.sh'
+# bin/webb-shell has no .sh suffix because that is the name the compositor's
+# autostart and the docs call it by, so the glob does not reach it.
+check "shell syntax" bash -c 'bash -n install.sh portabilize.sh bin/*.sh bin/webb-shell'
+
+# The systemd unit is the shell's launch path, and it is the one artifact whose
+# breakage costs a login rather than a restart. Rendered to a temp dir because
+# the checked-in copy still carries the @QS@ / @REPO@ placeholders.
+check "systemd unit" bash -c '
+  d="$(mktemp -d)"; t="$d/webb-shell.service"
+  sed -e "s|@QS@|/usr/bin/qs|g" -e "s|@REPO@|$REPO|g" "$REPO/systemd/webb-shell.service" > "$t"
+  out="$(systemd-analyze --user verify "$t" 2>&1)"; rc=$?
+  rm -rf "$d"
+  if [ -n "$out" ]; then
+    printf "%s\n" "$out"
+    exit 1
+  fi
+  exit $rc
+'
+
+# Every path in the repo resolves from $HOME, Quickshell.shellDir or ShellConfig.
+# A literal /home/<user> works on exactly one machine, so the development box's
+# own path is precisely what must not ship. The documented placeholders are
+# allowed; the files that exist to explain or rewrite the pattern are skipped.
+check "portable paths" bash -c '
+  hits="$(grep -rEn "/home/[A-Za-z0-9_.-]+" "$REPO" \
+    --exclude-dir=.git --exclude-dir=.pi --exclude-dir=reference --exclude-dir=node_modules \
+    --exclude=AGENTS.md --exclude=AGENTS-REFERENCE.md --exclude=portabilize.sh \
+    --exclude=find-backend.js --exclude=OTHER-PC.md 2>/dev/null \
+    | grep -vE "/home/(you|<olduser>|olduser|testuser)" || true)"
+  if [ -n "$hits" ]; then
+    printf "%s\n" "$hits"
+    exit 1
+  fi
+'
 
 for t in test/*.js; do
   check "$(basename "$t" .js)" node "$t"

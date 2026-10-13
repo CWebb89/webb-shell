@@ -1,0 +1,262 @@
+#!/bin/bash
+# shot — the one capture tool for this Hyprland machine. Any project or pi
+# session can call it; every capture target it opens lands on a fresh unused
+# workspace, and the caller's workspace is restored afterwards.
+#
+# Canonical copy is bin/shot in the webb-shell repo: edit it there and re-run
+# install.sh, which syncs this file to ~/.local/bin/shot. Every caller — the
+# Print binds, bin/screenshot.sh, the screenshot IPC target — goes through it.
+#
+# Interactive ops (capture what's on screen; for the user):
+#   shot full [out] [--copy] [--notify]
+#   shot region [out] [--copy] [--notify]
+#   shot window [out] [--copy] [--notify]
+#
+# Agent ops (empty-workspace invariant — the capture target is the ONLY thing
+# on an unused workspace; used by skills/scripts, never the raw compositor):
+#   shot popup <out.png> [grim args...]               capture an open layer-surface popup (background swapped to a fresh ws)
+#   shot app <out.png|out.mkv> [--video] [--dur N] [--audio] [--kitty] -- <cmd...>
+#                                                      launch a TUI (--kitty) or GUI app on a fresh ws, capture or
+#                                                      record (--video), close what it opened, restore the caller's ws
+#   shot onws <ws> <out.png> [grim args...]           capture the given workspace's content (e.g. a tui-review run)
+#   shot focus-empty                                  print + focus the next unused workspace id
+#   shot restore-ws <n>                               focus workspace n
+#   shot video <out.mkv> [--dur N] [--audio] [--monitor NAME]
+#                                                      record the current screen (or one monitor) for N seconds
+#
+# Workspace rule: switching must use the Lua dispatcher (plain `hyprctl
+# dispatch workspace N` is a no-op on this box); captures pass an explicit
+# monitor to grim/gpu-screen-recorder so only the intended output is taken.
+
+set -u
+
+SHOT_DIR="${HOME}/Pictures/screenshots"
+need() { command -v "$1" >/dev/null || { echo "shot: missing $1" >&2; exit 1; }; }
+need jq
+need grim
+
+ws_now() { hyprctl activeworkspace -j | jq -r '.id'; }
+ws_on()  { hyprctl dispatch "hl.dsp.focus({workspace=\"$1\"})" >/dev/null; }
+mon_now() { hyprctl -j monitors | jq -r '.[] | select(.focused) | .name' | head -1; }
+
+pick_empty() {
+  local used i
+  used="$(hyprctl workspaces -j | jq -r '[.[] | select(.id > 0) | .id] | sort | join(" ")')"
+  for ((i = 1; i <= 10000; i++)); do
+    if [[ -z "$used" ]] || ! printf '%s' " $used " | grep -q " $i "; then
+      echo "$i"
+      return 0
+    fi
+  done
+  echo "shot: no free workspace found" >&2
+  return 1
+}
+
+capture() { # out [grim args...] — full focused monitor
+  local out="$1"; shift
+  grim -o "$(mon_now)" "$@" "$out"
+}
+
+stamp_out() { echo "$SHOT_DIR/screenshot-$(date +'%Y-%m-%d_%H-%M-%S').png"; }
+mk_shots() { mkdir -p "$SHOT_DIR"; }
+
+# --- interactive modes ------------------------------------------------------
+
+interactive_flags() { # $1..$n -> sets OUT, C, N
+  local a
+  OUT="" C=0 N=0
+  for a in "$@"; do
+    case "$a" in
+      --copy) C=1 ;;
+      --notify) N=1 ;;
+      *) [ -z "$OUT" ] && OUT="$a" || { echo "shot: unexpected arg $a" >&2; exit 1; } ;;
+    esac
+  done
+  [ -n "$OUT" ] || OUT="$(stamp_out)"
+}
+
+finish_interactive() { # out
+  [ "$C" -eq 1 ] && command -v wl-copy >/dev/null && wl-copy --type image/png <"$1"
+  [ "$N" -eq 1 ] && command -v notify-send >/dev/null && notify-send -u low -t 5000 "Screenshot saved" "$1"
+  echo "$1"
+}
+
+do_full() {
+  local OUT C N
+  interactive_flags "$@"
+  mk_shots
+  capture "$OUT" || exit 1
+  finish_interactive "$OUT"
+}
+
+do_region() {
+  local OUT C N geom
+  interactive_flags "$@"
+  command -v slurp >/dev/null || { echo "shot: slurp required for region" >&2; exit 1; }
+  geom="$(slurp)" || return 1
+  [ -n "$geom" ] || return 1
+  mk_shots
+  grim -g "$geom" "$OUT" || exit 1
+  finish_interactive "$OUT"
+}
+
+do_window() {
+  local OUT C N geom
+  interactive_flags "$@"
+  geom="$(hyprctl -j activewindow | jq -r 'if .mapped == true then "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])" else empty end')"
+  if [ -z "$geom" ]; then
+    # focus may sit on a layer surface (menu/bar/toast): fall back to the most
+    # recently focused real window — focusHistoryID 0 = currently focused, so
+    # the lowest id is the best "the window the user means".
+    geom="$(hyprctl -j clients | jq -r '([.[] | select(.mapped == true) | { id: .focusHistoryID, g: "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])" }] | sort_by(.id) | .[0].g) // empty')"
+  fi
+  [ -n "$geom" ] || { echo "shot: no window to capture (check a real window or focus one)" >&2; exit 1; }
+  mk_shots
+  grim -g "$geom" "$OUT" || exit 1
+  finish_interactive "$OUT"
+}
+
+# --- agent modes ------------------------------------------------------------
+
+ORIG_WS=""
+CAP_WS=""
+GSPID=""
+LAUNCH_PID=""
+
+cleanup() {
+  if [[ -n "$GSPID" ]]; then
+    kill -INT "$GSPID" 2>/dev/null
+    wait "$GSPID" 2>/dev/null
+  fi
+  if [[ -n "$LAUNCH_PID" ]]; then
+    kill -- -"$LAUNCH_PID" 2>/dev/null
+    sleep 0.6
+  fi
+  if [[ -n "$CAP_WS" ]]; then
+    for a in $(hyprctl -j clients | jq -r --argjson w "$CAP_WS" '.[] | select(.workspace.id == $w) | .address'); do
+      hyprctl dispatch "hl.dsp.window.close({window=\"address:$a\"})" >/dev/null 2>&1
+    done
+  fi
+  [[ -n "$ORIG_WS" ]] && ws_on "$ORIG_WS"
+}
+trap cleanup EXIT
+
+do_popup() { # out.png [grim args...]
+  local out="$1"; shift
+  ORIG_WS="$(ws_now)"
+  CAP_WS="$(pick_empty)" || exit 1
+  ws_on "$CAP_WS"
+  sleep 0.7
+  capture "$out" "$@" || exit 1
+  echo "$out"
+}
+
+do_onws() { # ws out.png [grim args...]
+  local ws="$1" out="$2"; shift 2
+  ORIG_WS="$(ws_now)"
+  ws_on "$ws"
+  sleep 0.7
+  capture "$out" "$@" || exit 1
+  echo "$out"
+}
+
+do_focus_empty() {
+  local ws
+  ws="$(pick_empty)" || exit 1
+  ws_on "$ws"
+  echo "$ws"
+}
+
+do_restore_ws() { ws_on "$1"; }
+
+do_video() { # out.mkv [--dur N] [--audio] [--monitor NAME]
+  local out="${1:?usage: shot video <out.mkv> [--dur N] [--audio] [--monitor NAME]}"; shift
+  local dur=10 mon="$(mon_now)" audio=no
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dur) dur="${2:?}"; shift 2 ;;
+      --audio) audio=yes; shift ;;
+      --monitor) mon="${2:?}"; shift 2 ;;
+      *) echo "shot: unknown video arg $1" >&2; exit 1 ;;
+    esac
+  done
+  need gpu-screen-recorder gpu-screen-recorder
+  local args=(-w "$mon" -f 60 -o "$out")
+  [ "$audio" = "yes" ] && args+=(-a default_output)
+  gpu-screen-recorder "${args[@]}" &
+  GSPID=$!
+  sleep "$dur"
+  kill -INT "$GSPID" 2>/dev/null
+  wait "$GSPID" 2>/dev/null
+  GSPID=""
+  echo "$out"
+}
+
+do_app() { # out.png|out.mkv [--video] [--dur N] [--audio] [--kitty] -- <cmd...>
+  local out="${1:?usage: shot app <out> [--video] [--dur N] [--audio] [--kitty] -- <cmd...>}"; shift
+  local video=no dur=10 audio=no kitty=no
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --video) video=yes; shift ;;
+      --dur) dur="${2:?}"; shift 2 ;;
+      --audio) audio=yes; shift ;;
+      --kitty) kitty=yes; shift ;;
+      --) shift; break ;;
+      *) echo "shot: unknown app arg $1" >&2; exit 1 ;;
+    esac
+  done
+  [[ $# -gt 0 ]] || { echo "shot: shot app needs a command after --" >&2; exit 1; }
+  if [[ "$video" = "yes" ]]; then
+    need gpu-screen-recorder gpu-screen-recorder
+  fi
+  ORIG_WS="$(ws_now)"
+  CAP_WS="$(pick_empty)" || exit 1
+  ws_on "$CAP_WS"
+
+  if [[ "$kitty" = "yes" ]]; then
+    need kitty
+    setsid -- kitty --title "shot-app-$$" --hold -- "$@" & LAUNCH_PID=$!
+  else
+    setsid -- "$@" & LAUNCH_PID=$!
+  fi
+
+  local deadline=$((SECONDS + 25))
+  until hyprctl -j clients | jq -e --argjson w "$CAP_WS" '.[] | select(.workspace.id == $w and .mapped == true) | .address' >/dev/null 2>&1; do
+    if (( SECONDS >= deadline )); then
+      echo "shot: target never mapped on workspace $CAP_WS" >&2
+      exit 1
+    fi
+    sleep 0.3
+  done
+  sleep 0.9
+
+  if [[ "$video" = "yes" ]]; then
+    local args=(-w "$(mon_now)" -f 60 -o "$out")
+    [ "$audio" = "yes" ] && args+=(-a default_output)
+    gpu-screen-recorder "${args[@]}" &
+    GSPID=$!
+    sleep "$dur"
+    kill -INT "$GSPID" 2>/dev/null
+    wait "$GSPID" 2>/dev/null
+    GSPID=""
+  else
+    grim -o "$(mon_now)" "$out" || exit 1
+  fi
+  echo "$out"
+}
+
+case "${1:-}" in
+  full)  shift; do_full "$@" ;;
+  region) shift; do_region "$@" ;;
+  window) shift; do_window "$@" ;;
+  popup)  shift; do_popup "$@" ;;
+  onws)   shift; [ $# -ge 2 ] || { echo "usage: shot onws <ws> <out.png> [grim args...]" >&2; exit 1; }; do_onws "$@" ;;
+  focus-empty) do_focus_empty ;;
+  restore-ws)  shift; [ $# -ge 1 ] || { echo "usage: shot restore-ws <n>" >&2; exit 1; }; do_restore_ws "$1" ;;
+  video)  shift; do_video "$@" ;;
+  app)    shift; do_app "$@" ;;
+  -h|--help|"")
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  *) echo "shot: unknown op $1 (see: shot --help)" >&2; exit 1 ;;
+esac

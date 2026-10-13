@@ -4,6 +4,7 @@ import Quickshell.Wayland
 import "../theme"
 import "../components"
 import "../state"
+import "../services"
 
 // Context menu for a bar status-notifier item, dropped below the bar's right
 // edge.
@@ -120,6 +121,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "webb-shell:tray-menu"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     mask: Region { item: scrim }
 
@@ -127,6 +129,7 @@ PanelWindow {
         id: keyCatcher
         anchors.fill: parent
         focus: root.visible
+        onFocusChanged: if (focus) forceActiveFocus()
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) {
                 if (root.navStack.length > 0)
@@ -275,7 +278,7 @@ PanelWindow {
                             height: 22
                             sourceSize.width: 22
                             sourceSize.height: 22
-                            source: row.modelData.icon ? Quickshell.iconPath(row.modelData.icon) : ""
+                            source: IconResolver.urlFor(row.modelData.icon)
                         }
 
                         AppIcon {

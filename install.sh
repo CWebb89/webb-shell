@@ -1,13 +1,18 @@
 #!/bin/bash
 # webb-shell install script — makes this repo runnable on any machine.
-# No symlinks, no fixed paths: it only writes per-user config under
-# ~/.config/webb-shell and optionally enables the lock-screen PAM service.
+# No symlinks, no fixed paths: it writes per-user config under
+# ~/.config/webb-shell, installs the two user-level helpers the compositor and
+# the Print binds call by absolute path, and enables the systemd user unit.
 #
 # Usage: ./install.sh [--packages]
 #   Idempotent; safe to re-run. Plain run only checks tools and writes
-#   config + matugen template + PAM. --packages additionally installs the
-#   shell's runtime deps plus a curated desktop package set, skipping
-#   hardware-specifics, with no prompts — --needed no-ops what's present.
+#   config + matugen template + helpers + unit. --packages additionally
+#   installs the shell's runtime deps plus a curated desktop package set,
+#   skipping hardware-specifics, with no prompts — --needed no-ops what's
+#   present.
+#
+# No step needs root. The lock screen reads src/assets/pam.d/webb-shell through
+# PamContext.configDirectory, so nothing is installed into /etc.
 #
 # The tool lists below mirror what the shell and the compositor actually run,
 # verified against every caller in src/ and bin/.
@@ -23,15 +28,15 @@ INSTALL_PACKAGES=0
 echo "Installing webb-shell from $REPO"
 
 # ── 1. Required runtime tools ──────────────────────────────────────────────
-# Core: the shell cannot function without these. Screenshots delegate to the
-# global `shot` helper; grim/slurp are the direct capture path used by
+# Core: the shell cannot function without these. Screenshots delegate to
+# bin/shot (installed in step 4); grim/slurp are the direct capture path used by
 # bin/ocr.sh and bin/qr-capture.sh.
 CORE_TOOLS="quickshell hyprctl qs matugen grim slurp wl-copy nmcli pactl"
 # Optional: features degrade; still worth listing on a fresh box.
 OPT_TOOLS="fzf fd bluetoothctl pavucontrol-qt cliphist tesseract zbarimg \
 gpu-screen-recorder powerprofilesctl curl file gsettings gtk-update-icon-cache \
 python3 xdg-mime xdg-settings gio ffmpeg hyprpicker notify-send udisksctl \
-lsblk udevadm coredumpctl"
+lsblk udevadm coredumpctl gdbus"
 # Called by the Hyprland config rather than the shell: the hardware volume and
 # brightness keys in ~/.config/hypr/modules/binds.lua.
 COMPOSITOR_TOOLS="playerctl brightnessctl"
@@ -45,24 +50,12 @@ if [ -n "$MISSING" ]; then
   echo "NOTE — missing tools:$MISSING"
 fi
 
-# ── 1b. Files the repo cannot supply ───────────────────────────────────────
-# Two scripts live only on the machine and are called by absolute path: the
-# launch/kill wrapper the compositor's autostart runs, and the capture tool that
-# bin/screenshot.sh delegates to. Neither is in the repo and neither is a
-# package, so no tool check above can catch them.
-MISSING_FILES=""
-for f in "$HOME/.local/bin/webb-shell" "$HOME/.local/bin/shot"; do
-  [ -x "$f" ] || MISSING_FILES="$MISSING_FILES $f"
-done
-if [ -n "$MISSING_FILES" ]; then
-  echo "NOTE — missing machine-side files:$MISSING_FILES"
-  echo "      ~/.local/bin/webb-shell is the autostart wrapper; ~/.local/bin/shot"
-  echo "      is what the Print binds, the Capture menu rows and the screenshot"
-  echo "      IPC call. Both are outside the repo — see docs/OTHER-PC.md 3-4."
-fi
-
 # ── 2. Per-user config ─────────────────────────────────────────────────────
 mkdir -p "$CFG_DIR"
+# The shell's per-user runtime state: the wallpaper record, the notification
+# history and the idle flag. Created here so a first write cannot fail for want
+# of a directory.
+mkdir -p "$HOME/.local/state/webb-shell"
 
 # The OpenRouter key for the Agent Usage panel's real spend figure. It lives in
 # its own 0600 file rather than config.json (world-readable) because the shell
@@ -85,12 +78,20 @@ CPU_NAME="CPU"
 if command -v lscpu >/dev/null 2>&1; then
   CPU_NAME="$(lscpu | awk -F': *' '/Model name/ {print $2; exit}' | sed 's/  */ /g')"
 fi
+# Discrete vendors win over the integrated one: a laptop with both enumerates
+# the iGPU as card0, and the System Monitor's GPU card is better labelled with
+# the card that has an actual driver readout. Intel is the fallback for an
+# Intel-only machine (a T480s and the like), which would otherwise sit at the
+# generic "GPU".
 GPU_NAME="GPU"
 if [ -d /sys/class/drm ]; then
   for c in /sys/class/drm/card*/device; do
     [ -e "$c/vendor" ] || continue
-    if [ "$(cat "$c/vendor")" = "0x10de" ]; then GPU_NAME="NVIDIA"; break; fi
-    if [ "$(cat "$c/vendor")" = "0x1002" ]; then GPU_NAME="AMD"; break; fi
+    case "$(cat "$c/vendor")" in
+      0x10de) GPU_NAME="NVIDIA"; break ;;
+      0x1002) GPU_NAME="AMD"; break ;;
+      0x8086) if [ "$GPU_NAME" = "GPU" ]; then GPU_NAME="Intel"; fi ;;
+    esac
   done
 fi
 
@@ -122,7 +123,13 @@ if [ -f "$CFG_FILE" ]; then
      --arg gpu "$GPU_NAME" \
      --arg idark "$ICON_DARK" \
      --arg ilight "$ICON_LIGHT" \
-     '(.wallpaperDir = (.wallpaperDir // $wd)) | (.cpuName = (.cpuName // $cpu)) | (.gpuName = (.gpuName // $gpu)) | (.iconTheme = (.iconTheme // {dark: $idark, light: $ilight}))' \
+     '(.wallpaperDir = (.wallpaperDir // $wd))
+      | (.cpuName = (.cpuName // $cpu))
+      | (.gpuName = (.gpuName // $gpu))
+      | (.iconTheme = (.iconTheme // {dark: $idark, light: $ilight}))
+      | (.idleDimSeconds = (.idleDimSeconds // 300))
+      | (.idleDisplayOffSeconds = (.idleDisplayOffSeconds // 600))
+      | (.idleLockSeconds = (.idleLockSeconds // 600))' \
      "$CFG_FILE" > "$MERGED" 2>/dev/null \
     || cat "$CFG_FILE" > "$MERGED"
 else
@@ -131,7 +138,10 @@ else
   "wallpaperDir": "$WALLPAPER_DIR",
   "cpuName": "$CPU_NAME",
   "gpuName": "$GPU_NAME",
-  "iconTheme": { "dark": "$ICON_DARK", "light": "$ICON_LIGHT" }
+  "iconTheme": { "dark": "$ICON_DARK", "light": "$ICON_LIGHT" },
+  "idleDimSeconds": 300,
+  "idleDisplayOffSeconds": 600,
+  "idleLockSeconds": 600
 }
 EOF
 fi
@@ -186,17 +196,68 @@ else
   echo "  matugen not found — colors won't update live; edit src/theme/Colors.qml or install matugen"
 fi
 
-# ── 4. Lock-screen PAM service (sudo; skip if unavailable) ─────────────────
-if command -v sudo >/dev/null 2>&1 && [ -f "$REPO/src/assets/pam.d/webb-shell" ]; then
-  if [ ! -f /etc/pam.d/webb-shell ] || ! cmp -s "$REPO/src/assets/pam.d/webb-shell" /etc/pam.d/webb-shell; then
-    sudo install -Dm644 "$REPO/src/assets/pam.d/webb-shell" /etc/pam.d/webb-shell \
-      && echo "  installed /etc/pam.d/webb-shell" || echo "  skipped PAM install (sudo failed/non-interactive)"
+# ── 4. The two user-level helpers ──────────────────────────────────────────
+# Both are called by absolute path from outside the shell: ~/.local/bin/webb-shell
+# by the compositor's autostart, ~/.local/bin/shot by the Print binds and by
+# bin/screenshot.sh (which the screenshot IPC call and the Capture menu rows
+# run). They live in bin/ so a second machine gets them from the repo instead of
+# by hand, and are installed only when the content differs, so a re-run does not
+# churn them.
+install_helper() {
+  local src="$1" dst="$2"
+  [ -f "$src" ] || return 0
+  mkdir -p "$(dirname "$dst")"
+  if [ ! -f "$dst" ]; then
+    install -m755 "$src" "$dst" && echo "  installed $dst"
+  elif ! cmp -s "$src" "$dst"; then
+    install -m755 "$src" "$dst" && echo "  updated $dst (was different)"
   else
-    echo "  /etc/pam.d/webb-shell already current"
+    echo "  $dst already current"
   fi
+}
+install_helper "$REPO/bin/webb-shell" "$HOME/.local/bin/webb-shell"
+install_helper "$REPO/bin/shot" "$HOME/.local/bin/shot"
+
+# ── 5. systemd user units ──────────────────────────────────────────────────
+# The shell's launch path, versioned in systemd/ rather than hand-written under
+# $HOME. The unit owns the process so a crash restarts it; the wrapper the
+# compositor's autostart calls delegates to `systemctl --user start`, so there
+# is exactly one owner and no way to end up with two shells.
+UNIT_DIR="$HOME/.config/systemd/user"
+mkdir -p "$UNIT_DIR"
+QS_BIN="$(command -v qs || command -v quickshell || echo /usr/bin/quickshell)"
+
+# Writes only when the rendering differs, so a re-run does not restart the
+# shell by touching its unit.
+render_unit() {
+  sed -e "s|@QS@|$QS_BIN|g" -e "s|@REPO@|$REPO|g" "$1" > "$2.new"
+  if [ -f "$2" ] && cmp -s "$2.new" "$2"; then
+    rm -f "$2.new"
+    return 1
+  fi
+  mv "$2.new" "$2"
+  return 0
+}
+
+if render_unit "$REPO/systemd/webb-shell.service" "$UNIT_DIR/webb-shell.service"; then
+  echo "  wrote $UNIT_DIR/webb-shell.service"
+else
+  echo "  $UNIT_DIR/webb-shell.service already current"
 fi
 
-# ── 5. Optional: install all packages used on this machine ─────────────────
+if command -v systemctl >/dev/null 2>&1 && systemctl --user daemon-reload 2>/dev/null; then
+  if systemctl --user enable webb-shell.service >/dev/null 2>&1; then
+    echo "  enabled webb-shell.service (graphical-session target)"
+  else
+    echo "  NOTE — could not enable webb-shell.service; start it with"
+    echo "         'systemctl --user start webb-shell'"
+  fi
+else
+  echo "  NOTE — no user systemd manager here to load the unit; enable it later with"
+  echo "         systemctl --user daemon-reload && systemctl --user enable --now webb-shell"
+fi
+
+# ── 6. Optional: install all packages used on this machine ─────────────────
 # `--packages` installs the shell's runtime deps PLUS the full list of
 # packages this machine has (`pacman -Qqe`), minus hardware/boot-specific
 # ones that would be wrong on another PC (vendor GPU drivers, amd-ucode,
@@ -250,15 +311,16 @@ if [ "$INSTALL_PACKAGES" -eq 1 ]; then
   echo "    the new hardware needs manually (e.g. nvidia-open or amd-ucode)."
 fi
 
-# ── 6. Autostart ───────────────────────────────────────────────────────────
+# ── 7. Autostart ───────────────────────────────────────────────────────────
 echo
 echo "Done. Start the shell with:"
-echo "    quickshell -p \"$REPO\""
+echo "    systemctl --user start webb-shell"
 echo
 echo "The shell binds no compositor keys itself. To autostart it and wire keys,"
 echo "see docs/OTHER-PC.md 3. In a Lua Hyprland config that is:"
 echo "    hl.exec_cmd(os.getenv(\"HOME\") .. \"/.local/bin/webb-shell\")"
-echo "and binds of the form 'qs -p <repo> ipc call <target> <fn>'."
+echo "which starts the systemd unit above; binds are of the form"
+echo "'qs -p <repo> ipc call <target> <fn>'."
 echo
 echo "First wallpaper pick: set a wallpaper in the picker to have matugen generate the palette."
 if [ "$INSTALL_PACKAGES" -eq 0 ]; then

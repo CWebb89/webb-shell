@@ -29,6 +29,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "webb-shell:sysmonitor"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     mask: Region { item: scrim }
 
@@ -36,6 +37,7 @@ PanelWindow {
         id: keyCatcher
         anchors.fill: parent
         focus: root.visible
+        onFocusChanged: if (focus) forceActiveFocus()
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) { Popups.systemMonitorOpen = false; event.accepted = true }
         }
@@ -113,7 +115,7 @@ PanelWindow {
                     temp: SysStats.gpuTemp
                     usage: SysStats.gpuUsage
                     usageLabel: Math.round(SysStats.gpuUsage) + "%"
-                    detail: SysStats.gpuName
+                    detail: SysStats.gpuDetail
                     fanRpm: SysStats.fan2
                     fanActive: SysStats.fanActive
                 }
@@ -144,10 +146,12 @@ PanelWindow {
     }
 
     // ── CPU/GPU trend card: thermographic load waveform ─────
-    // Live scroll of usage; each polyline segment is stroked with the
-    // temperature color at the moment it was sampled (cool→hot), so the
-    // graph reads as both a load trace and a thermal heat-map. The big
-    // readout shows the current temperature.
+    // Two scrolling traces over one shared value axis: usage dashed and drawn
+    // from the muted part of the palette, temperature solid and drawn from the
+    // vivid part. Each is stroked with a vertical gradient over the plot
+    // height, so a sample's colour is its own reading — the temperature trace
+    // warms down the ramp as the reading rises. The big readout shows the
+    // current temperature.
     component TrendCard: Rectangle {
         id: tcard
         required property string iconGlyph
@@ -170,23 +174,7 @@ PanelWindow {
         color: Colors.surfaceContainer
         clip: true
 
-        readonly property color tempColor: tcard.tempColorFor(tcard.temp)
-
-        function lerpColor(a, b, f) {
-            f = Math.max(0, Math.min(1, f))
-            return Qt.rgba(a.r + (b.r - a.r) * f,
-                           a.g + (b.g - a.g) * f,
-                           a.b + (b.b - a.b) * f, 1)
-        }
-        function tempColorFor(t) {
-            if (t <= 52) return Colors.tempCool
-            if (t < 80) {
-                var f = (t - 52) / 28
-                return tcard.lerpColor(Colors.tempCool, Colors.tempWarm, f * f)
-            }
-            if (t < 96) return tcard.lerpColor(Colors.tempWarm, Colors.tempHot, (t - 80) / 16)
-            return Colors.tempHot
-        }
+        readonly property color tempColor: Colors.tempColorAt(tcard.temp)
 
         function step() {
             var u = Math.max(0, Math.min(100, tcard.usage))
@@ -202,15 +190,35 @@ PanelWindow {
 
         Timer {
             id: sampleTimer
-            interval: 2000
+            // SysStats polls on a 5 s timer; sampling faster than the data moves
+            // only plotted the same reading two or three times, so the trace
+            // was 2.5x longer than the history it described.
+            interval: 5000
             repeat: true
             running: Popups.systemMonitorOpen
             onTriggered: tcard.step()
         }
 
-        Component.onCompleted: {
-            samples.push({ u: tcard.usage, t: tcard.temp, from: tcard.usage })
-            samples.push({ u: tcard.usage, t: tcard.temp, from: tcard.usage })
+        // Two identical points give the polyline something to draw from when
+        // the panel has only just opened: the first segment has no previous
+        // value, so without them the trace starts as a single dot.
+        function seed() {
+            tcard.samples.length = 0
+            tcard.samples.push({ u: tcard.usage, t: tcard.temp, from: tcard.usage })
+            tcard.samples.push({ u: tcard.usage, t: tcard.temp, from: tcard.usage })
+            spark.requestPaint()
+        }
+
+        Component.onCompleted: tcard.seed()
+
+        // Samples outlive a close, so a reopened panel used to resume a trace
+        // from whenever it was last shut rather than from the current reading.
+        Connections {
+            target: Popups
+            function onSystemMonitorOpenChanged() {
+                if (Popups.systemMonitorOpen)
+                    tcard.seed()
+            }
         }
 
         // header: icon left, fan status right
@@ -332,6 +340,14 @@ PanelWindow {
                 }
                 ctx.lineTo(pts[endIdx].x, pts[endIdx].y)
             }
+            // one vertical gradient per ramp, spanning the value axis the
+            // traces are plotted against (bottom = lowest, top = highest)
+            function rampGradient(ctx, ramp) {
+                var g = ctx.createLinearGradient(0, spark.yOf(0), 0, spark.yOf(100))
+                for (var i = 0; i < ramp.length; i++)
+                    g.addColorStop(ramp[i][0], ramp[i][1])
+                return g
+            }
 
             onPaint: {
                 var ctx = getContext("2d"); if (!ctx) return
@@ -349,20 +365,24 @@ PanelWindow {
                 }
 
                 var last = vals[n - 1]
-                var fillCol = tcard.tempColorFor(last.t)
+                var fillCol = Colors.tempColorAt(last.t)
+                var tempGrad = spark.rampGradient(ctx, Colors.tempRamp)
+                var useGrad = spark.rampGradient(ctx, Colors.usageRamp)
 
-                // temperature trace: layered glow passes + core
+                // temperature trace: layered glow passes + core, all stroked
+                // with the heat ramp
                 if (n > 1) {
                     ctx.lineJoin = "round"; ctx.lineCap = "round"
-                    ctx.strokeStyle = Qt.rgba(fillCol.r, fillCol.g, fillCol.b, 0.14 * spark.glowPulse)
+                    ctx.strokeStyle = tempGrad
+                    ctx.globalAlpha = 0.14 * spark.glowPulse
                     ctx.lineWidth = 10
                     spark.trace(ctx, tpPts, spark.progress)
                     ctx.stroke()
-                    ctx.strokeStyle = Qt.rgba(fillCol.r, fillCol.g, fillCol.b, 0.28 * spark.glowPulse)
+                    ctx.globalAlpha = 0.28 * spark.glowPulse
                     ctx.lineWidth = 6
                     spark.trace(ctx, tpPts, spark.progress)
                     ctx.stroke()
-                    ctx.strokeStyle = fillCol
+                    ctx.globalAlpha = 1
                     ctx.lineWidth = 2.5
                     spark.trace(ctx, tpPts, spark.progress)
                     ctx.stroke()
@@ -378,30 +398,35 @@ PanelWindow {
                     ctx.fill()
                 }
 
-                // usage trace: layered glow passes + core
+                // usage trace: same glow treatment, dashed and stroked with the
+                // muted ramp so it never reads as the temperature line
                 if (n > 1) {
+                    var useCol = Colors.usageColorAt(last.u)
                     ctx.lineJoin = "round"; ctx.lineCap = "round"
-                    ctx.strokeStyle = Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.14 * spark.glowPulse)
+                    ctx.setLineDash([7, 5])
+                    ctx.strokeStyle = useGrad
+                    ctx.globalAlpha = 0.14 * spark.glowPulse
                     ctx.lineWidth = 10
                     spark.trace(ctx, usPts, spark.progress)
                     ctx.stroke()
-                    ctx.strokeStyle = Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.28 * spark.glowPulse)
+                    ctx.globalAlpha = 0.28 * spark.glowPulse
                     ctx.lineWidth = 6
                     spark.trace(ctx, usPts, spark.progress)
                     ctx.stroke()
-                    ctx.strokeStyle = Colors.accentBlue
+                    ctx.globalAlpha = 1
                     ctx.lineWidth = 2
                     spark.trace(ctx, usPts, spark.progress)
                     ctx.stroke()
+                    ctx.setLineDash([])
                     // usage head dot (glow + core)
                     var hx = usPts[n - 1].x
                     var hy = spark.progress < 1 && n > 1
                         ? usPts[n - 2].y + (usPts[n - 1].y - usPts[n - 2].y) * spark.progress
                         : usPts[n - 1].y
                     ctx.beginPath(); ctx.arc(hx, hy, 9, 0, Math.PI * 2); ctx.closePath()
-                    ctx.fillStyle = Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.30 * spark.glowPulse); ctx.fill()
+                    ctx.fillStyle = Qt.rgba(useCol.r, useCol.g, useCol.b, 0.30 * spark.glowPulse); ctx.fill()
                     ctx.beginPath(); ctx.arc(hx, hy, 3.5, 0, Math.PI * 2); ctx.closePath()
-                    ctx.fillStyle = Colors.accentBlue
+                    ctx.fillStyle = useCol
                     ctx.fill()
                 }
             }
@@ -417,7 +442,9 @@ PanelWindow {
 
             // gentle breathing pulse on the glow so the traces feel alive
             Timer {
-                interval: 50
+                // 10 Hz, not 20: this only drives a slow sine on the glow and
+                // every tick repaints the whole canvas.
+                interval: 100
                 repeat: true
                 running: Popups.systemMonitorOpen
                 onTriggered: {
@@ -454,7 +481,7 @@ PanelWindow {
                 Rectangle {
                     width: 24; height: 5; radius: 2.5
                     anchors.verticalCenter: parent.verticalCenter
-                    color: Colors.accentBlue
+                    color: Colors.usageColorAt(50)
                 }
                 AppText {
                     anchors.verticalCenter: parent.verticalCenter

@@ -1,8 +1,8 @@
 import QtQuick
-import Quickshell
 import Quickshell.Services.SystemTray
 import "../../theme"
 import "../../state"
+import "../../services"
 import "../../components"
 
 // Status-notifier icons. Left click activates, except for menu-only items
@@ -51,18 +51,18 @@ Row {
             Image {
                 id: trayIcon
                 anchors.centerIn: parent
-                // 22px, not 16: Quickshell's icon provider resolves a name
-                // only at a size the active theme ships. hicolor has no
-                // 16x16 nm-signal entry, so a 16px request fails and the
-                // provider draws a placeholder. 22 is the common nominal
-                // size; trayGlyph covers themes that still miss.
+                // Drawn at 22px, which is the size the resolver is asked for:
+                // bin/icon-resolve.sh picks the theme entry closest to it, so
+                // the provider is not left to find some exact size that the
+                // active theme happens not to ship. trayGlyph still covers an
+                // icon the theme genuinely lacks.
                 width: 22
                 height: 22
                 sourceSize.width: 22
                 sourceSize.height: 22
                 smooth: true
                 visible: trayIcon.status === Image.Ready
-                source: Quickshell.iconPath(traySlot.modelData.icon)
+                source: IconResolver.urlFor(traySlot.modelData.icon)
             }
 
             AppIcon {

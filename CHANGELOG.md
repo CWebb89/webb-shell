@@ -7,6 +7,49 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **The shell owns the session's idle behaviour.** `src/services/IdleState.qml`
+  runs three `IdleMonitor`s — dim at 5 minutes, display off and lock at 10 — and
+  `src/popups/DimOverlay.qml` is the dim stage. Hyprland is configured with no
+  idle behaviour of its own and no `hypridle` runs here, so nothing previously
+  dimmed, blanked or locked a desk-bound machine: the only automatic lock was on
+  suspend, which a laptop sitting open never reaches. All three stages respect
+  other applications' idle inhibitors, all three timeouts are `config.json` keys
+  (`idleDimSeconds`, `idleDisplayOffSeconds`, `idleLockSeconds`; 0 disables a
+  stage), and the new **Stay Awake** menu row plus an `idle` IPC target
+  (`state` / `toggle` / `stay` / `awake`) hold them off, persisted in
+  `~/.local/state/webb-shell/idle.json`.
+- **Intel GPU telemetry.** `SysStats` reads i915's frequency files and derives
+  load from the RC6 residency counter, because an Intel iGPU has no utilisation
+  counter to read: the figure is the complement of the idle fraction across the
+  poll interval, which is what `intel_gpu_top` shows as GPU idle time. Its
+  temperature is the CPU package sensor (the iGPU is on that die, and i915
+  exposes no sensor of its own) and its power reads 0, since Gen9 has no
+  unprivileged energy counter. `install.sh` now labels vendor `0x8086` as Intel.
+  The paths come from the i915 driver source and were verified against a
+  synthetic sysfs tree — this machine has no Intel GPU to point them at.
+- **`lock engage`** — an idempotent lock for scripts and binds. The lock target's
+  `show()` is unreachable from `qs ipc` (the CLI swallows that name) and `toggle`
+  *unlocks* an already-locked screen, so there was no safe way to lock from
+  outside the shell. The `Lock` menu row and the new `Lock Now` row use it.
+- **Two more gates in `tools/verify.sh`**: the systemd unit is rendered to a temp
+  directory and checked with `systemd-analyze --user verify`, reading that
+  command's output rather than its status because a directive systemd cannot
+  parse is reported and then ignored with exit 0; and the tree is scanned for
+  literal `/home/<user>` paths, since a path that names one machine is exactly
+  what must not ship. `bash -n` also covers `bin/webb-shell`, which the
+  `bin/*.sh` glob cannot see.
+- **Idle-free session hardening** — the screen locks on suspend and again on
+  resume. Neither obvious hook exists on this stack: a systemd user unit cannot
+  order itself against `sleep.target` (that target is defined only in the system
+  manager), and monitoring the system bus is refused to a normal user, so
+  `src/services/SleepMonitor.qml` subscribes to logind's `PrepareForSleep` with
+  `gdbus` instead. Both directions lock, so nothing is on screen as the machine
+  sleeps and a resume cannot come back to an unlocked desktop.
+- **The shell is supervised** — `systemd/webb-shell.service`, rendered and
+  enabled by `install.sh`. It owns the process, so a transient runtime error
+  restarts the bar instead of leaving it dead until someone notices, and the
+  compositor's autostart, `bin/restart.sh` and `~/.local/bin/webb-shell` all
+  drive that one unit rather than starting shells of their own.
 - `tools/verify.sh` — the whole verification list as one command, with per-step
   `PASS`/`FAIL`, a non-zero exit on failure, and an advisory `qmllint` pass so
   warnings the `--silent` run hides cannot go unnoticed.
@@ -18,6 +61,40 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Changed
 
+- **The two helpers outside the repo are in it now.** `shot` — the capture tool
+  that the Print binds, `bin/screenshot.sh`, the Capture menu rows and the
+  `screenshot` IPC target all depend on — existed only in `~/.local/bin` on one
+  machine and in no repository, and the autostart wrapper had the same shape. Both
+  are versioned under `bin/` and installed by `install.sh` step 4, which writes
+  only when the content differs, so a re-run cannot churn them.
+- **`install.sh` needs no root.** Its only sudo step installed
+  `/etc/pam.d/webb-shell`, a file this machine does not have and never needed:
+  `PamContext.configDirectory` points at `src/assets/pam.d/webb-shell` in the
+  checkout, which is what PAM actually reads. Locking works from the repo copy
+  alone, so the step is gone and a plain `./install.sh` no longer prints
+  "skipped PAM install" on a non-interactive run. It also creates
+  `~/.local/state/webb-shell/` so a first write cannot fail for want of a
+  directory.
+- `docs/OTHER-PC.md` gained **§ 12, the T480s runbook** — what differs from this
+  machine, the order to do the generic steps in, the two Hyprland values that must
+  be re-derived for a different panel, the packages `install.sh` deliberately
+  leaves to the operator, four checks specific to an Intel ThinkPad, and the list
+  of things that must not be carried over (starting with `config.json`, whose
+  hardware labels survive a copy because `install.sh` only fills in missing
+  keys).
+- **Notification state has one owner.** The Do Not Disturb flag moved out of the
+  toast daemon into `src/services/NotificationState.qml`, since a PanelWindow and
+  the bar cannot share state any other way; the on-disk format is unchanged
+  because the menu's guard still reads `notifications.json` with `jq`.
+- **The notification bell is no longer one fixed glyph.** It shows a slashed bell
+  while DND is on and the number of toasts on screen while any are — neither fact
+  was visible before. `BarButton` gained an opt-in `badge` that deliberately does
+  not change `implicitWidth`, so a badge cannot shove the modules to its right
+  sideways each time one arrives.
+- **The lock screen shows battery state**, red below 20% while discharging. A
+  locked laptop could not previously say that it was about to die, because the
+  bar is behind the lock. The glyph ladder moved to `Battery.levelGlyph` so the
+  bar icon, the lock screen and the charge OSD share one set of thresholds.
 - **Glance panel** rebuilt in the shape of the other panels: square card
   (`Colors.surface`, no corner radius, no drop shadow), `SectionLabel` headers
   for `CALENDAR` / the day / `HOURLY`, and the calendar and current conditions
@@ -38,6 +115,36 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Fixed
 
+- **Escape did nothing in nine of the modal popups.** Audio, Wi-Fi, Bluetooth,
+  System Monitor, Notifications, the tray menu, USB storage, Agent Usage and Bar
+  Settings all declared `Keys.onPressed` with `focusable: true` and nothing else,
+  so the compositor never routed a key to the surface at all — and the panels that
+  appeared to work only did so after a click handed them `OnDemand` focus. All
+  nine now take `WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive` and pull
+  focus to the key catcher as they become visible, which is the pattern the other
+  popups already used. Navigation inside the two that implement it (the tray menu
+  and the notification centre) arrives the same way.
+- **Tray icons drew as a generic glyph.** `Quickshell.iconPath` resolves through
+  Qt's icon theme, which is unset here, so it only ever reached hicolor — where a
+  22px tray entry usually does not exist — and every item fell back to the
+  `AppIcon` placeholder. `bin/icon-resolve.sh` looks the name up the way GTK apps
+  do instead: the active theme from `gsettings`, its `index.theme`
+  `Directories`, its `Inherits` chain, then hicolor, picking the size closest to
+  the one the widget draws. The new `IconResolver` singleton batches every name a
+  tray change asks for into one call and caches the misses, and
+  `test/icon-resolve.js` drives the real script against a synthetic theme tree.
+- **The System Monitor sampled faster than its own data.** The trend cards
+  sampled every 2 s against a 5 s `SysStats` poll, so the trace covered 2.5 times
+  the history it described and plotted the same reading two or three times, and
+  its samples outlived a close, so a reopened panel resumed a trace from whenever
+  it was last shut. Sampling now matches the poll, resets when the panel opens,
+  and the glow pulse redraws the canvas at 10 Hz instead of 20.
+- **A dbus restart killed the suspend lock for the rest of the session.**
+  `SleepMonitor`'s `gdbus` subscriber is a one-shot process, so anything that
+  restarted the system bus — a dbus package upgrade is enough — left it dead with
+  nothing on screen to say so. It now restarts itself after an exit, but only if
+  it had been alive for more than 5 s: a binary that is missing or refuses to
+  start exits immediately and is not retried, so this cannot spin.
 - **Notification toasts drew over the lock screen.** `NotificationToasts` bound
   `visible: true`, so its surface stayed mapped on the `WlrLayer.Overlay` layer
   that the lock screen occupies, and it is created immediately after the lock

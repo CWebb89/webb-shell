@@ -6,6 +6,7 @@ import Quickshell.Services.Pam
 import "../theme"
 import "../state"
 import "../components"
+import "../services"
 
 // Lock screen: blurred live desktop, big clock, PAM password auth.
 PanelWindow {
@@ -13,6 +14,9 @@ PanelWindow {
 
     property date now: new Date()
     property string pendingPwd: ""
+
+    readonly property color batteryColor: Battery.low && !Battery.charging
+                                          ? Colors.error : Colors.surfaceVariantText
 
     color: "transparent"
     visible: Popups.lockOpen
@@ -84,6 +88,29 @@ PanelWindow {
                 variant: "medium"
                 color: Colors.surfaceVariantText
                 text: Qt.formatDate(root.now, "dddd, MMM d")
+            }
+        }
+
+        // A locked laptop whose battery is about to die cannot say so anywhere
+        // else: the bar is behind this screen. Hidden on a machine with no
+        // battery rather than showing a dead-cell placeholder.
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 6
+            visible: Battery.hasBattery
+
+            AppText {
+                anchors.verticalCenter: parent.verticalCenter
+                font.pixelSize: Type.sizeMedium
+                color: root.batteryColor
+                text: Battery.levelGlyph
+            }
+
+            AppText {
+                anchors.verticalCenter: parent.verticalCenter
+                variant: "medium"
+                color: root.batteryColor
+                text: (Battery.percentage >= 0 ? Battery.percentage : "--") + "%"
             }
         }
 

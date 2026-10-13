@@ -36,7 +36,7 @@
   // System
   "system":            {"icon":"\uf013","label":"System","description":"Power and session"},
   "system.reload":     {"icon":"\uf2f1","label":"Reload","description":"Lock, logout, reboot, shutdown, reload"},
-  "system.reload.lock":{"icon":"\uf023","label":"Lock","action":"qs -p @shellDir@ ipc call lock toggle","confirm":true},
+  "system.reload.lock":{"icon":"\uf023","label":"Lock","action":"qs -p @shellDir@ ipc call lock engage","confirm":true},
   "system.reload.logout":{"icon":"\uf08b","label":"Logout","action":"hyprctl dispatch 'hl.dsp.exit()'","confirm":true},
   "system.reload.reboot":{"icon":"\uf021","label":"Reboot","action":"systemctl reboot","confirm":true},
   "system.reload.shutdown":{"icon":"\uf011","label":"Shutdown","action":"systemctl poweroff","confirm":true},
@@ -133,6 +133,9 @@
   "shell.agents.default.omp":{"icon":"\uf544","label":"omp","when":"command -v omp >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"omp\" ]]","action":"@shellDir@/bin/agent-default.sh omp"},
   "shell.agents.crash":{"icon":"\uf188","label":"Diagnose Last Crash","description":"Hand the most recent coredump to the agent","action":"hyprctl dispatch 'hl.dsp.exec_cmd(\"@shellDir@/bin/crash-diagnose.sh\")'"},
   "shell.dnd":         {"icon":"\uf0f3","label":"Do Not Disturb","description":"Silence toasts into notification history","checked":"[[ \"$(jq -r '.dnd // false' \"$HOME/.local/state/webb-shell/notifications.json\" 2>/dev/null)\" == \"true\" ]]","action":"qs -p @shellDir@ ipc call notify toggle"},
+  "shell.idle":        {"icon":"\uf186","label":"Idle","description":"Dim, then turn the display off and lock","aliases":["idle","sleep","dim","blank","away"]},
+  "shell.idle.stayawake":{"icon":"\uf185","label":"Stay Awake","description":"Hold off the dim, display-off and idle lock","checked":"[[ \"$(jq -r '.stayAwake // false' \"$HOME/.local/state/webb-shell/idle.json\" 2>/dev/null)\" == \"true\" ]]","action":"qs -p @shellDir@ ipc call idle toggle"},
+  "shell.idle.locknow":{"icon":"\uf023","label":"Lock Now","description":"Lock the screen immediately","action":"qs -p @shellDir@ ipc call lock engage"},
   "shell.reminders":   {"icon":"\uf017","label":"Reminders","description":"Set, list and clear desktop reminders"},
   "shell.reminders.set":  {"icon":"\uf017","label":"Set Reminder","description":"Remind me in N minutes","open":"reminder"},
   "shell.reminders.show": {"icon":"\uf06e","label":"Show Reminders","description":"List active reminders","action":"qs -p @shellDir@ ipc call reminder list"},

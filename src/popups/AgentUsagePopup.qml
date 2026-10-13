@@ -95,6 +95,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "webb-shell:agent-usage"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     mask: Region { item: scrim }
 
@@ -102,6 +103,7 @@ PanelWindow {
         id: keyCatcher
         anchors.fill: parent
         focus: root.visible
+        onFocusChanged: if (focus) forceActiveFocus()
         Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) { Popups.agentsOpen = false; event.accepted = true }
         }

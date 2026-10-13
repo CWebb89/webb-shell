@@ -17,6 +17,11 @@ QtObject {
     })()
     readonly property string configPath: homeDir !== ""
         ? homeDir + "/.config/webb-shell/config.json" : ""
+    // Per-user runtime state: the wallpaper record, the notification history and
+    // the idle flag. Defined once so the three writers cannot disagree about
+    // where state lives.
+    readonly property string stateDir: homeDir !== ""
+        ? homeDir + "/.local/state/webb-shell" : ""
 
     property string wallpaperDir: homeDir !== "" ? homeDir + "/Pictures/Wallpapers" : ""
     property string matugenColorsFile: homeDir !== ""
@@ -28,6 +33,14 @@ QtObject {
     // a plain `matugen image <wall>` invocation does (tonal-spot, dark).
     property string matugenScheme: "scheme-tonal-spot"
     property string matugenMode: "dark"
+
+    // The idle chain, in seconds: dim the screen, turn the display off, then
+    // lock. A stage whose timeout is 0 is not monitored. The lock defaults to
+    // the moment the display goes off, so a dark screen is never an unlocked
+    // one; raising it alone leaves the machine unlocked behind a blank panel.
+    property int idleDimSeconds: 300
+    property int idleDisplayOffSeconds: 600
+    property int idleLockSeconds: 600
 
     // Bar placement, per-module popup settings, and tray filtering. The module
     // catalogue (valid ids, widget files, popup keys, default anchors) is
@@ -77,6 +90,13 @@ QtObject {
         return { layout: layout, modules: modules, tray: { hidden: hidden } }
     }
 
+    // Anything that is not a non-negative number is the default, so a typo in
+    // config.json degrades to the shipped behaviour rather than to a stage that
+    // fires instantly or never.
+    function seconds(value, fallback) {
+        return typeof value === "number" && value >= 0 ? Math.floor(value) : fallback
+    }
+
     function applyText(text) {
         var data = {}
         try {
@@ -95,6 +115,10 @@ QtObject {
         if (scheme.indexOf("scheme-") !== 0) scheme = "scheme-" + scheme
         config.matugenScheme = scheme
         config.matugenMode = data.matugenMode || "dark"
+        config.idleDimSeconds = config.seconds(data.idleDimSeconds, config.idleDimSeconds)
+        config.idleDisplayOffSeconds = config.seconds(data.idleDisplayOffSeconds,
+                                                     config.idleDisplayOffSeconds)
+        config.idleLockSeconds = config.seconds(data.idleLockSeconds, config.idleLockSeconds)
         config.bar = config.normalizeBar(data.bar)
         config.configLoaded()
         if (data.bar === undefined || data.bar === null)

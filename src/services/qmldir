@@ -8,5 +8,9 @@ singleton Battery 1.0 BatteryService.qml
 singleton Recorder 1.0 Recorder.qml
 singleton Reminders 1.0 Reminders.qml
 singleton NotificationHistory 1.0 NotificationHistory.qml
+singleton NotificationState 1.0 NotificationState.qml
+singleton SleepMonitor 1.0 SleepMonitor.qml
+singleton IdleState 1.0 IdleState.qml
+singleton IconResolver 1.0 IconResolver.qml
 singleton UsbStorage 1.0 UsbStorage.qml
 singleton AgentUsage 1.0 AgentUsage.qml

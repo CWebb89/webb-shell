@@ -48,6 +48,11 @@ Colours come from [matugen](https://github.com/InioX/matugen). Picking a
 wallpaper regenerates a palette the shell watches and applies live, so every
 panel, the bar and the background follow the wallpaper.
 
+It owns the session's idle behaviour too, rather than deferring to `hypridle`:
+the screen dims, then the display goes off and the screen locks, on three
+configurable timeouts that respect other applications' idle inhibitors, with a
+Stay Awake toggle for when they get in the way.
+
 No fixed paths and no symlinks: every script and component resolves the
 repository at runtime, and per-machine values live in one config file.
 
@@ -168,7 +173,7 @@ shell falls back to a baked-in palette.
 ```fish
 git clone https://github.com/CWebb89/webb-shell.git
 cd webb-shell
-./install.sh              # tool check + config + matugen template + PAM
+./install.sh              # tool check + config + matugen template + systemd unit
 ./install.sh --packages   # also install the runtime and desktop package sets
 ```
 
@@ -180,9 +185,13 @@ exec-once = quickshell -p /path/to/webb-shell
 
 `install.sh` writes `~/.config/webb-shell/config.json`, registers the matugen
 **quickshell** colour template additively (backing up your `matugen/config.toml`
-once and never rewriting your other template blocks), installs the lock-screen
-PAM service to `/etc/pam.d/webb-shell`, and prints the autostart line. It is
-idempotent — re-running is safe, and unknown keys in your config are preserved.
+once and never rewriting your other template blocks), installs `bin/webb-shell`
+and `bin/shot` into `~/.local/bin`, and renders `systemd/webb-shell.service`
+into `~/.config/systemd/user/` and enables it — so the shell starts with
+`graphical-session.target` and a crash restarts it. It is idempotent — re-running
+is safe, and unknown keys in your config are preserved. No step needs root: the
+lock screen reads `src/assets/pam.d/webb-shell` from the checkout through
+`PamContext.configDirectory`, so nothing is installed into `/etc`.
 
 `install.sh --packages` is the only mode that touches pacman. It installs the
 runtime dependencies plus a curated desktop package set. That list is
@@ -278,7 +287,7 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 | `clock` | `toggle` `show` `hide` |
 | `battery` | `toggle` `show` `hide` |
 | `glance` | `toggle` `show` `hide` |
-| `lock` | `toggle` `show` `hide` |
+| `lock` | `toggle` `engage` `show` `hide` |
 | `audio` | `toggle` `show` `hide` |
 | `wifi` | `toggle` `show` `hide` |
 | `bluetooth` | `toggle` `show` `hide` |
@@ -286,6 +295,7 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 | `usb` | `toggle` `show` `hide` `refresh` |
 | `usage` | `toggle` `show` `hide` `refresh` |
 | `notify` | `dnd` `toggle` `state` `history` `clear` `dismissAll` `center` `centerHide` |
+| `idle` | `state` `toggle` `stay` `awake` |
 | `reminder` | `set` `show` `list` `clear` |
 | `screenshot` | `full` `region` `window` |
 | `print` | `start <path>` |
@@ -296,8 +306,9 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 `show` is declared on most targets but is **not reachable from `qs ipc`**: the CLI
 parses a trailing `show` as its own "print the function list" subcommand, so
 `ipc call <target> show` prints that table entry, changes nothing, and still exits
-0. Use `toggle`. This is upstream behaviour, not something the shell can work
-around.
+0. Use `toggle`, or `engage` where one exists — `lock engage` locks without the
+risk `lock toggle` carries of unlocking an already-locked screen. This is
+upstream behaviour, not something the shell can work around.
 
 `bin/menu-select.sh` uses the `dmenu` target to reuse the menu popup as a picker
 from arbitrary scripts — clipboard history, Wi-Fi connect, audio device select,
@@ -315,13 +326,14 @@ exists, and cancelling leaves it empty.
 ./tools/verify.sh
 ```
 
-The whole gate in one command: `qmllint`, shell syntax, and every test, with
-per-step PASS/FAIL. It exits non-zero on any failure, and finishes with an
-advisory pass that prints the `qmllint` warnings `--silent` hides. Individually:
+The whole gate in one command: `qmllint`, shell syntax, the systemd unit, a scan
+for hardcoded home paths, and every test, with per-step PASS/FAIL. It exits
+non-zero on any failure, and finishes with an advisory pass that prints the
+`qmllint` warnings `--silent` hides. Individually:
 
 ```bash
 bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
-bash -n install.sh portabilize.sh bin/*.sh
+bash -n install.sh portabilize.sh bin/*.sh bin/webb-shell
 node test/menu-model.js          # menu tree, guards, search ranking, JSONC
 node test/bar-config.js          # bar config writer
 node test/bar-layout.js          # drag/drop index maths
@@ -330,7 +342,14 @@ node test/mpris-model.js         # which player is active
 node test/usb-storage-model.js   # udev event to drive list
 node test/find-backend.js        # file search parsing
 node test/clipboard-script.js    # clipboard history pipeline
+node test/icon-resolve.js        # tray icon lookup order and size scoring
 ```
+
+Two of the gate's steps have no shell one-liner worth writing: it renders the unit
+to a temp directory and checks it with `systemd-analyze --user verify`, reading
+that command's **output** rather than its status — a directive systemd cannot
+parse is reported and then ignored, still exiting 0 — and it fails on any literal
+`/home/<user>` path anywhere in the tree.
 
 `qmllint -p` does not exist in the installed toolchain.
 
@@ -366,6 +385,14 @@ identify the new run with `qs list --all`, target **only** that run with
   unpaired `disable` would silently hide real warnings below it.
 - **`for (var i …)` in a loop header is reported by `qmlls` but not `qmllint`.**
   The CLI is what the gate runs; those sites are idiomatic and are untouched.
+- **Intel GPU telemetry has never run on Intel hardware here.** The i915 sysfs
+  paths come from the driver source, and the parsing was checked against a
+  synthetic sysfs tree and the Nvidia path for regressions, but this machine has
+  no iGPU to point it at. On an Intel box, confirm the files exist before
+  believing the GPU card — `docs/OTHER-PC.md` § 12.7 has the command.
+- **Idle inhibition depends on the application asking.** All three idle stages
+  respect inhibitors, so a player that requests one (mpv) keeps the screen awake;
+  a browser tab does not, which is what the Stay Awake row is for.
 
 <br>
 

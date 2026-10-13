@@ -1,0 +1,25 @@
+# Rendered by install.sh into ~/.config/systemd/user/webb-shell.service, which
+# fills in the quickshell binary and the path to this checkout. This copy is the
+# source of truth so the launch path is versioned instead of a hand-written file
+# in $HOME.
+#
+# Restart=on-failure is the reason this unit exists. The shell used to be a bare
+# nohup from the compositor's autostart, so one transient runtime error took the
+# bar and every panel down until someone started it again by hand.
+#
+# Started by graphical-session.target, and also by the compositor's autostart
+# through ~/.local/bin/webb-shell, which delegates to `systemctl --user start`.
+# Both routes drive this same unit, so neither can produce a second instance.
+[Unit]
+Description=webb-shell (Quickshell for Hyprland)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=@QS@ -p @REPO@
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target
