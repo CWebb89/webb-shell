@@ -34,8 +34,9 @@ that *do* exist are in the machine-side Hyprland configs, and both resolve
 
 The lock screen does **not** need `/etc/pam.d/webb-shell`. `LockScreen`'s
 `PamContext` sets `configDirectory: Quickshell.shellDir + "/src/assets/pam.d"`,
-so PAM reads the repo copy directly — which means `install.sh` needs no sudo at
-all, and a machine that never had that file in `/etc` can still lock and unlock.
+so PAM reads the repo copy directly — which means a machine that never had that
+file in `/etc` can still lock and unlock, and `install.sh` needs no sudo except
+for the `pacman` calls in `--packages`.
 
 ---
 
@@ -571,8 +572,13 @@ cd ~/dev/webb-shell
 
 That installs the shell's runtime deps plus the curated desktop set, writes
 `config.json`, registers the matugen template, installs `bin/webb-shell` and
-`bin/shot` into `~/.local/bin`, and enables the systemd user unit. It needs no
-sudo: the lock screen reads the repo's `src/assets/pam.d/webb-shell` directly.
+`bin/shot` into `~/.local/bin`, and enables the systemd user unit. `--packages`
+is the only part that wants sudo: two `pacman -S --needed` lines and nothing
+else. Everything else runs as you, the lock screen included, because PAM reads
+the repo's `src/assets/pam.d/webb-shell` directly. Drop `--packages` and the
+script still writes `config.json`, renders the unit and installs both helpers —
+only the package installation is skipped, which is the right choice when you
+already have the runtime deps and would rather pick the desktop set yourself.
 
 The packages it deliberately leaves to you, because they are hardware-specific:
 
