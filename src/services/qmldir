@@ -7,6 +7,7 @@ singleton SysStats 1.0 SysStats.qml
 singleton Battery 1.0 BatteryService.qml
 singleton Recorder 1.0 Recorder.qml
 singleton Reminders 1.0 Reminders.qml
+singleton Notes 1.0 Notes.qml
 singleton NotificationHistory 1.0 NotificationHistory.qml
 singleton NotificationState 1.0 NotificationState.qml
 singleton SleepMonitor 1.0 SleepMonitor.qml

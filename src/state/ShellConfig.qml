@@ -54,7 +54,7 @@ QtObject {
                 left: ["workspaces"],
                 center: [],
                 right: ["recording", "tray", "media", "find", "audio", "wifi",
-                        "bluetooth", "usb", "agents", "system"]
+                        "bluetooth", "usb", "agents", "system", "notes"]
             },
             modules: {},
             tray: { hidden: ["nm-applet"] }

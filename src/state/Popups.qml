@@ -18,6 +18,7 @@ QtObject {
     property bool findOpen: false
     property string findQuery: ""
     property bool usbOpen: false
+    property bool notesOpen: false
     property bool agentsOpen: false
     property bool barSettingsOpen: false
     property bool batteryOpen: false
@@ -51,7 +52,8 @@ QtObject {
                                           "glanceOpen", "audioOpen", "wifiOpen", "btOpen",
                                           "systemMonitorOpen", "findOpen",
                                           "schemeOpen", "reminderOpen", "notifOpen",
-                                          "usbOpen", "agentsOpen", "barSettingsOpen"]
+                                          "usbOpen", "agentsOpen", "barSettingsOpen",
+                                          "notesOpen"]
 
     function closeAll() {
         for (var i = 0; i < exclusiveKeys.length; i++)

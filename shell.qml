@@ -74,6 +74,7 @@ ShellRoot {
 
     ModulePopup { moduleId: "menu" }
     ModulePopup { moduleId: "find" }
+    ModulePopup { moduleId: "notes" }
     ModulePopup { moduleId: "audio" }
     ModulePopup { moduleId: "wifi" }
     ModulePopup { moduleId: "bluetooth" }
@@ -410,6 +411,20 @@ ShellRoot {
                 Popups.findQuery = query || ""
                 Popups.findOpen = true
             })
+        }
+    }
+
+    IpcHandler {
+        target: "notes"
+        function toggle(): void {
+            BarModules.toggle("notesOpen")
+        }
+        function hide(): void {
+            BarModules.hide("notesOpen")
+        }
+        function add(text: string, subtext: string): string {
+            Notes.add(text, subtext)
+            return "ok"
         }
     }
 

@@ -14,6 +14,7 @@ QtObject {
     readonly property int wifiWidth: 760
     readonly property int btWidth: 760
     readonly property int usbWidth: 620
+    readonly property int notesWidth: 820
     readonly property int agentsWidth: 1040
     readonly property int mediaCardWidth: 400
     readonly property int mediaCardHeight: 200
