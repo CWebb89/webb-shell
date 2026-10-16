@@ -8,8 +8,8 @@
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/badge/Quickshell-0.3.1-7aa2f7?style=for-the-badge" alt="Quickshell">
   <img src="https://img.shields.io/badge/Qt_6-QML-41cd52?style=for-the-badge&logo=qt&logoColor=white" alt="Qt 6">
-  <img src="https://img.shields.io/badge/bar_modules-19-7dcfff?style=for-the-badge" alt="19 bar modules">
-  <img src="https://img.shields.io/badge/IPC_targets-22-bb9af7?style=for-the-badge" alt="22 IPC targets">
+  <img src="https://img.shields.io/badge/bar_modules-20-7dcfff?style=for-the-badge" alt="20 bar modules">
+  <img src="https://img.shields.io/badge/IPC_targets-24-bb9af7?style=for-the-badge" alt="24 IPC targets">
   <img src="https://img.shields.io/badge/Hyprland-Wayland-58e1ff?style=for-the-badge" alt="Hyprland">
   <img src="https://img.shields.io/github/last-commit/CWebb89/webb-shell?style=for-the-badge&color=teal" alt="Last commit">
 </div>
@@ -99,7 +99,7 @@ still missing.
 
 ## ✦ What it puts on screen
 
-The bar is a catalogue of 19 modules. Each one is either always visible, or hides
+The bar is a catalogue of 20 modules. Each one is either always visible, or hides
 itself when it has nothing to say — and the whole arrangement is yours to change
 from Bar Settings, including per-module placement and which section of the bar it
 belongs to.
@@ -111,6 +111,7 @@ belongs to.
 | **Tray** | Status-notifier icons, with a filter for entries you never want |
 | **Recording** | A pulsing dot while `gpu-screen-recorder` is running |
 | **Find** | File search over `fd`, scoped to indexed folders |
+| **Notes** | Scratch notes with add, edit, copy and delete |
 | **Audio** | Volume, output and input devices, and the media card |
 | **Wi-Fi** | Scan, connect, forget, saved networks |
 | **Bluetooth** | Paired devices, scan, adapter power |
@@ -136,7 +137,7 @@ notification daemon with toasts and Do-Not-Disturb, reminders, a tray menu, and 
 
 ## ✦ The menu
 
-`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 419
+`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 426
 rows, and the logic that reads them is a pure JS module with no QML in it.
 
 Hierarchy comes from dotted IDs (`system.lock` is a child of `system`), and the
@@ -282,12 +283,13 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 | `bar` | `toggle` `show` `hide` `settings` `config <args>` |
 | `menu` | `toggle` `summon` `show` `hide` |
 | `find` | `toggle` `show` `hide` `open` |
+| `notes` | `toggle` `hide` `add <text> [subtext]` |
 | `wallpaper` | `toggle` `show` `hide` |
 | `scheme` | `toggle` `show` `hide` |
 | `clock` | `toggle` `show` `hide` |
 | `battery` | `toggle` `show` `hide` |
 | `glance` | `toggle` `show` `hide` |
-| `lock` | `toggle` `engage` `show` `hide` |
+| `lock` | `engage` `show` |
 | `audio` | `toggle` `show` `hide` |
 | `wifi` | `toggle` `show` `hide` |
 | `bluetooth` | `toggle` `show` `hide` |
@@ -306,9 +308,11 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 `show` is declared on most targets but is **not reachable from `qs ipc`**: the CLI
 parses a trailing `show` as its own "print the function list" subcommand, so
 `ipc call <target> show` prints that table entry, changes nothing, and still exits
-0. Use `toggle`, or `engage` where one exists — `lock engage` locks without the
-risk `lock toggle` carries of unlocking an already-locked screen. This is
-upstream behaviour, not something the shell can work around.
+0. Use `toggle`, or `engage` on the lock target, which is the lock-only one:
+`lock engage` is idempotent and `lock` has no function that can clear
+`Popups.lockOpen`, so an IPC call can never unlock an already-locked screen —
+only the password can. This is upstream behaviour, not something the shell can
+work around.
 
 `bin/menu-select.sh` uses the `dmenu` target to reuse the menu popup as a picker
 from arbitrary scripts — clipboard history, Wi-Fi connect, audio device select,

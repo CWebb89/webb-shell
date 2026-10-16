@@ -173,7 +173,7 @@ hl.bind(mainMod .. " + C",         hl.dsp.exec_cmd(wb("clock", "toggle")))
 hl.bind(mainMod .. " + H",         hl.dsp.exec_cmd(wb("battery", "toggle")))
 hl.bind(mainMod .. " + F2",        hl.dsp.exec_cmd(wb("system", "toggle")))
 hl.bind(mainMod .. " + SEMICOLON", hl.dsp.exec_cmd(wb("bar", "toggle")))
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd(wb("lock", "toggle")))
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd(wb("lock", "engage")))
 hl.bind("ALT + SPACE",             hl.dsp.exec_cmd(wb("find", "toggle")))
 hl.bind("ALT + W",                 hl.dsp.exec_cmd(wb("scheme", "toggle")))
 hl.bind(mainMod .. " + U",         hl.dsp.exec_cmd(wb("usb", "toggle")))
@@ -184,6 +184,8 @@ hl.bind(mainMod .. " + V",         hl.dsp.exec_cmd(shellDir .. "/bin/clipboard.s
 
 hl.bind("Print",       hl.dsp.exec_cmd(os.getenv("HOME") .. "/.local/bin/shot full --notify"))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.local/bin/shot region --notify"))
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(shellDir .. "/bin/screenrecord.sh toggle"),
+        { description = "Toggle screen recording" })
 ```
 
 `mainMod` is `SUPER`. The volume, microphone and brightness keys
@@ -293,9 +295,14 @@ redo by hand:
   correctly; on a machine with a different EC arrangement the indicator will be
   approximate. The platform profile was a third term until it was dropped: the
   default `balanced` pinned the indicator on at idle, where it lied.
-- **`~/.config/hypr/modules/monitors.lua`, `decorations.lua`,
-  `windowrules.lua`** — never had anything to do with webb-shell, and they are
-  not part of the repo. Re-derive per monitor layout.
+- **`~/.config/hypr/modules/monitors.lua` and `windowrules.lua`** — never had
+  anything to do with webb-shell, and they are not part of the repo. Re-derive
+  per monitor layout. `decorations.lua` is machine-side too, but three of its
+  `hl.layer_rule`s *are* the shell's: `webb-shell:osd-clock` and
+  `webb-shell:notifications` blur behind their cards (`ignore_alpha = 0.2`),
+  and `webb-shell:lock` blurs the whole fullscreen surface (no `ignore_alpha`).
+  The lock screen draws no backdrop of its own, so without that last rule it is
+  simply transparent.
 - **`bin/history.sh`** reads fish history specifically.
 
 ---
@@ -369,10 +376,11 @@ qs kill -i <runid>
 
 Two known gotchas. `qs ipc call <target> show` is swallowed by the CLI — it
 prints the target's function list and exits 0 without calling anything, so use
-`toggle`, or `engage` on the lock target, which is the idempotent one that cannot
-accidentally *unlock* an already-locked screen. And a second instance duplicates
-the bar and background over your live workspaces, so always kill it by run id —
-never `pkill quickshell`.
+`toggle`, or `engage` on the lock target, which is the lock-only one: `lock`
+deliberately has no `toggle` and no `hide`, so an IPC call can never open a
+locked session without the password. And a second instance duplicates the bar
+and background over your live workspaces, so always kill it by run id — never
+`pkill quickshell`.
 
 ---
 

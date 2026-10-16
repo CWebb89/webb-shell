@@ -7,6 +7,102 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **The lock screen says more, and only the password opens it.** It shows a
+  telemetry card — CPU and GPU temperature, load and fan RPM, the same readings
+  and the same heat colour as the System Monitor's cards, which `SysStats` now
+  also polls while the lock is up — plus Caps Lock state (polled from
+  `hyprctl -j devices`, because this Hyprland build publishes no caps-lock event
+  on its socket), a `Checking…` state while PAM works instead of a silent field,
+  a live countdown while the MaxTries cooldown blocks input, the next due
+  reminder — whose toast is unmapped while locked, so it was otherwise silent
+  until unlock — and a `Locked 6:05 · 12m` footer. The Caps Lock and status
+  lines keep a reserved height, so the centred column no longer jumps as they
+  appear and clear, and the password field retakes focus if anything steals it.
+- **The lock screen blurs the desktop behind it.** The screenshot it used to
+  take of the screen (`ScreencopyView` + `MultiEffect`, then a 60 % scrim over
+  it) is gone, and so is the scrim: the panel draws no backdrop at all and the
+  blur comes from the compositor — a `layer_rule` on the `webb-shell:lock`
+  namespace in `~/.config/hypr/modules/decorations.lua`, with no
+  `ignore_alpha`, so the whole fullscreen surface is blurred instead of only a
+  card. Real-time GPU blur costs the shell nothing and needs no re-capture per
+  frame, and it blurs whatever is behind — wallpaper or a window — instead of
+  the last captured frame. The tradeoff is that the blur now lives on the
+  machine: a second box needs the same rule (see `docs/OTHER-PC.md`) or the lock
+  screen is simply transparent.
+- **The lock screen's clock is a card, and its halo breathes.** Time and date
+  sit in the same bordered card as the telemetry below them, and the two glyph
+  rows glow: the time's halo pulses and the date's is steady and dimmer, both
+  zero-offset `MultiEffect` shadows tinted `Colors.primary` (so `QtQuick.Effects`
+  is imported again). The pulse is the System Monitor's own idiom — the
+  0.85..1.0 sine its traces breathe on, written by a 100 ms timer rather than a
+  60 fps animation, and only while the panel is mapped. The battery reading left
+  the centred column for the top-right corner (24 px inset) and gained a bolt
+  that shows only while `Battery.charging`; the corner chip and the telemetry
+  card were both judged from throwaway-instance captures, never by locking the
+  session.
+- **The clock card and the month are one card, in the middle.** The calendar was
+  what made the left column taller than the two beside it, and the grid needs a
+  width only the centre column has, so the clock card now carries the month
+  beneath its time and date. The left column lost a card and the two side columns
+  now stand 337 px against 332 px.
+- **The battery is a card, not a corner row.** The top-right glyph-and-percentage
+  row is gone; the card on the left has room for the glyph ladder, the percentage
+  and what the battery is doing, and hides itself on a machine with no battery the
+  same way the row did. That needed `BatteryService.status` — the raw sysfs
+  string — because `charging` collapses "Discharging", "Not charging" and "Full"
+  into one false, which is what the glyph ladder wants and not enough to say what
+  is happening.
+- **The lock screen grew a left column.** Three cards mirroring the three on the
+  right: what is playing (artwork, or the note glyph when a track carries none),
+  the current weather, and the month. The player is chosen the way the Audio popup
+  chooses when nothing is pinned, and a panel with nothing to show keeps its slot
+  with a muted line rather than collapsing, so no column ever changes height.
+- **Every card on that surface is now one width.** A single `cardWidth` (380)
+  drives the clock, telemetry and password cards, both side columns and the right
+  column's delegate, and the right cards' header and body became one vertically
+  centred block instead of being pinned to the card's top and bottom edges — the
+  sizing that made them read as three loose boxes rather than a column.
+- **`CalendarGrid` takes a cell size and can be read-only.** `cellWidth` and
+  `cellHeight` were readonly constants, which pinned the grid to 558 px, far wider
+  than a lock screen card; they are writable now with the popup's own values as
+  defaults, and a new `interactive` flag hides the month arrows and stops cell
+  picking where clicking a day would be a lie.
+- **The lock footer reads 12-hour and larger.** `Qt.formatTime(..., "h:mm")` is
+  24-hour — the 12-hour hour only applies when the format carries an AM/PM field
+  — so it formats as `"h:mm AP"` now, and the line moved from the small to the
+  large token.
+- **Notes, reminders and notifications on the lock screen.** A right-hand column
+  of three 380 x 100 px cards — the newest note, the next reminder due and the newest
+  notification — each with a count of what else is waiting, built as one
+  `Repeater` over a model so the three cannot drift apart. Read-only, because a
+  lock screen is no place to lose the password field's focus, and the cards are
+  always present at a fixed height so the column never jumps. The notification
+  count is what arrived *since this lock* rather than the size of the history (a
+  badge reading 47 is not information), and the shell's own notifications — a
+  reminder firing, the charge OSD, a DND acknowledgement — are filtered out of
+  it because the card beside it already shows them. The read lives in
+  `NotificationHistory.refreshRecent()`: the notification centre and the toast
+  daemon each walk that directory for their own slice, and a third walker would
+  have been one too many. The superseded single reminder row under the clock is
+  gone.
+- **Glowing text and icons are one property now.** `AppText` gained `glow`,
+  `glowColor` and `glowStrength` — a zero-offset `MultiEffect` shadow, off by
+  default so nothing else in the shell renders differently, and inherited by
+  `AppIcon` because an icon is an `AppText`. The lock screen's card headers, the
+  telemetry rows' glyphs and device labels and the clock card all use it and all
+  breathe on the clock's shared 10 Hz pulse at lower strengths, which retired the
+  hand-rolled effect blocks the clock card had. Empty text is not layered, so a
+  card with no count to report does not create a zero-sized layer.
+- **Notes** — a scratch-note popup as a bar module. `src/services/Notes.qml`
+  keeps the list in `~/.local/state/webb-shell/notes.json` (debounced writes,
+  the `Reminders` persistence shape), and `src/popups/NotesPopup.qml` is a
+  right-anchored card with a pinned composer, per-row copy and delete. Enter
+  adds, Esc closes, and a row's pencil loads that note into the composer to
+  edit it. Reachable from the new **Notes** bar module, the
+  `shell.notes` menu rows and a `notes` IPC target (`toggle` / `hide` /
+  `add <text> [subtext]`). Written from scratch against webb-shell's own
+  components: the notes drawer this was modelled on is GPL-3.0, and this tree
+  is MIT, so nothing could be lifted from it.
 - **The shell owns the session's idle behaviour.** `src/services/IdleState.qml`
   runs three `IdleMonitor`s — dim at 5 minutes, display off and lock at 10 — and
   `src/popups/DimOverlay.qml` is the dim stage. Hyprland is configured with no
@@ -31,6 +127,13 @@ All notable changes to webb-shell, oldest release last. The format follows
   `show()` is unreachable from `qs ipc` (the CLI swallows that name) and `toggle`
   *unlocks* an already-locked screen, so there was no safe way to lock from
   outside the shell. The `Lock` menu row and the new `Lock Now` row use it.
+- **Screen recording got a toggle, and the recordings play anywhere.**
+  `bin/screenrecord.sh toggle` stops a recording if one is running and starts one
+  with system audio otherwise, which is what the new `SUPER + SHIFT + R` bind and
+  the menu's keybind row call; the old `start`/`stop` pair remains. Its
+  `start`/`stop` bodies were factored into `start_rec`/`stop_rec` so the three
+  verbs share one definition of "is it recording" (`pgrep -f` on a bracket-escaped
+  pattern, so the check does not match itself).
 - **Two more gates in `tools/verify.sh`**: the systemd unit is rendered to a temp
   directory and checked with `systemd-analyze --user verify`, reading that
   command's output rather than its status because a directive systemd cannot
@@ -60,6 +163,19 @@ All notable changes to webb-shell, oldest release last. The format follows
   palette rather than a generic accent.
 
 ### Changed
+
+- **Recordings are MP4 with AAC audio, not MKV with Opus.** `gpu-screen-recorder`'s
+  default audio codec for the `mp4` container is Opus, which most players and
+  editors reject, so `-ac aac` is now passed explicitly alongside `-c mp4`. The
+  encoder is part of the tool's own bundled libavcodec — nothing new to install
+  (`-ac` takes `aac|opus|flac` per `gpu-screen-recorder --help`), and the
+  container and codec choice is documented in the script's own header.
+- **The lock target can only lock.** `lock toggle` and `lock hide` both cleared
+  `Popups.lockOpen`, so either one was a way into a locked session that never
+  asked for the password — and the `SUPER + SHIFT + L` bind called `toggle`, so
+  pressing it twice locked and then unlocked. Both functions are gone, the bind
+  now calls the idempotent `lock engage`, and `Popups.lockOpen` is cleared by
+  PAM success in `LockScreen.qml` and nowhere else.
 
 - **The two helpers outside the repo are in it now.** `shot` — the capture tool
   that the Print binds, `bin/screenshot.sh`, the Capture menu rows and the
