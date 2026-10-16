@@ -206,26 +206,22 @@ ShellRoot {
 
     readonly property string shellDir: Quickshell.shellDir
 
+    // The lock target can only ever LOCK. There is deliberately no toggle and no
+    // hide: either would be a lock-free way back in, and the password is meant
+    // to be the only way out. Popups.lockOpen is cleared by PAM success in
+    // LockScreen.qml and nowhere else.
+    //
+    // `show` is declared but unreachable — the CLI parses a trailing `show` as
+    // its own "print the function list" subcommand, so it prints and exits 0
+    // without calling anything. `engage` exists because a script or keybind
+    // needs the idempotent lock under a name the CLI does not swallow.
     IpcHandler {
         target: "lock"
-        function toggle(): void {
-            if (Popups.lockOpen)
-                Popups.lockOpen = false
-            else
-                Popups.engageLock()
-        }
-        // `show` is the name the CLI swallows — `qs ipc call lock show` prints
-        // this target's function list and exits 0 without calling anything — so
-        // the idempotent lock has to be reachable under another name. Toggle is
-        // not a substitute: it UNLOCKS an already-locked screen.
         function engage(): void {
             Popups.engageLock()
         }
         function show(): void {
             Popups.engageLock()
-        }
-        function hide(): void {
-            Popups.lockOpen = false
         }
     }
 

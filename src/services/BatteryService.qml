@@ -9,6 +9,11 @@ QtObject {
 
     property int percentage: -1
     property bool charging: false
+    // The raw sysfs status: "Charging", "Discharging", "Not charging" or
+    // "Full". `charging` collapses everything but the first of those to false,
+    // which is what the glyph ladder wants and not enough for a card that has to
+    // say what the battery is actually doing.
+    property string status: ""
     readonly property bool hasBattery: percentage >= 0
     // Display threshold, shared by the lock screen and the charge OSD card.
     // Distinct from `lowThreshold` below, which is the 10% that warrants an
@@ -69,7 +74,8 @@ QtObject {
                 var pct = parseInt(lines[0])
                 if (!isNaN(pct) && pct >= 0) {
                     root.percentage = pct
-                    root.charging = (lines[1] || "") === "Charging"
+                    root.status = (lines[1] || "").trim()
+                    root.charging = root.status === "Charging"
                     root.checkLowBattery()
                 }
             }

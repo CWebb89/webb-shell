@@ -58,14 +58,19 @@ QtObject {
     }
 
     function poll() {
-        // Bar consumers (fanActive/cpuTemp/cpuUsage) need live values;
-        // GPU/mem/disk feed only the monitor popup, so poll those only while
-        // it is open. The popup's own on-open Connections fires poll() too.
+        // Bar consumers (fanActive/cpuTemp/cpuUsage) need live values. The GPU
+        // pair is read by the monitor popup and by the lock screen's telemetry
+        // card, which has no other source of its own — without this the card
+        // would report whatever the popup last measured, which on a machine
+        // that has not opened it is nothing at all. Mem and disk still feed
+        // only the popup. Both panels fire poll() again when they open.
         tempProc.running = false; tempProc.running = true
         cpuProc.running = false; cpuProc.running = true
         fanProc.running = false; fanProc.running = true
-        if (Popups.systemMonitorOpen) {
+        if (Popups.systemMonitorOpen || Popups.lockOpen) {
             gpuProc.running = false; gpuProc.running = true
+        }
+        if (Popups.systemMonitorOpen) {
             memProc.running = false; memProc.running = true
             diskProc.running = false; diskProc.running = true
         }

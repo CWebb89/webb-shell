@@ -14,8 +14,15 @@ Item {
     property int viewMonth: today.getMonth()
     property date selectedDate: today
 
-    readonly property int cellWidth: 70
-    readonly property int cellHeight: 32
+    // Navigation and cell picking are popup affordances. A read-only surface
+    // turns them off and keeps the month title the arrows frame.
+    property bool interactive: true
+
+    // Writable so a second surface can draw this same grid at its own
+    // density: the lock screen's card is narrower than this popup, and a grid
+    // that came in only one size would force that surface to draw its own.
+    property int cellWidth: 70
+    property int cellHeight: 32
     readonly property int gridSpacing: 6
     readonly property int weekColumnWidth: 26
     readonly property int navRowHeight: 28
@@ -195,6 +202,7 @@ Item {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: "\uf053"
+                visible: root.interactive
                 onActivated: root.goMonth(-1)
             }
 
@@ -211,7 +219,7 @@ Item {
                 anchors.right: nextBtn.left
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
-                visible: !root.onCurrentMonth
+                visible: root.interactive && !root.onCurrentMonth
                 onActivated: root.goToday()
             }
 
@@ -220,6 +228,7 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: "\uf054"
+                visible: root.interactive
                 onActivated: root.goMonth(1)
             }
         }
@@ -323,8 +332,8 @@ Item {
                     MouseArea {
                         id: dayHover
                         anchors.fill: parent
-                        enabled: parent.isDay
-                        hoverEnabled: true
+                        enabled: parent.isDay && root.interactive
+                        hoverEnabled: root.interactive
                         onClicked: root.pick(modelData.cell)
                     }
                 }

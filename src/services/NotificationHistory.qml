@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 
 // The notification history on disk, described once. The toast daemon writes
@@ -47,5 +48,33 @@ QtObject {
             }
         }
         return out
+    }
+
+    // Newest first, for a consumer that wants the recent notifications as a
+    // list rather than a directory to walk. The centre and the toast daemon
+    // read the directory themselves because each wants its own slice of it;
+    // this is the plain shape the lock screen binds to. On demand, so a shell
+    // with no lock screen mapped never forks awk at all.
+    property var recent: []
+
+    function refreshRecent() {
+        if (!root.historyDir)
+            return
+        recentProc.running = false
+        recentProc.running = true
+    }
+
+    property var recentProc: Process {
+        command: ["bash", "-c", "awk 1 \"$1\"/*.json 2>/dev/null || true",
+                  "--", root.historyDir]
+        running: false
+        stdout: StdioCollector {
+            waitForEnd: true
+            onStreamFinished: {
+                const rows = root.parse(text)
+                rows.sort(function(a, b) { return b.ts - a.ts })
+                root.recent = rows
+            }
+        }
     }
 }
