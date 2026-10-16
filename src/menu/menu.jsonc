@@ -177,6 +177,7 @@
   "binds.hyprland.bright": {"icon":"\uf185","label":"XF86MonBrightness · Screen ±5%","action":"printf '%s' 'XF86MonBrightnessUp/Down' | wl-copy"},
   "binds.hyprland.region": {"icon":"\uf047","label":"Shift + Print · Region screenshot","action":"printf '%s' 'Shift + Print' | wl-copy"},
   "binds.hyprland.logout": {"icon":"\uf08b","label":"SUPER + SHIFT + E · Logout / shutdown","action":"printf '%s' 'SUPER + SHIFT + E' | wl-copy"},
+  "binds.hyprland.record": {"icon":"\uf111","label":"SUPER + SHIFT + R · Toggle screen recording","action":"printf '%s' 'SUPER + SHIFT + R' | wl-copy"},
 
   "binds.webb":        {"icon":"\uf0c9","label":"Webb Shell"},
   "binds.webb.bar":    {"icon":"\uf412","label":"SUPER + ; · Toggle bar","action":"printf '%s' 'SUPER + ;' | wl-copy"},
