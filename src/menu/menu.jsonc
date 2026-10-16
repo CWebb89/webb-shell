@@ -195,6 +195,7 @@
   "binds.webb.usb":    {"icon":"\uf287","label":"SUPER + U · USB drives","action":"printf '%s' 'SUPER + U' | wl-copy"},
   "binds.webb.audio":  {"icon":"\uf028","label":"SUPER + M · Audio panel","action":"printf '%s' 'SUPER + M' | wl-copy"},
   "binds.webb.agents": {"icon":"\uf080","label":"SUPER + A · Agent usage","action":"printf '%s' 'SUPER + A' | wl-copy"},
+  "binds.webb.notes":  {"icon":"\uf249","label":"SUPER + SHIFT + N · Scratch notes","action":"printf '%s' 'SUPER + SHIFT + N' | wl-copy","description":"Add, edit, copy and delete notes"},
 
   "binds.nvim":        {"icon":"\uf010","label":"Neovim"},
   "binds.nvim.leader": {"icon":"\uf067","label":"SPACE · Leader key","action":"printf '%s' 'SPACE' | wl-copy"},
