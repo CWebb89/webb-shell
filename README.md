@@ -137,7 +137,7 @@ notification daemon with toasts and Do-Not-Disturb, reminders, a tray menu, and 
 
 ## ✦ The menu
 
-`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 426
+`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 427
 rows, and the logic that reads them is a pure JS module with no QML in it.
 
 Hierarchy comes from dotted IDs (`system.lock` is a child of `system`), and the
