@@ -164,6 +164,16 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Changed
 
+- **`docs/OTHER-PC.md` is a runbook now, not a reference.** It was eleven
+  generic sections plus a separate T480s section that repeated them, so using
+  one meant reading the other. It is one ordered path instead: 22 numbered
+  steps across seven parts, each labelled with the machine it runs on — the
+  Legion, which pushes, or the new PC, which installs — and each carrying its
+  commands, what success looks like, and what to do when it does not. The T480s
+  hardware is Appendix A (microcode, the VA-API driver, the panel mode, the Qt
+  scale factor, the four checks with their sysfs paths, the ThinkPad extras) and
+  the older-copy checklist is Appendix B. The in-document `§ N` numbering those
+  sections used is gone, so references to it from before this change are stale.
 - **Recordings are MP4 with AAC audio, not MKV with Opus.** `gpu-screen-recorder`'s
   default audio codec for the `mp4` container is Opus, which most players and
   editors reject, so `-ac aac` is now passed explicitly alongside `-c mp4`. The

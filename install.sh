@@ -317,7 +317,7 @@ echo "Done. Start the shell with:"
 echo "    systemctl --user start webb-shell"
 echo
 echo "The shell binds no compositor keys itself. To autostart it and wire keys,"
-echo "see docs/OTHER-PC.md 3. In a Lua Hyprland config that is:"
+echo "see docs/OTHER-PC.md Part 4. In a Lua Hyprland config that is:"
 echo "    hl.exec_cmd(os.getenv(\"HOME\") .. \"/.local/bin/webb-shell\")"
 echo "which starts the systemd unit above; binds are of the form"
 echo "'qs -p <repo> ipc call <target> <fn>'."

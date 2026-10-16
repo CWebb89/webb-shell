@@ -393,7 +393,7 @@ identify the new run with `qs list --all`, target **only** that run with
   paths come from the driver source, and the parsing was checked against a
   synthetic sysfs tree and the Nvidia path for regressions, but this machine has
   no iGPU to point it at. On an Intel box, confirm the files exist before
-  believing the GPU card — `docs/OTHER-PC.md` § 12.7 has the command.
+  believing the GPU card — `docs/OTHER-PC.md` Appendix A.4 has the commands.
 - **Idle inhibition depends on the application asking.** All three idle stages
   respect inhibitors, so a player that requests one (mpv) keeps the screen awake;
   a browser tab does not, which is what the Stay Awake row is for.
