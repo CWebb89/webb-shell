@@ -286,10 +286,10 @@ All notable changes to webb-shell, oldest release last. The format follows
   `/usr/bin/qmllint`. It cannot parse Qt6 QML at all and exits 255 with no
   output on every file, so the gate failed while reporting nothing; the script
   now prefers `/usr/lib/qt6/bin/qmllint` when it is installed.
-- **`portabilize.sh` was not idempotent.** An unanchored `s|$OLD|$NEW|g` turned
-  `/home/newuser` into `/home/newuserlt` on a second run. The pattern is now
-  word-anchored with `$OLD` escaped, and the shell checkouts are no longer
-  rewrite targets — `verify.sh` already fails on a literal `/home/<user>` there,
+- **`portabilize.sh` was not idempotent.** Its substitution was unanchored, so
+  a second run matched the new home directory it had just written and appended
+  the old path's tail to it. The pattern is now word-anchored with `$OLD`
+  escaped, and the shell checkouts are no longer rewrite targets — `verify.sh` already fails on a literal `/home/<user>` there,
   so the only matches were docs and plan files naming it as an example.
 - **Escape did nothing in nine of the modal popups.** Audio, Wi-Fi, Bluetooth,
   System Monitor, Notifications, the tray menu, USB storage, Agent Usage and Bar
