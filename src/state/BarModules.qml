@@ -68,6 +68,9 @@ QtObject {
         { id: "agents", section: "right", label: "Agent Usage", hint: "Coding-agent limits and spend (hidden when unavailable)",
           widget: "src/bar/widgets/AgentsButton.qml",
           popupKey: "agentsOpen", popup: "src/popups/AgentUsagePopup.qml", anchor: "center" },
+        { id: "pi", section: "right", label: "pi", hint: "Live pi activity and last-run cost; click for Quick Ask (hidden until a pi session publishes)",
+          widget: "src/bar/widgets/PiWidget.qml",
+          popupKey: "askOpen", popup: "src/popups/AskPopup.qml", anchor: "top-right" },
 
         { id: "battery", section: "right", label: "Battery", hint: "Charge card; opens itself when low",
           widget: "src/bar/widgets/BatteryButton.qml",

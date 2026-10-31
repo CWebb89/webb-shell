@@ -15,3 +15,5 @@ singleton IdleState 1.0 IdleState.qml
 singleton IconResolver 1.0 IconResolver.qml
 singleton UsbStorage 1.0 UsbStorage.qml
 singleton AgentUsage 1.0 AgentUsage.qml
+singleton PiActivity 1.0 PiActivity.qml
+singleton PiAsk 1.0 PiAsk.qml
