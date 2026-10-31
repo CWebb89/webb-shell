@@ -57,20 +57,25 @@ mkdir -p "$CFG_DIR"
 # of a directory.
 mkdir -p "$HOME/.local/state/webb-shell"
 
-# The OpenRouter key for the Agent Usage panel's real spend figure. It lives in
-# its own 0600 file rather than config.json (world-readable) because the shell
-# is normally relaunched by the compositor, whose environment has none of an
-# interactive shell's exports. bin/openrouter-usage.sh prefers the environment
-# and falls back to this file.
-KEY_FILE="$CFG_DIR/openrouter.env"
-if [ ! -f "$KEY_FILE" ]; then
+# Provider keys for the Agent Usage panel's account figures, one 0600 file per
+# provider rather than config.json (world-readable) because the shell is
+# normally relaunched by the compositor, whose environment has none of an
+# interactive shell's exports. bin/provider-usage.sh prefers the environment
+# and falls back to these files; a provider with no key file still gets its
+# local session-log figures in the panel.
+seed_key_file() {
+  local provider="$1" hint="$2" file="$CFG_DIR/$1.env"
+  if [ -f "$file" ]; then return 0; fi
   ( umask 077; printf '%s\n' \
-      '# OPENROUTER_API_KEY=PUT_YOUR_KEY_HERE' \
-      '# get one at https://openrouter.ai/keys' > "$KEY_FILE" )
-  echo "  wrote $KEY_FILE (put your key in it for real OpenRouter spend)"
-fi
+      "# $(printf '%s' "$provider" | tr '[:lower:]' '[:upper:]')_API_KEY=PUT_YOUR_KEY_HERE" \
+      "# $hint" > "$file" )
+  echo "  wrote $file (put your key in it for real $provider account data)"
+}
 
-WALLPAPER_DIR="${WEBBSHELL_WALLPAPERS:-$HOME/Pictures/Wallpapers}"
+seed_key_file openrouter "get one at https://openrouter.ai/keys"
+seed_key_file deepseek "get one at https://platform.deepseek.com/api_keys"
+
+WALLPAPER_DIR="${WEBBSHELL_WALLPAPERS:-$HOME/pictures/wallpapers}"
 [ -d "$WALLPAPER_DIR" ] || mkdir -p "$WALLPAPER_DIR"
 
 # Auto-detect hardware labels for the system monitor, with sane fallbacks.

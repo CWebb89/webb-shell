@@ -6,19 +6,30 @@ import "../state"
 import "../services"
 import "../components"
 
-// Coding-agent spend and volume.
+// Coding-agent spend and volume, for whichever provider pi used last.
 //
-// The headline is the OpenRouter ACCOUNT figure from bin/openrouter-usage.sh,
-// not the local pi session total: local logs only ever describe this machine
-// from the first surviving session onward, and only pi's own traffic, so they
-// read far below what the account has actually consumed. They remain the only
-// source for tokens, the cache split and the per-model breakdown, so both are
-// shown, clearly labelled as different things.
+// The provider is not configured here: it comes from the newest assistant
+// message in pi's session logs (AgentUsage.activeProvider), so the panel follows
+// a switch to another provider on its own. Two kinds of number are shown and
+// never mixed:
+//
+//   account  that provider's own figures from bin/provider-usage.sh. OpenRouter
+//            reports lifetime spend, credits and period usage; DeepSeek reports
+//            balance only; anything else reports nothing, and the account block
+//            hides instead of showing a fake zero.
+//   local    pi's session logs on this machine, which are the only source for
+//            tokens, the cache split and the per-model / per-provider
+//            breakdowns. They read far below account spend because they cover
+//            one machine from the first surviving session onward, and only
+//            pi's own traffic.
 PanelWindow {
     id: root
 
     readonly property var days: AgentUsage.days
     readonly property var models: AgentUsage.models
+
+    readonly property bool isOpenrouter: AgentUsage.activeProvider === "openrouter"
+    readonly property bool accountReady: AgentUsage.accountOk
 
     // Index of the model whose detail panel is expanded. Clamped so a refresh
     // that shortens the list can never leave the panel pointing past the end.
@@ -55,6 +66,58 @@ PanelWindow {
         return "$" + v.toFixed(2)
     }
 
+    // Account money is not always USD — DeepSeek reports CNY for a CN account —
+    // so it is formatted from the currency the provider returned.
+    function fmtMoney(n) {
+        var v = Number(n || 0)
+        var symbol = AgentUsage.currency === "CNY" ? "¥"
+                   : AgentUsage.currency === "EUR" ? "€"
+                   : "$"
+        if (v > 0 && v < 0.01) return symbol + v.toFixed(4)
+        return symbol + v.toFixed(2)
+    }
+
+    function providerName(p) {
+        if (!p) return "No provider"
+        if (p === "openrouter") return "OpenRouter"
+        if (p === "deepseek") return "DeepSeek"
+        return String(p).charAt(0).toUpperCase() + String(p).slice(1)
+    }
+
+    function keyPath(p) {
+        return "~/.config/webb-shell/" + p + ".env"
+    }
+
+    // The account block adapts to what the provider actually reports: OpenRouter
+    // has lifetime spend plus a credit balance, DeepSeek has one balance with a
+    // top-up/granted split, and neither label is assumed for anyone else.
+    function primaryLabel() {
+        return root.isOpenrouter ? "OPENROUTER SPEND (" + AgentUsage.currency + ")"
+                                 : root.providerName(AgentUsage.activeProvider).toUpperCase()
+                                   + " BALANCE (" + AgentUsage.currency + ")"
+    }
+
+    function primaryValue() {
+        return root.fmtMoney(root.isOpenrouter ? AgentUsage.lifetime : AgentUsage.balance)
+    }
+
+    function primarySub() {
+        return root.isOpenrouter ? "lifetime account usage" : "available to spend"
+    }
+
+    function secondaryLabel() {
+        return root.isOpenrouter ? "CREDITS REMAINING" : "TOP-UP BALANCE"
+    }
+
+    function secondaryValue() {
+        return root.fmtMoney(root.isOpenrouter ? AgentUsage.balance : AgentUsage.toppedUp)
+    }
+
+    function secondarySub() {
+        if (root.isOpenrouter) return "of " + root.fmtMoney(AgentUsage.purchased) + " loaded"
+        return root.fmtMoney(AgentUsage.granted) + " granted"
+    }
+
     function fmtPct(f) {
         return (Number(f || 0) * 100).toFixed(1) + "%"
     }
@@ -64,13 +127,28 @@ PanelWindow {
         return parts.length === 3 ? parts[2] : String(day || "")
     }
 
-    // Why the account figure is missing, in words rather than a code.
-    function orHint(reason) {
-        if (reason === "no-key") return "Add OPENROUTER_API_KEY to the shell's environment or ~/.config/webb-shell/openrouter.env for real account spend."
-        if (reason === "network") return "OpenRouter unreachable — showing local logs only."
-        if (reason === "api-unauthorized") return "OpenRouter rejected the API key."
-        if (reason === "no-curl") return "curl is not installed."
-        return "OpenRouter account data unavailable."
+    // Why the account figure is missing, in words rather than a code. A
+    // provider with no account API is a supported state, not a failure, so it
+    // says what the panel is showing instead.
+    function accountHint() {
+        var name = root.providerName(AgentUsage.activeProvider)
+        if (!AgentUsage.ok)
+            return AgentUsage.loaded ? "No agent session logs found." : "Reading session logs…"
+        if (!AgentUsage.accountCurrent || !AgentUsage.accountLoaded)
+            return "Reading " + name + " account…"
+        var reason = AgentUsage.accountReason
+        if (reason === "unsupported-provider")
+            return name + " exposes no account usage API — showing local pi logs only."
+        if (reason === "no-key")
+            return "Add " + AgentUsage.activeProvider.toUpperCase() + "_API_KEY to the shell's environment or "
+                   + root.keyPath(AgentUsage.activeProvider) + " for real account data."
+        if (reason === "network")
+            return name + " unreachable — showing local pi logs only."
+        if (reason === "api-unauthorized")
+            return name + " rejected the API key."
+        if (reason === "no-curl")
+            return "curl is not installed."
+        return name + " account data unavailable."
     }
 
     Connections {
@@ -194,16 +272,21 @@ PanelWindow {
                             anchors.horizontalCenter: parent.horizontalCenter
                             variant: "small"
                             color: Colors.surfaceVariantText
-                            text: "OpenRouter account · " + AgentUsage.totalMessages
-                                  + " local messages · " + AgentUsage.models.length + " models"
+                            text: root.providerName(AgentUsage.activeProvider) + " account · "
+                                  + AgentUsage.activeMessages + " local messages · "
+                                  + AgentUsage.models.length + " models"
                         }
                     }
                 }
 
-                // ═══ OPENROUTER ACCOUNT — the real spend figure ═══
+                // ═══ THE ACTIVE PROVIDER'S ACCOUNT — its own figures ═══
+                // Hidden entirely for a provider that reports nothing: two
+                // dashes and a "key unavailable" label would be worse than the
+                // one line underneath that says what the panel is showing.
                 Row {
                     width: parent.width
                     spacing: 12
+                    visible: root.accountReady
 
                     Rectangle {
                         width: (parent.width - 12) / 2
@@ -220,19 +303,19 @@ PanelWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 variant: "small"
                                 color: Colors.surfaceVariantText
-                                text: "OPENROUTER SPEND (USD)"
+                                text: root.primaryLabel()
                             }
                             AppText {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 variant: "large"; font.bold: true; font.pixelSize: 27
-                                color: AgentUsage.orOk ? Colors.accentBlue : Colors.surfaceVariantText
-                                text: AgentUsage.orOk ? root.fmtCost(AgentUsage.orLifetime) : "—"
+                                color: Colors.accentBlue
+                                text: root.primaryValue()
                             }
                             AppText {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 variant: "small"
                                 color: Colors.surfaceVariantText
-                                text: "lifetime account usage"
+                                text: root.primarySub()
                             }
                         }
                     }
@@ -252,20 +335,19 @@ PanelWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 variant: "small"
                                 color: Colors.surfaceVariantText
-                                text: "CREDITS REMAINING"
+                                text: root.secondaryLabel()
                             }
                             AppText {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 variant: "large"; font.bold: true; font.pixelSize: 27
-                                color: AgentUsage.orOk ? Colors.accentRose : Colors.surfaceVariantText
-                                text: AgentUsage.orOk ? root.fmtCost(AgentUsage.orRemaining) : "—"
+                                color: Colors.accentRose
+                                text: root.secondaryValue()
                             }
                             AppText {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 variant: "small"
                                 color: Colors.surfaceVariantText
-                                text: AgentUsage.orOk ? ("of " + root.fmtCost(AgentUsage.orPurchased) + " loaded")
-                                                      : "key unavailable"
+                                text: root.secondarySub()
                             }
                         }
                     }
@@ -273,25 +355,28 @@ PanelWindow {
 
                 AppText {
                     width: parent.width
-                    visible: !AgentUsage.orOk
+                    visible: !root.accountReady
                     variant: "small"
-                    color: Colors.accentRose
+                    color: AgentUsage.accountCurrent && AgentUsage.accountReason !== "unsupported-provider"
+                           && AgentUsage.accountReason !== "" ? Colors.accentRose : Colors.surfaceVariantText
                     wrapMode: Text.WordWrap
-                    text: root.orHint(AgentUsage.orReason)
+                    text: root.accountHint()
                 }
 
-                // ═══ period spend ═══
+                // ═══ period spend — only where the provider's API has it ═══
+                // DeepSeek publishes balance and nothing else, so this row does
+                // not pretend the local log days are account periods.
                 Row {
                     width: parent.width
                     height: 54
                     spacing: 12
-                    visible: AgentUsage.orOk
+                    visible: root.accountReady && AgentUsage.periodFromApi
 
                     Repeater {
                         model: [
-                            { label: "TODAY", value: AgentUsage.orDaily },
-                            { label: "7 DAYS", value: AgentUsage.orWeekly },
-                            { label: "30 DAYS", value: AgentUsage.orMonthly }
+                            { label: "TODAY", value: AgentUsage.periodDaily },
+                            { label: "7 DAYS", value: AgentUsage.periodWeekly },
+                            { label: "30 DAYS", value: AgentUsage.periodMonthly }
                         ]
 
                         delegate: Rectangle {
@@ -315,16 +400,20 @@ PanelWindow {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     variant: "body"; font.bold: true; font.pixelSize: 19
                                     color: Colors.textPrimary
-                                    text: root.fmtCost(modelData.value)
+                                    text: root.fmtMoney(modelData.value)
                                 }
                             }
                         }
                     }
                 }
 
-                // ═══ LOCAL PI LOGS ═══
+                // ═══ LOCAL PI LOGS — the active provider's slice ═══
+                // Scoped to the provider in the header so the detail block, the
+                // day chart and the account card all describe the same thing;
+                // every provider's total is one row down in PROVIDERS.
                 SectionLabel {
-                    label: "LOCAL PI LOGS · THIS MACHINE"; color: Colors.accentBlue; pixelSize: 20
+                    label: "LOCAL PI LOGS · " + root.providerName(AgentUsage.activeProvider).toUpperCase()
+                    color: Colors.accentBlue; pixelSize: 20
                     visible: AgentUsage.ok
                 }
 
@@ -348,24 +437,24 @@ PanelWindow {
                         Row {
                             width: parent.width
                             spacing: 12
-                            DetailStat { width: (parent.width - 24) / 3; label: "LOCAL COST"; value: root.fmtCost(AgentUsage.totalCost) }
-                            DetailStat { width: (parent.width - 24) / 3; label: "TOKENS"; value: root.fmtTokens(AgentUsage.totalTokens) }
-                            DetailStat { width: (parent.width - 24) / 3; label: "MESSAGES"; value: String(AgentUsage.totalMessages) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "LOCAL COST"; value: root.fmtCost(AgentUsage.activeCost) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "TOKENS"; value: root.fmtTokens(AgentUsage.activeTokens) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "MESSAGES"; value: String(AgentUsage.activeMessages) }
                         }
 
                         Row {
                             width: parent.width
                             spacing: 12
-                            DetailStat { width: (parent.width - 24) / 3; label: "INPUT"; value: root.fmtTokens(AgentUsage.totalInput) }
-                            DetailStat { width: (parent.width - 24) / 3; label: "OUTPUT"; value: root.fmtTokens(AgentUsage.totalOutput) }
-                            DetailStat { width: (parent.width - 24) / 3; label: "CACHE HIT"; value: root.fmtPct(AgentUsage.totalCacheHit) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "INPUT"; value: root.fmtTokens(AgentUsage.activeInput) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "OUTPUT"; value: root.fmtTokens(AgentUsage.activeOutput) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "CACHE HIT"; value: root.fmtPct(AgentUsage.activeCacheHit) }
                         }
 
                         Row {
                             width: parent.width
                             spacing: 12
-                            DetailStat { width: (parent.width - 24) / 3; label: "CACHE READ"; value: root.fmtTokens(AgentUsage.totalCacheRead) }
-                            DetailStat { width: (parent.width - 24) / 3; label: "CACHE WRITE"; value: root.fmtTokens(AgentUsage.totalCacheWrite) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "CACHE READ"; value: root.fmtTokens(AgentUsage.activeCacheRead) }
+                            DetailStat { width: (parent.width - 24) / 3; label: "CACHE WRITE"; value: root.fmtTokens(AgentUsage.activeCacheWrite) }
                             DetailStat { width: (parent.width - 24) / 3; label: "SOURCES"; value: "sessions + archive" }
                         }
                     }
@@ -379,8 +468,117 @@ PanelWindow {
                     text: AgentUsage.loaded ? "No agent session logs found." : "Reading session logs…"
                 }
 
+                // ═══ PROVIDERS — every provider pi has used on this machine ═══
+                // The rows come from the logs, so a provider added to models.json
+                // appears here after its first message with no code change, and
+                // the one pi called last is marked rather than assumed.
                 SectionLabel {
-                    label: "LAST 7 ACTIVE DAYS · LOCAL"; color: Colors.accentBlue; pixelSize: 20
+                    label: "PROVIDERS · LOCAL TRAFFIC"; color: Colors.accentBlue; pixelSize: 20
+                    visible: AgentUsage.ok && AgentUsage.providers.length > 0
+                }
+
+                Column {
+                    width: parent.width
+                    spacing: 4
+                    visible: AgentUsage.ok && AgentUsage.providers.length > 0
+
+                    Repeater {
+                        model: AgentUsage.ok ? AgentUsage.providers : []
+
+                        delegate: Rectangle {
+                            id: providerRow
+                            required property var modelData
+
+                            readonly property bool inUse: String(modelData.provider) === AgentUsage.activeProvider
+
+                            width: parent.width
+                            height: 30
+                            color: providerRow.inUse ? Colors.surfaceContainerHigh : Colors.surfaceContainerLow
+                            border.color: providerRow.inUse ? Colors.accentBlue : Colors.outlineVariant
+                            border.width: Metrics.borderWidth
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: 14
+                                anchors.rightMargin: 14
+                                spacing: 8
+
+                                AppText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 14
+                                    variant: "small"
+                                    color: Colors.accentBlue
+                                    text: providerRow.inUse ? "\uf0d7" : " "
+                                }
+
+                                AppText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - 14 - 78 - 76 - 32
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                    variant: "body"; font.bold: true; font.pixelSize: 15
+                                    color: providerRow.inUse ? Colors.accentBlue : Colors.textPrimary
+                                    text: root.providerName(modelData.provider)
+                                }
+
+                                AppText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 78
+                                    horizontalAlignment: Text.AlignRight
+                                    variant: "small"; font.bold: true
+                                    color: modelData.cost > 0 ? Colors.accentBlue : Colors.surfaceVariantText
+                                    text: root.fmtCost(modelData.cost)
+                                }
+
+                                AppText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 76
+                                    horizontalAlignment: Text.AlignRight
+                                    variant: "small"
+                                    color: Colors.secondary
+                                    text: root.fmtTokens(modelData.tokens)
+                                }
+                            }
+                        }
+                    }
+
+                    Item {
+                        width: parent.width
+                        height: 24
+                        visible: AgentUsage.providers.length > 1
+
+                        AppText {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 14
+                            anchors.verticalCenter: parent.verticalCenter
+                            variant: "small"; font.bold: true
+                            color: Colors.surfaceVariantText
+                            text: "ALL PROVIDERS"
+                        }
+
+                        AppText {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 14 + 76 + 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            variant: "small"; font.bold: true
+                            color: Colors.surfaceVariantText
+                            text: root.fmtCost(AgentUsage.totalCost)
+                        }
+
+                        AppText {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 14
+                            anchors.verticalCenter: parent.verticalCenter
+                            variant: "small"
+                            color: Colors.surfaceVariantText
+                            text: root.fmtTokens(AgentUsage.totalTokens)
+                        }
+                    }
+                }
+
+                SectionLabel {
+                    label: "LAST 7 ACTIVE DAYS · " + root.providerName(AgentUsage.activeProvider).toUpperCase()
+                    color: Colors.accentBlue; pixelSize: 20
                     visible: AgentUsage.ok && root.days.length > 0
                 }
 
@@ -472,7 +670,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         variant: "small"
                         color: Colors.surfaceVariantText
-                        text: root.models.length + " models · click for detail"
+                        text: root.models.length + " models · all providers · click for detail"
                     }
                 }
 
