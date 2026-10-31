@@ -30,7 +30,7 @@
 
 set -u
 
-SHOT_DIR="${HOME}/Pictures/screenshots"
+SHOT_DIR="${HOME}/pictures/screenshots"
 need() { command -v "$1" >/dev/null || { echo "shot: missing $1" >&2; exit 1; }; }
 need jq
 need grim

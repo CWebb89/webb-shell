@@ -8,7 +8,7 @@ set -u
 need() { command -v "$1" >/dev/null || { notify-send -u critical "Transcode unavailable" "Missing $1 — install: sudo pacman -S ${2:-$1}"; exit 1; }; }
 need ffmpeg ffmpeg
 
-DIR="$HOME/Pictures/Videos/Recordings"
+DIR="$HOME/pictures/videos/Recordings"
 IN="${1:-}"
 if [ -z "$IN" ]; then
   IN=$(find "$DIR" -maxdepth 1 -type f \

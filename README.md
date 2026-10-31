@@ -46,7 +46,64 @@ through QtMultimedia — so there is no `swww`/`awww`/`hyprpaper` in the stack.
 
 Colours come from [matugen](https://github.com/InioX/matugen). Picking a
 wallpaper regenerates a palette the shell watches and applies live, so every
-panel, the bar and the background follow the wallpaper.
+panel, the bar and the background follow the wallpaper. With a solid
+background, the scheme picker's **Seed** card does the same from a colour you
+choose instead of an image.
+
+**Custom** in the scheme picker goes further: it opens the whole palette for
+editing, one swatch per colour, and renders your edits back through matugen's
+own templates on every change. The bar, kitty, GTK, hyprland, btop and the rest
+are painted from one palette — never the shell's colours on top of matugen's.
+`S` saves the palette under a name, and saved palettes become cards in the
+Custom tab beside the editor, so a palette worth keeping is one keypress away
+instead of re-derived by hand. They live in
+`~/.config/webb-shell/palettes.json` (name → matugen's own palette JSON), which
+`install.sh` neither writes nor rewrites.
+
+In the picker the mode row is four tabs — Dark, Light, Smart, Custom. `↑`/`↓`
+switch tab, `←`/`→` pick a card, `⏎` opens or applies the highlighted card and
+`Esc` closes. The first three tabs show the scheme wheel, whose last card is
+**Seed**: the single colour the palette is generated from. **Custom** swaps the
+wheel for its own set: the **Custom** door card, then one card per saved
+palette. `⏎` on the door edits every colour in the palette; `⏎` on a saved card
+opens that palette in the same editor (its name is what `s` prefills, so saving
+refines that card), `a` applies it without opening the editor, and `d` deletes
+it (twice, to be sure).
+Inside the editor `↑`/`↓` switch between hue, saturation and lightness,
+`←`/`→` adjust the focused one (`Shift` for ten steps), `Tab` moves to the next
+colour, `c` copies the highlighted colour and `v` pastes it onto the highlighted
+row, `s` saves the palette as a named card, `⏎` applies it and `Esc` puts the
+previous colours back.
+
+The picker beside the list answers what the highlighted colour controls under
+**WHAT CHANGES**, in the order you would notice it. Every line names the piece of
+the shell that repaints, not a widget class:
+
+- **the shell's own widgets first**, one line per place: for `primary` that is the
+  bar's open-but-unfocused workspace numbers, an accent pill button's fill, the
+  menu's filter ring and selected row, the system monitor's graph line below 70 %,
+  the lock screen's password field ring, the weekday on the on-screen clock and
+  today's calendar cell, and the wifi/audio/bluetooth/find popups' accent. The
+  table lives in `src/popups/PaletteTokens.js`.
+- **In the terminal:** the kitty slots, read off the kitty template — cursor, ANSI
+  bright blue, active tab, window border.
+- **In Hyprland:** the compositor setting, read off your own Lua config in
+  `~/.config/hypr`, so it names the real thing: `secondary_container` is the
+  active window border, `outline_variant` the inactive one.
+- **Other app themes:** every other template in `~/.config/matugen/config.toml`
+  that mentions the role.
+
+The last three are derived at runtime by `bin/palette.sh usage`, so they follow
+the machine's own config instead of a table in the repo that could drift. When
+nothing on screen reads the role the first line says so outright — "nothing you
+can see — no bar, popup, terminal or window border reads it" — and the remaining
+line names the app theme that still does. Rows in the list whose colour paints
+nothing visible are dimmed for the same reason, and the list column grows to the
+height of the longest explanation instead of scrolling.
+
+A miniature preview of the shell with the painted regions ringed was tried and
+removed: it was prettier and less informative than the sentence it replaced, and
+so was a one-line summary per colour.
 
 It owns the session's idle behaviour too, rather than deferring to `hypridle`:
 the screen dims, then the display goes off and the screen locks, on three
@@ -117,13 +174,13 @@ belongs to.
 | **Bluetooth** | Paired devices, scan, adapter power |
 | **System** | CPU and GPU temperature, load, fan, memory, disk, per-core |
 | **USB Storage** | Mounted drives with safe eject — hidden when there are none |
-| **Agent Usage** | Coding-agent limits and spend — hidden when unavailable |
+| **Agent Usage** | Coding-agent spend for the provider pi used last — OpenRouter spend and credits, DeepSeek balance, local per-provider token and cache breakdowns for any provider; hidden when unavailable |
 | **Battery** | Charge card, and it raises itself when the battery is low |
 | **Clock** | The clock OSD |
 | **Glance** | Month calendar and weather, hourly and daily |
 | **Notifications** | Notification history you can read and prune |
 | **Wallpaper** | Full-screen carousel over your wallpaper directory |
-| **Theme Scheme** | matugen scheme picker: tints, variants, base16 palettes |
+| **Theme Scheme** | matugen scheme picker: tints, variants, plus a Seed card for a colour you pick and a Custom palette editor for all 50 tokens, with saved palettes as cards |
 | **Menu** | The `SUPER+D` command menu |
 | **Bar Settings** | Drag-and-drop bar layout, module palette, tray filter |
 
@@ -238,17 +295,22 @@ One file, `~/.config/webb-shell/config.json`:
 
 ```json
 {
-  "wallpaperDir": "/home/you/Pictures/Wallpapers",
+  "wallpaperDir": "/home/you/pictures/wallpapers",
   "cpuName": "AMD Ryzen 7 ...",
   "gpuName": "NVIDIA",
   "matugenColorsFile": "/home/you/.cache/matugen/webb-shell-colors.json",
+  "matugenScheme": "scheme-tonal-spot",
+  "matugenMode": "dark",
+  "matugenSource": "wallpaper",
+  "matugenPaletteFile": "/home/you/.config/webb-shell/palette.json",
+  "solidColor": "",
   "iconTheme": { "dark": "Papirus-Dark", "light": "Papirus" },
   "defaultAgent": "pi"
 }
 ```
 
 `wallpaperDir` may be unset, in which case the shell falls back to
-`$HOME/Pictures/Wallpapers`. `cpuName` and `gpuName` are labels in the system
+`$HOME/pictures/wallpapers`. `cpuName` and `gpuName` are labels in the system
 monitor. `matugenColorsFile` is what the theme watches, with a built-in fallback
 palette if it is missing.
 
@@ -261,6 +323,20 @@ survive.
 every theme change so GTK applications follow the shell's dark/light choice. A
 mode with no entry leaves your icons alone. Qt applications only follow this when
 a Qt platform theme maps GTK settings.
+
+`matugenScheme`, `matugenMode` and `solidColor` are written by the scheme picker
+(they survive a re-run of `install.sh`). `solidColor` is the Seed card's
+`#rrggbb`, and it is the exact flat colour the desktop draws while no wallpaper
+record exists — empty means the palette's own background role. `matugenSource`
+records where that palette came from: the wallpaper image, `solidColor`, or
+`palette` for the hand-edited one.
+
+A hand-edited palette is stored whole in `matugenPaletteFile` (default
+`~/.config/webb-shell/palette.json`) as matugen's own palette JSON, and
+`bin/palette.sh` is its only writer. While `matugenSource` is `palette` that
+file outranks the wallpaper: changing the wallpaper re-renders it instead of
+deriving from the image, so the colours stay put. Picking a scheme card in the
+picker returns to a generated palette.
 
 The bar's own layout lives in a `bar` block in the same file, and
 **`bin/bar-config.sh` is its only writer** — the menu rows, the Bar Settings drag

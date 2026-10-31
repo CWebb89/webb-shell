@@ -7,6 +7,35 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **The scheme picker edits the whole palette, and saved palettes become
+  cards.** Its fourth tab is Custom: the door card opens an editor over all 50
+  tokens, with a side panel naming what each colour repaints in the shell, the
+  terminal, the compositor and the other templates. Every edit is rendered back
+  through matugen's own templates on a 140 ms debounce, so the bar and every
+  themed app stay on one palette instead of the shell drawing colours no
+  template ever produced. `s` saves the palette under a name and it returns as a
+  card beside the editor, `a` applies a saved card without opening it, `d`
+  deletes it. Palettes live in `~/.config/webb-shell/palettes.json` and the
+  edited one in `palette.json`, both written only by `bin/palette.sh`.
+- **A wallpaper-less desktop now has a colour it chose.** The Seed card stores
+  its `#rrggbb` as `solidColor`, which is the exact flat colour
+  `Background.qml` draws while no wallpaper record exists, and `matugenSource`
+  records whether the palette came from the image, that colour or the editor, so
+  a wallpaper change re-renders an edited palette instead of quietly deriving
+  over it.
+- **The Agent Usage panel asks the provider pi used last for its own account
+  data.** `bin/provider-usage.sh` replaces the OpenRouter-only script:
+  OpenRouter answers spend, credits and today/7-day/30-day usage, DeepSeek
+  answers balance only — it publishes no usage endpoint, so that row hides
+  rather than being filled from local logs — and any other provider says so and
+  leaves the local token and cache breakdown showing. `install.sh` seeds one
+  0600 key file per provider.
+- **The Bluetooth panel lists every device bluez remembers,** not only the
+  paired set, so a removed bond or a trusted device still has a row to act on.
+  Adapter toggles and device actions run in separate queues, so a 30 s pair no
+  longer blocks a power toggle, and every command carries a timeout — an
+  unbounded `bluetoothctl pair` used to wedge the queue and make the panel look
+  dead.
 - **The lock screen says more, and only the password opens it.** It shows a
   telemetry card — CPU and GPU temperature, load and fan RPM, the same readings
   and the same heat colour as the System Monitor's cards, which `SysStats` now
@@ -164,6 +193,12 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Changed
 
+- **Media directories are lower-case now** — `~/pictures/wallpapers`,
+  `~/pictures/screenshots`, `~/pictures/videos/Recordings`. `install.sh`'s
+  default, `ShellConfig`'s fallback, `bin/shot`, `bin/transcode.sh`,
+  `bin/screenrecord.sh`, `bin/scheme-swatches.sh` and the menu row that copies
+  the last screenshot all agree; an existing `wallpaperDir` in `config.json` is
+  left alone, so only a fresh install or a hand edit moves.
 - **`docs/OTHER-PC.md` is a runbook now, not a reference.** It was eleven
   generic sections plus a separate T480s section that repeated them, so using
   one meant reading the other. It is one ordered path instead: 22 numbered
@@ -241,6 +276,21 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Fixed
 
+- **One click toggled a setting twice.** `ToggleSetting`'s row MouseArea covered
+  the switch beneath it, so clicking the switch ran `toggled()` for the row and
+  again for the switch, and the setting ended where it started.
+- **The USB panel read a partition before it existed,** throwing on `part.used`
+  while a drive showed no enumerated partition yet; the used/free row now prints
+  a dash.
+- **`tools/verify.sh` could run Qt5's `qmllint`** where qt5-declarative owns
+  `/usr/bin/qmllint`. It cannot parse Qt6 QML at all and exits 255 with no
+  output on every file, so the gate failed while reporting nothing; the script
+  now prefers `/usr/lib/qt6/bin/qmllint` when it is installed.
+- **`portabilize.sh` was not idempotent.** An unanchored `s|$OLD|$NEW|g` turned
+  `/home/newuser` into `/home/newuserlt` on a second run. The pattern is now
+  word-anchored with `$OLD` escaped, and the shell checkouts are no longer
+  rewrite targets — `verify.sh` already fails on a literal `/home/<user>` there,
+  so the only matches were docs and plan files naming it as an example.
 - **Escape did nothing in nine of the modal popups.** Audio, Wi-Fi, Bluetooth,
   System Monitor, Notifications, the tray menu, USB storage, Agent Usage and Bar
   Settings all declared `Keys.onPressed` with `focusable: true` and nothing else,
@@ -370,6 +420,12 @@ with evidence and a reproduction.
 
 ### Documentation
 
+- **`README.md` documents the Custom palette editor:** its keyboard map, what the
+  WHAT CHANGES column means, where saved palettes live, and the four theme keys
+  the picker writes. `docs/OTHER-PC.md` follows — `bin/icon-theme.sh`,
+  `palette.json` and `matugenSource` in the runbook, the per-provider key files
+  in Appendix B, and the Agent Usage troubleshooting rows now name a provider
+  instead of assuming OpenRouter.
 - The `dmenu` IPC signature in `README.md` was wrong in both arity and order;
   `bar settings`, `bar config`, `notify center` and `notify centerHide` were
   missing from the table.

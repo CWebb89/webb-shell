@@ -6,9 +6,9 @@
 #   screenrecord.sh start video  — video only
 #   screenrecord.sh stop         — finalize recording
 #   screenrecord.sh toggle       — stop if one runs, else start with audio
-# Needs: gpu-screen-recorder (pacman -S gpu-screen-recorder). Outputs to ~/Pictures/Videos/Recordings/
+# Needs: gpu-screen-recorder (pacman -S gpu-screen-recorder). Outputs to ~/pictures/videos/Recordings/
 set -u
-OUTDIR="$HOME/Pictures/Videos/Recordings"
+OUTDIR="$HOME/pictures/videos/Recordings"
 MODE="${1:-}"
 need() { command -v "$1" >/dev/null || { notify-send -u critical "Screen recording unavailable" "Missing $1 — install: sudo pacman -S ${2:-$1}"; exit 1; }; }
 recording() { pgrep -f 'gpu[-]screen-recorder' >/dev/null; }
@@ -33,7 +33,7 @@ start_rec() {
 stop_rec() {
   recording || { notify-send "No recording running"; return 0; }
   pkill -SIGINT -f 'gpu-screen-recorder'
-  notify-send "Recording saved" "Check ~/Pictures/Videos/Recordings/"
+  notify-send "Recording saved" "Check ~/pictures/videos/Recordings/"
 }
 
 case "$MODE" in

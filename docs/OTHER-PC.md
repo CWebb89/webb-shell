@@ -392,10 +392,19 @@ registered the template in Step 6, and matugen runs for the first time when you
 pick a wallpaper in Step 16.
 
 `config.json`'s `iconTheme: { dark, light }` maps a matugen mode to a GTK icon
-theme, applied by `bin/matugen-apply.sh` through `gsettings`. A mode with no
-entry — including the default `smart` — leaves your icons alone. Qt apps follow
-it only when a Qt platform theme maps GTK settings, which on this machine means
-`QT_QPA_PLATFORMTHEME=qt6ct` plus `qt6ct` configured.
+theme, applied by `bin/matugen-apply.sh` through `gsettings` (via
+`bin/icon-theme.sh`). A mode with no entry — including the default `smart` —
+leaves your icons alone. Qt apps follow it only when a Qt platform theme maps GTK
+settings, which on this machine means `QT_QPA_PLATFORMTHEME=qt6ct` plus `qt6ct`
+configured.
+
+The scheme picker's **Custom** chip takes over from matugen's derivation: it
+derives the current palette once (`bin/palette.sh derive`, dry-run), lets you
+edit any of its 50 colours, and renders the result back through every template
+(`bin/palette.sh render`), so the bar and the themed apps stay on one palette.
+The result lives in `~/.config/webb-shell/palette.json` and, while
+`matugenSource` is `palette`, `bin/set-wallpaper.sh` re-renders that file instead
+of deriving from the new image — the wallpaper changes, the colours do not.
 
 ---
 
@@ -816,7 +825,9 @@ see, which is the fastest way to identify a half-updated box.
 | Eject fails with a permission error | `udisks2` is missing — Step 8 |
 | Agent Usage says "No agent session logs found" | no `~/.pi/agent/sessions/*/*.jsonl` on that box yet, or `jq` is missing |
 | No Agents rows in the menu | no coding-agent CLI on `PATH`; every row is `command -v`-guarded |
-| Agent Usage shows a dash instead of a spend figure | `OPENROUTER_API_KEY` is in neither the shell's environment nor `~/.config/webb-shell/openrouter.env` — the panel prints the reason underneath |
+| Agent Usage shows no account figure | the panel takes the provider pi used last from its session logs, then asks `bin/provider-usage.sh` for that provider's account data. A key in neither the shell's environment nor `~/.config/webb-shell/<provider>.env` is the usual cause — the panel prints the reason underneath, and the provider breakdown below it still works from local logs |
+| Agent Usage names a provider you are not using | pi's newest assistant message still belongs to the old provider — send one message with the new one and reopen the panel |
+| Agent Usage shows a balance but no TODAY/7/30 row | that provider publishes no usage endpoint (DeepSeek is one) — the period row is hidden rather than filled from local logs |
 | YouTube never appears in the audio panel's Now Playing | Chromium publishes no MPRIS player. Watch video through mpv with `mpv-mpris` installed instead |
 | Several players fight over the Now Playing card | click the player chip above the card to pin one; until then the playing player wins |
 | The System Monitor's GPU card reads 0 | the probe found no supported vendor — Step 20 item 1 |
@@ -985,13 +996,16 @@ the fastest way to tell a half-updated machine from a broken one.
    before.
 3. **dunst must be masked** — Step 13.
 4. **No `awww`/`swww`/`hyprpaper`** in autostart — Step 14.
-5. **Config keys**: `iconTheme` (GTK icons follow the scheme) and
-   `matugenScheme` / `matugenMode` (the Scheme picker's saved choice).
+5. **Config keys**: `iconTheme` (GTK icons follow the scheme),
+   `matugenScheme` / `matugenMode` (the Scheme picker's saved choice), and
+   `matugenSource` / `solidColor` (whether the palette is seeded from the image
+   or from the Custom card's colour, and that colour).
 6. **matugen templates**: `swatches/all.json` exists only after the Scheme
    picker has regenerated once; a missing `schemes.toml` makes the preview fail.
 7. **The Scheme picker reads `~/.local/state/webb-shell/background`**, not
-   Hyprland's `~/.config/hypr/colors.conf`. If that record is empty or stale,
-   pick a wallpaper once — apply is a no-op until a wallpaper is recorded.
+   Hyprland's `~/.config/hypr/colors.conf`. An empty record means solid mode:
+   the desktop draws `solidColor` when set, otherwise the palette's background
+   role, and scheme cards seed from their own saved seeds rather than an image.
 8. **`bin/restart.sh` and the `webb-shell` wrapper must delegate to the systemd
    unit.** An older wrapper kills every quickshell on the machine, which would
    take out the unit's process and race its own restart into two shells.
@@ -1003,13 +1017,17 @@ the fastest way to tell a half-updated machine from a broken one.
 11. **The Agents menu subtree is `command -v`-guarded per agent.** With no
     coding-agent CLI on the box the whole subtree hides, and `install.sh` says
     so. That is intended, not a broken install.
-12. **`OPENROUTER_API_KEY`** is needed for the real account spend figure.
-    `bin/openrouter-usage.sh` reads the environment first, then
-    `~/.config/webb-shell/openrouter.env` (mode 0600, seeded by `install.sh`).
-    **Use the file.** Exporting the key where the compositor starts only covers
-    shells launched from a terminal — a shell relaunched by the compositor
-    inherits none of those exports and loses the figure. Without either source
-    the panel shows local log totals only and states why.
+12. **A provider API key** is needed for that provider's account figure in the
+    Agent Usage panel. `bin/provider-usage.sh <provider>` reads
+    `<PROVIDER>_API_KEY` from the environment first, then
+    `~/.config/webb-shell/<provider>.env` (mode 0600, seeded by `install.sh` for
+    `openrouter` and `deepseek`). **Use the file.** Exporting the key where the
+    compositor starts only covers shells launched from a terminal — a shell
+    relaunched by the compositor inherits none of those exports and loses the
+    figure. Without either source the panel shows local log figures only and
+    states why. OpenRouter answers spend, credits and period usage; DeepSeek
+    answers balance only; any other provider answers `unsupported-provider` and
+    the panel falls back to local logs, which cover every provider.
 13. **The `media` IPC target no longer exists.** Media control moved into the
     audio panel, so `SUPER + M` and the *Media Player* menu row call
     `ipc call audio toggle`. **mpv-mpris** is worth installing

@@ -7,10 +7,19 @@
 # Usage (run on the NEW PC, after rsync):
 #   OLD=/home/olduser ./portabilize.sh [--dry-run]
 #
+# Safe to run twice: the substitution is anchored to a word boundary, so a
+# home dir that already points at the new user is left alone. (An unanchored
+# s|$OLD|$NEW|g turns /home/newuser into /home/newuserlt on the second run —
+# that is exactly the damage this script now refuses to do.)
+#
 # (NEW defaults to $HOME on the new machine.)
 # Targets: ~/.config (hypr/fish/lean-ctx/...), ~/.local/bin, ~/.pi config
-# (not sessions/cache/npm), and the shell repos. Skips generated matugen
-# outputs (regenerated locally) and binary files (handled separately below).
+# (not sessions/cache/npm). The shell checkouts are deliberately NOT targets:
+# tools/verify.sh already fails on a literal /home/<user> in code, so the only
+# matches under them are docs and plan files that name it as an example, and
+# rewriting those just dirties a git tree.
+# Skips generated matugen outputs (regenerated locally) and binary files
+# (handled separately below).
 set -euo pipefail
 
 # Text-only targets. Generated matugen outputs (*.conf with wallpaper paths),
@@ -34,8 +43,6 @@ TARGETS=(
   "$HOME/.pi/agent/themes"
   "$HOME/.pi/agent/projects-memory"
   "$HOME/.pi/agent/brain"
-  "$HOME/dev/webb-shell"
-  "$HOME/dev/scotia-shell"
 )
 
 OLD="${OLD:-}"
@@ -44,9 +51,10 @@ DRY=0
 [ "${1:-}" = "--dry-run" ] && DRY=1
 
 if [ -z "$OLD" ]; then
-  # Auto-detect the old PC's home dir from the synced files (most common
-  # /home/<user> that isn't the current user).
-  OLD="$((grep -rhoE '/home/[A-Za-z0-9_.-]+' "${TARGETS[@]}" 2>/dev/null || true) | sort | uniq -c | sort -rn | head -1 | awk '{print $2}')"
+  # Auto-detect the old PC's home dir from the synced files (the most common
+  # /home/<user> that isn't this machine's own — with counts equal, the reverse
+  # sort would otherwise pick the new one).
+  OLD="$( (grep -rhoE '/home/[A-Za-z0-9_.-]+' "${TARGETS[@]}" 2>/dev/null || true) | grep -vxF "$NEW" | sort | uniq -c | sort -rn | head -1 | awk '{print $2}' )"
   if [ -z "$OLD" ] || [ "$OLD" = "$NEW" ]; then
     echo "couldn't auto-detect the old home dir; pass OLD=/home/olduser" >&2
     exit 1
@@ -56,6 +64,10 @@ fi
 
 echo "Will replace: ${OLD} -> ${NEW}"
 if [ "$DRY" = 1 ]; then echo "(dry run — no files changed)"; fi
+
+# OLD is used as a regex, so escape it; and the pattern below contains | while
+# the paths contain /, so the substitution uses # as its delimiter.
+ESC_OLD="$(printf '%s' "$OLD" | sed 's#[][\.^$*+?(){}|/]#\\&#g')"
 
 found=0
 while IFS= read -r -d '' f; do
@@ -69,8 +81,10 @@ while IFS= read -r -d '' f; do
     echo "  would fix: $f"
     continue
   fi
-  # sed on a temp then move, to avoid clobbering file modes
-  sed "s|${OLD}|${NEW}|g" "$f" > "$f.tmp.port" && mv "$f.tmp.port" "$f"
+  # sed on a temp then move, to avoid clobbering file modes. The trailing
+  # group keeps the character that followed the old path (usually a /) and
+  # stops a longer name from matching, which is what makes this idempotent.
+  sed -E "s#${ESC_OLD}([^A-Za-z0-9_-]|\$)#${NEW}\\1#g" "$f" > "$f.tmp.port" && mv "$f.tmp.port" "$f"
   echo "  fixed: $f"
 done < <(find "${TARGETS[@]}" \( -name '*.conf' -o -name '*.pyc' -o -name '*.json' -o -name '*.log' \) -prune -o \
   -path '*/build/*' -prune -o -path '*/_autogen/*' -prune -o \
@@ -90,4 +104,4 @@ echo "  ~/.local/bin/lean-ctx        → 94MB binary; reinstall or leave (locate
 echo "  ~/.pi/agent/npm/             → pi dependency cache; reinstall pi instead"
 echo
 echo "Then regenerate matugen (creates colors.conf with the NEW wallpaper path):"
-echo "  matugen image ~/Pictures/Wallpapers/your-wallpaper.jpg"
+echo "  matugen image ~/pictures/wallpapers/your-wallpaper.jpg"

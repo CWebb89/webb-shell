@@ -11,7 +11,7 @@
 set -euo pipefail
 WALL="$1"
 MODE="$2"
-WALLDIR="${3:-$HOME/Pictures/Wallpapers}"
+WALLDIR="${3:-$HOME/pictures/wallpapers}"
 SWATCHES="$HOME/.cache/matugen/swatches"
 TPL="$HOME/.config/matugen/templates/swatch.json"
 
