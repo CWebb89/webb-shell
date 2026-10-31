@@ -190,6 +190,21 @@ All notable changes to webb-shell, oldest release last. The format follows
   the panels still wanted.
 - `assets/header.svg` — the README banner, drawn in the shell's own Tokyo Night
   palette rather than a generic accent.
+- **Live pi activity, a completion toast, and Quick Ask.** A pi extension
+  (`contrib/pi-extension/webb-shell-activity.ts`, installed by `install.sh`) writes
+  the session's current tool, turns, tokens and cost to
+  `~/.local/state/webb-shell/pi-activity.json`; the `pi` bar module renders it and
+  a toast reports each settled run with its duration, turns, cost and model. Quick
+  Ask (`SUPER+D` → Ask pi, or `qs ipc call ask toggle`) answers one question in a
+  card with no terminal and no session, prefilled from the clipboard.
+- **Text from Screen** — `bin/ocr.sh` OCRs a region onto the clipboard, with
+  `--ask` handing the text straight to pi. Uses `shot` for the capture, and
+  reports the missing `tesseract-data-eng` package instead of failing quietly.
+- **KDE Connect** — a `phone` bar module and Phone panel: device battery and
+  reachability, ring, ping, clipboard-to-phone and SMS. `bin/kdeconnect-state.sh`
+  reads the daemon over `busctl` and `bin/kdeconnect-notify.sh` mirrors phone
+  notifications into the shell's own toasts, which `kdeconnectd` cannot do
+  without a Plasma applet.
 
 ### Changed
 

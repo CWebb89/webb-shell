@@ -368,6 +368,37 @@ their absence is not obvious:
   shell is not fish the menu's history rows come back empty while everything
   else works.
 
+### Step 8b — Optional extras: OCR language data and the phone
+
+Two features stay dormant until their data or package exists, and neither is
+part of `--packages`:
+
+- **Text from Screen** — `bin/ocr.sh`, behind the menu's OCR rows — needs the
+  language data, which Arch ships separately from the engine:
+
+  ```fish
+  sudo pacman -S tesseract-data-eng
+  ```
+
+  Without it the script says exactly that and stops; it does not fail silently.
+
+- **The Phone module** needs KDE Connect on the desktop and the KDE Connect app
+  on the phone. The shell hides the module until `kdeconnect-cli` exists.
+
+  ```fish
+  sudo pacman -S kdeconnect
+  sudo ufw allow 1714:1764/tcp
+  sudo ufw allow 1714:1764/udp
+  ```
+
+  `ufw` is active on this machine, so without those two rules the pairing screen
+  never finds the PC — the package alone is not enough. Pair from the phone, then
+  `qs -p /path/to/webb-shell ipc call phone state` should name the device.
+
+  Mirrored phone notifications need no extra package: `bin/kdeconnect-notify.sh`
+  runs while KDE Connect is installed and posts them through the shell's own
+  notification server, which is also why they land in notification history.
+
 ### Step 9 — Fonts, and how theming flows
 
 ```fish

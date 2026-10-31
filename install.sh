@@ -36,7 +36,7 @@ CORE_TOOLS="quickshell hyprctl qs matugen grim slurp wl-copy nmcli pactl"
 OPT_TOOLS="fzf fd bluetoothctl pavucontrol-qt cliphist tesseract zbarimg \
 gpu-screen-recorder powerprofilesctl curl file gsettings gtk-update-icon-cache \
 python3 xdg-mime xdg-settings gio ffmpeg hyprpicker notify-send udisksctl \
-lsblk udevadm coredumpctl gdbus"
+lsblk udevadm coredumpctl gdbus kdeconnect-cli"
 # Called by the Hyprland config rather than the shell: the hardware volume and
 # brightness keys in ~/.config/hypr/modules/binds.lua.
 COMPOSITOR_TOOLS="playerctl brightnessctl"
@@ -223,6 +223,28 @@ install_helper() {
 install_helper "$REPO/bin/webb-shell" "$HOME/.local/bin/webb-shell"
 install_helper "$REPO/bin/shot" "$HOME/.local/bin/shot"
 
+# ── 4b. pi activity extension ──────────────────────────────────────────────
+# The bar's pi module and its completion toast read a state file only pi can
+# write, so the shell ships the extension and installs it where pi looks. Only
+# when a pi config directory exists: a machine without pi should not grow a
+# ~/.pi tree from this installer. pi loads extensions per session, so a new
+# session is needed before the module shows anything.
+PI_EXT="$HOME/.pi/agent/extensions/webb-shell-activity.ts"
+if [ -d "$HOME/.pi/agent" ]; then
+  mkdir -p "$(dirname "$PI_EXT")"
+  if [ ! -f "$PI_EXT" ]; then
+    install -m644 "$REPO/contrib/pi-extension/webb-shell-activity.ts" "$PI_EXT" \
+      && echo "  installed the pi activity extension"
+  elif ! cmp -s "$REPO/contrib/pi-extension/webb-shell-activity.ts" "$PI_EXT"; then
+    install -m644 "$REPO/contrib/pi-extension/webb-shell-activity.ts" "$PI_EXT" \
+      && echo "  updated the pi activity extension (was different)"
+  else
+    echo "  pi activity extension already current"
+  fi
+else
+  echo "  no ~/.pi/agent — skipping the pi activity extension"
+fi
+
 # ── 5. systemd user units ──────────────────────────────────────────────────
 # The shell's launch path, versioned in systemd/ rather than hand-written under
 # $HOME. The unit owns the process so a crash restarts it; the wrapper the
@@ -278,7 +300,7 @@ if [ "$INSTALL_PACKAGES" -eq 1 ]; then
     hyprland quickshell matugen grim slurp wl-clipboard
     networkmanager libpulse wireplumber pipewire-pulse pipewire-alsa
     bluez-utils pavucontrol-qt playerctl brightnessctl libnotify
-    fd fzf tesseract zbar cliphist python udisks2
+    fd fzf tesseract tesseract-data-eng zbar cliphist python udisks2
     power-profiles-daemon gpu-screen-recorder
     qt6-multimedia qt6-multimedia-ffmpeg
     ttf-jetbrains-mono-nerd ttf-firacode-nerd otf-font-awesome

@@ -82,6 +82,7 @@ ShellRoot {
     ModulePopup { moduleId: "usb" }
     ModulePopup { moduleId: "agents" }
     ModulePopup { moduleId: "pi" }
+    ModulePopup { moduleId: "phone" }
     ModulePopup { moduleId: "battery" }
     ModulePopup { moduleId: "clock" }
     ModulePopup { moduleId: "glance" }
@@ -389,6 +390,30 @@ ShellRoot {
                                     model: PiActivity.model, pid: PiActivity.pid,
                                     updated: PiActivity.updatedAt,
                                     summary: PiActivity.lastSummary.slice(0, 120) })
+        }
+    }
+
+    IpcHandler {
+        target: "phone"
+        function toggle(): void {
+            BarModules.toggle("phoneOpen")
+        }
+        function open(): void {
+            BarModules.show("phoneOpen")
+        }
+        function hide(): void {
+            BarModules.hide("phoneOpen")
+        }
+        function state(): string {
+            return KdeConnect.status()
+        }
+        function ring(): void {
+            if (Popups.lockOpen)
+                return
+            KdeConnect.ring()
+        }
+        function refresh(): void {
+            KdeConnect.refresh()
         }
     }
 

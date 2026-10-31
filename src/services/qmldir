@@ -17,3 +17,4 @@ singleton UsbStorage 1.0 UsbStorage.qml
 singleton AgentUsage 1.0 AgentUsage.qml
 singleton PiActivity 1.0 PiActivity.qml
 singleton PiAsk 1.0 PiAsk.qml
+singleton KdeConnect 1.0 KdeConnect.qml

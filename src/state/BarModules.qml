@@ -71,6 +71,9 @@ QtObject {
         { id: "pi", section: "right", label: "pi", hint: "Live pi activity and last-run cost; click for Quick Ask (hidden until a pi session publishes)",
           widget: "src/bar/widgets/PiWidget.qml",
           popupKey: "askOpen", popup: "src/popups/AskPopup.qml", anchor: "top-right" },
+        { id: "phone", section: "right", label: "Phone", hint: "KDE Connect device: battery, ring, clipboard, SMS (hidden without kdeconnect)",
+          widget: "src/bar/widgets/PhoneWidget.qml",
+          popupKey: "phoneOpen", popup: "src/popups/PhonePopup.qml", anchor: "top-right" },
 
         { id: "battery", section: "right", label: "Battery", hint: "Charge card; opens itself when low",
           widget: "src/bar/widgets/BatteryButton.qml",

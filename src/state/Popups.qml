@@ -21,6 +21,7 @@ QtObject {
     property bool notesOpen: false
     property bool agentsOpen: false
     property bool askOpen: false
+    property bool phoneOpen: false
     property bool barSettingsOpen: false
     property bool batteryOpen: false
     // Reminder setter overlay — exclusive keyboard entry, never stacks
@@ -54,7 +55,7 @@ QtObject {
                                           "systemMonitorOpen", "findOpen",
                                           "schemeOpen", "reminderOpen", "notifOpen",
                                           "usbOpen", "agentsOpen", "barSettingsOpen",
-                                          "notesOpen", "askOpen"]
+                                          "notesOpen", "askOpen", "phoneOpen"]
 
     function closeAll() {
         for (var i = 0; i < exclusiveKeys.length; i++)

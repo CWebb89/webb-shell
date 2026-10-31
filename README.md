@@ -156,7 +156,7 @@ still missing.
 
 ## ✦ What it puts on screen
 
-The bar is a catalogue of 20 modules. Each one is either always visible, or hides
+The bar is a catalogue of 22 modules. Each one is either always visible, or hides
 itself when it has nothing to say — and the whole arrangement is yours to change
 from Bar Settings, including per-module placement and which section of the bar it
 belongs to.
@@ -175,6 +175,8 @@ belongs to.
 | **System** | CPU and GPU temperature, load, fan, memory, disk, per-core |
 | **USB Storage** | Mounted drives with safe eject — hidden when there are none |
 | **Agent Usage** | Coding-agent spend for the provider pi used last — OpenRouter spend and credits, DeepSeek balance, local per-provider token and cache breakdowns for any provider; hidden when unavailable |
+| **pi** | Live agent activity — the tool a turn is running right now — and, once a run settles, a toast with its duration, turns, cost and model; click for Quick Ask. Hidden until a pi session publishes |
+| **Phone** | KDE Connect device: battery, reachability, and a panel for ring, ping, clipboard and SMS; hidden when KDE Connect is not installed |
 | **Battery** | Charge card, and it raises itself when the battery is low |
 | **Clock** | The clock OSD |
 | **Glance** | Month calendar and weather, hourly and daily |
@@ -187,6 +189,12 @@ belongs to.
 Not everything is a bar module. There is also a lock screen, a Polkit agent, a
 notification daemon with toasts and Do-Not-Disturb, reminders, a tray menu, and a
 3D-printing wallpaper transition that plays when a print starts.
+
+Three things live outside the bar's own surface because they take input: **Quick
+Ask** (one question to pi, answered in a card, prefilled from the clipboard),
+**Phone** (the KDE Connect panel), and **Text from Screen** — `bin/ocr.sh` picks a
+region, OCRs it with tesseract, and puts the text on the clipboard, or hands it
+straight to Quick Ask with `--ask`.
 
 <br>
 
@@ -372,6 +380,9 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 | `system` | `toggle` `open` `hide` |
 | `usb` | `toggle` `open` `hide` `refresh` |
 | `usage` | `toggle` `open` `hide` `refresh` |
+| `pi` | `state` |
+| `ask` | `toggle` `open` `hide` `question <text>` `state` |
+| `phone` | `toggle` `open` `hide` `state` `ring` `refresh` |
 | `notify` | `dnd` `toggle` `state` `history` `clear` `dismissAll` `center` `centerHide` |
 | `idle` | `state` `toggle` `stay` `awake` |
 | `reminder` | `set` `open` `list` `clear` |

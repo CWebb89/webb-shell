@@ -24,6 +24,11 @@ Personal Quickshell 0.3.2 shell for Hyprland (Arch package `quickshell` 0.3.2-1)
   them: `bin/shot` (the capture tool, to `~/.local/bin/shot`) and `bin/webb-shell`
   (the autostart shim over the unit, to `~/.local/bin/webb-shell`). The repo copy
   is canonical — edit it there and re-run `install.sh`, or the two drift.
+- `contrib/`: things the shell needs that live outside its own QML tree. Today
+  that is `pi-extension/webb-shell-activity.ts`, the only writer of
+  `~/.local/state/webb-shell/pi-activity.json`; `install.sh` step 4b copies it
+  into `~/.pi/agent/extensions/` when a pi config directory exists. It is
+  canonical here — editing the installed copy makes the two drift.
 - `systemd/`: the shell's launch path as a versioned user unit. `install.sh` renders it into `~/.config/systemd/user/` with the quickshell binary and this checkout filled in; the unit owns the process, so a crash restarts it and nothing else may start a second one. `bin/restart.sh` and `~/.local/bin/webb-shell` both delegate to it.
 - `tools/`: repository-level gates, currently just `verify.sh`, the one-command check below.
 - `test/`: node tests for the pure-JS models and the shell-script pipelines.

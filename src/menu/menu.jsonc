@@ -105,6 +105,7 @@
   "shell.bar.modules.usb": {"icon":"\uf287","label":"USB Storage","aliases":["bar"],"checked":"bar_in usb","action":"@shellDir@/bin/bar-config.sh toggle usb right"},
   "shell.bar.modules.agents": {"icon":"\uf080","label":"Agent Usage","aliases":["bar"],"checked":"bar_in agents","action":"@shellDir@/bin/bar-config.sh toggle agents right"},
   "shell.bar.modules.pi": {"icon":"\uf544","label":"pi Status","description":"Live agent activity and last-run cost","aliases":["bar"],"checked":"bar_in pi","action":"@shellDir@/bin/bar-config.sh toggle pi right"},
+  "shell.bar.modules.phone": {"icon":"\uf10b","label":"Phone","description":"KDE Connect device status","aliases":["bar"],"checked":"bar_in phone","action":"@shellDir@/bin/bar-config.sh toggle phone right"},
   "shell.bar.modules.battery": {"icon":"\uf240","label":"Battery","aliases":["bar"],"checked":"bar_in battery","action":"@shellDir@/bin/bar-config.sh toggle battery right"},
   "shell.bar.modules.clock": {"icon":"\uf017","label":"Clock","aliases":["bar"],"checked":"bar_in clock","action":"@shellDir@/bin/bar-config.sh toggle clock center"},
   "shell.bar.modules.glance": {"icon":"\uf06e","label":"Glance","aliases":["bar"],"checked":"bar_in glance","action":"@shellDir@/bin/bar-config.sh toggle glance right"},
@@ -125,6 +126,9 @@
   "shell.agents":      {"icon":"\uf544","label":"Agents","description":"Coding agents and local usage"},
   "shell.agents.usage":{"icon":"\uf080","label":"Agent Usage","description":"Spend and tokens from the local session logs","action":"qs -p @shellDir@ ipc call usage toggle"},
   "shell.agents.ask":  {"icon":"\uf544","label":"Ask pi","description":"One question, answered in a card — no terminal, no session","aliases":["quick ask","llm","question"],"when":"command -v pi >/dev/null","action":"qs -p @shellDir@ ipc call ask toggle"},
+  "shell.phone":       {"icon":"\uf10b","label":"Phone","description":"KDE Connect: battery, ring, clipboard, SMS","when":"command -v kdeconnect-cli >/dev/null","aliases":["kdeconnect","android","mobile"]},
+  "shell.phone.open":  {"icon":"\uf10b","label":"Phone Panel","description":"Device, battery, ring, clipboard and SMS","when":"command -v kdeconnect-cli >/dev/null","action":"qs -p @shellDir@ ipc call phone toggle"},
+  "shell.phone.ring":  {"icon":"\uf095","label":"Ring Phone","description":"Make the phone ring to find it","when":"command -v kdeconnect-cli >/dev/null","action":"qs -p @shellDir@ ipc call phone ring"},
   "shell.agents.launch":{"icon":"\uf544","label":"Launch Agent","description":"Open the default coding agent in a terminal","action":"hyprctl dispatch 'hl.dsp.exec_cmd(\"@shellDir@/bin/agent-launch.sh\")'"},
   "shell.agents.default":{"icon":"\uf544","label":"Default Agent","description":"Which coding agent the shell launches"},
   "shell.agents.default.pi":{"icon":"\uf544","label":"pi","when":"command -v pi >/dev/null","checked":"[[ \"$(jq -r .defaultAgent \"$HOME/.config/webb-shell/config.json\" 2>/dev/null)\" == \"pi\" ]]","action":"@shellDir@/bin/agent-default.sh pi"},
@@ -344,6 +348,8 @@
   "capture.region":    {"icon":"\uf047","label":"Region","action":"qs -p @shellDir@ ipc call screenshot region","description":"Pick an area with the mouse"},
   "capture.window":    {"icon":"\uf2d0","label":"Window","action":"qs -p @shellDir@ ipc call screenshot window","description":"Active window"},
   "capture.copy":      {"icon":"\uf0c5","label":"Copy Last","action":"f=$(ls -t $HOME/pictures/screenshots/*.png 2>/dev/null | head -1); [ -n \"$f\" ] && wl-copy --type image/png < \"$f\"","description":"Copy most recent screenshot to clipboard"},
+  "capture.ocr":       {"icon":"\uf031","label":"Text from Screen","action":"@shellDir@/bin/ocr.sh","description":"Pick a region and copy the text in it","aliases":["ocr","text"]},
+  "capture.ocr-ask":   {"icon":"\uf544","label":"Ask pi About Screen Text","action":"@shellDir@/bin/ocr.sh --ask","description":"OCR a region and hand the text to pi","when":"command -v pi >/dev/null","aliases":["ocr","ask"]},
   "capture.color":     {"icon":"\uf1fb","label":"Pick Colour","description":"Copy a hex value from the screen (needs hyprpicker)","when":"command -v hyprpicker >/dev/null","action":"setsid @shellDir@/bin/pick-color.sh >/dev/null 2>&1 &"},
 
   // Screen recording (bin/screenrecord.sh; needs gpu-screen-recorder)
