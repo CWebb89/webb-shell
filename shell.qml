@@ -434,6 +434,9 @@ ShellRoot {
             BarModules.show("askOpen")
             PiAsk.ask(text)
         }
+        function save(): void {
+            PiAsk.saveSession()
+        }
         function state(): string {
             return JSON.stringify({ running: PiAsk.running, exit: PiAsk.exitCode,
                                     chars: PiAsk.answer.length,

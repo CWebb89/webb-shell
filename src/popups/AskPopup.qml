@@ -1,20 +1,24 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import Quickshell.Wayland
 import "../theme"
 import "../state"
 import "../components"
 import "../services"
 
-// Quick Ask: one question to pi, the answer in the card, no terminal and no
-// session. `ask` is the bar's pi module and the `ask` IPC target; the prompt is
-// prefilled from the clipboard because the common case is "explain what I just
-// copied".
+// Quick Ask: one question to pi, the answer in the card, no terminal. `ask` is
+// the bar's pi module and the `ask` IPC target.
+//
+// The input starts empty every time — a box that still holds the last question
+// (or whatever was on the clipboard) makes the first keystroke a correction.
+// Clipboard paste is still Ctrl+V, which TextInput does natively.
+//
+// Nothing pi answers here is saved unless Ctrl+S is pressed: PiAsk hands the run
+// a scratch session that the next question wipes. See PiAsk.qml.
 //
 // The answer is plain text on purpose. pi returns markdown in print mode, and a
-// markdown renderer whose output has to survive a 480px card is a bigger
-// feature than this popup.
+// markdown renderer whose output has to survive one card is a bigger feature
+// than this popup.
 PanelWindow {
     id: root
 
@@ -23,6 +27,22 @@ PanelWindow {
     readonly property int answerMaxH: Math.max(root.answerMinH, Math.round(root.height * 0.55))
     readonly property int answerH: Math.min(root.answerMaxH,
                                            Math.max(root.answerMinH, answerText.implicitHeight + 8))
+
+    readonly property string lastRunLine: {
+        if (!PiActivity.present || PiActivity.busy)
+            return ""
+        var bits = []
+        if (PiActivity.turns > 0)
+            bits.push(PiActivity.turns + (PiActivity.turns === 1 ? " turn" : " turns"))
+        if (PiActivity.runMs > 0)
+            bits.push(PiActivity.durationLabel(PiActivity.runMs))
+        var cost = PiActivity.costLabel(PiActivity.runCost)
+        if (cost !== "")
+            bits.push(cost)
+        if (PiActivity.model !== "")
+            bits.push(PiActivity.model)
+        return bits.join(" · ")
+    }
 
     function dismiss() {
         if (PiAsk.running) {
@@ -39,35 +59,13 @@ PanelWindow {
         PiAsk.ask(promptField.text)
     }
 
-    function prefillFromClipboard() {
-        promptField.text = ""
-        clipper.command = ["bash", "-c", "wl-paste -n 2>/dev/null | head -n 1 | cut -c1-400"]
-        clipper.running = true
-    }
-
     Connections {
         target: Popups
         function onAskOpenChanged() {
-            if (Popups.askOpen) {
-                PiAsk.clear()
-                root.prefillFromClipboard()
-            } else {
-                PiAsk.clear()
-                promptField.text = ""
-            }
-        }
-    }
-
-    property var clipper: Process {
-        running: false
-        stdout: StdioCollector {
-            id: clipOut
-        }
-        onExited: () => {
-            var text = String(clipOut.text || "").trim()
-            if (!PiAsk.running)
-                promptField.text = text
-            Qt.callLater(function() { promptField.forceActiveFocus() })
+            PiAsk.clear()
+            promptField.text = ""
+            if (Popups.askOpen)
+                Delay.run(80, function() { promptField.forceActiveFocus() })
         }
     }
 
@@ -113,7 +111,7 @@ PanelWindow {
 
         x: root.place.x
         y: root.place.y
-        radius: Metrics.radiusMedium
+        radius: 0
         color: Colors.surfaceContainer
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
@@ -130,6 +128,9 @@ PanelWindow {
                     event.accepted = true
                 } else if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
                     PiAsk.copy()
+                    event.accepted = true
+                } else if (event.key === Qt.Key_S && (event.modifiers & Qt.ControlModifier)) {
+                    PiAsk.saveSession()
                     event.accepted = true
                 }
             }
@@ -151,7 +152,7 @@ PanelWindow {
 
                     AppIcon {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf544"
+                        text: "\uee9c"
                         font.pixelSize: 13
                         color: Colors.accent
                     }
@@ -178,7 +179,7 @@ PanelWindow {
             Rectangle {
                 width: parent.width
                 height: card.inputH
-                radius: Metrics.radiusSmall
+                radius: 0
                 color: Colors.surfaceVariant
                 border.color: promptField.activeFocus ? Colors.accent : Colors.outlineVariant
                 border.width: Metrics.borderWidth
@@ -204,6 +205,9 @@ PanelWindow {
                         } else if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
                             PiAsk.copy()
                             event.accepted = true
+                        } else if (event.key === Qt.Key_S && (event.modifiers & Qt.ControlModifier)) {
+                            PiAsk.saveSession()
+                            event.accepted = true
                         }
                     }
                 }
@@ -222,7 +226,7 @@ PanelWindow {
             Rectangle {
                 width: parent.width
                 height: root.answerH
-                radius: Metrics.radiusSmall
+                radius: 0
                 color: Colors.surfaceContainerLow
                 clip: true
 
@@ -295,20 +299,32 @@ PanelWindow {
                 AppText {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: PiAsk.answer !== ""
-                          ? "Enter to ask · Ctrl+C copy answer · Esc close"
-                          : "Enter to ask · Esc close"
+                    width: parent.width - (lastRun.width + 12)
+                    elide: Text.ElideMiddle
+                    text: {
+                        if (PiAsk.savedPath !== "")
+                            return "saved · resume with " + PiAsk.resumeCommand + " (on clipboard)"
+                        if (PiAsk.saving)
+                            return "saving the session…"
+                        if (PiAsk.answer !== "")
+                            return "Ctrl+S save session · Ctrl+C copy answer · Esc close"
+                        return PiAsk.running ? "Esc cancels" : "Enter to ask · nothing is saved · Esc close"
+                    }
                     variant: "small"
-                    color: Colors.outline
+                    color: PiAsk.savedPath !== "" ? Colors.accent : Colors.outline
                 }
 
+                // What the last pi run cost, next to the answer it produced
+                // instead of on the bar. The card is where a figure like this
+                // is read deliberately.
                 AppText {
+                    id: lastRun
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: PiAsk.answer !== "" && !PiAsk.running
-                    text: PiAsk.answer.split("\n").length + " lines"
+                    text: root.lastRunLine
+                    visible: text !== ""
                     variant: "small"
-                    color: Colors.outline
+                    color: Colors.surfaceVariantText
                 }
             }
         }

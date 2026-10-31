@@ -32,6 +32,14 @@ QtObject {
     readonly property bool activeCharging: root.active ? root.active.charging === true : false
     readonly property bool activeReachable: root.active ? root.active.reachable === true : false
     readonly property bool activePaired: root.active ? root.active.paired === true : false
+    readonly property string activeNetwork: root.active ? String(root.active.network || "") : ""
+    readonly property int activeStrength: root.active ? Number(root.active.strength ?? -1) : -1
+    readonly property int activeNotifications: root.active ? Number(root.active.notifications ?? 0) : 0
+    readonly property bool activeMounted: root.active ? root.active.mounted === true : false
+    readonly property string activeMountPoint: root.active ? String(root.active.mountPoint || "") : ""
+    readonly property string activeMediaTitle: root.active ? String(root.active.mediaTitle || "") : ""
+    readonly property string activeMediaArtist: root.active ? String(root.active.mediaArtist || "") : ""
+    readonly property bool activeMediaPlaying: root.active ? root.active.mediaPlaying === true : false
     readonly property bool available: root.installed && root.running && root.devices.length > 0
 
     property string lastError: ""
@@ -169,6 +177,78 @@ QtObject {
                                 devices: root.devices.length,
                                 active: root.activeName, charge: root.activeCharge,
                                 reachable: root.activeReachable, paired: root.activePaired,
+                                network: root.activeNetwork, strength: root.activeStrength,
+                                notifications: root.activeNotifications,
+                                mounted: root.activeMounted, mountPoint: root.activeMountPoint,
+                                media: root.activeMediaTitle, playing: root.activeMediaPlaying,
                                 busy: root.busy, error: root.lastError })
+    }
+
+    // Mount the phone's storage and open it in the desktop's file manager.
+    // sshfs is what kdeconnect's sftp plugin shells out to, so a machine without
+    // it fails here with that exact message instead of an empty window.
+    function mountFiles() {
+        if (root.activeId === "" || root.busy)
+            return
+        root.busy = true
+        root.lastError = ""
+        mountProc.command = ["bash", root.repoDir + "/bin/kdeconnect-do.sh", root.activeId, "mount"]
+        mountProc.running = true
+    }
+
+    function unmountFiles() {
+        if (root.activeId === "" || root.busy)
+            return
+        root.busy = true
+        root.lastError = ""
+        unmountProc.command = ["bash", root.repoDir + "/bin/kdeconnect-do.sh", root.activeId, "unmount"]
+        unmountProc.running = true
+    }
+
+    function media(action) {
+        if (root.activeId === "" || root.busy)
+            return
+        root.busy = true
+        root.lastError = ""
+        mediaProc.command = ["bash", root.repoDir + "/bin/kdeconnect-do.sh",
+                             root.activeId, "media", String(action)]
+        mediaProc.running = true
+    }
+
+    property var mountProc: Process {
+        running: false
+        stdout: StdioCollector { id: mountOut }
+        stderr: StdioCollector { id: mountErr }
+        onExited: (code) => {
+            root.busy = false
+            var path = String(mountOut.text || "").trim()
+            if (code !== 0 || path === "") {
+                root.lastError = String(mountErr.text || "").trim() || "could not mount the phone"
+            } else {
+                Quickshell.execDetached(["xdg-open", path])
+            }
+            root.query()
+        }
+    }
+
+    property var unmountProc: Process {
+        running: false
+        stderr: StdioCollector { id: unmountErr }
+        onExited: (code) => {
+            root.busy = false
+            if (code !== 0)
+                root.lastError = String(unmountErr.text || "").trim() || "could not unmount the phone"
+            root.query()
+        }
+    }
+
+    property var mediaProc: Process {
+        running: false
+        onExited: (code) => {
+            root.busy = false
+            if (code !== 0)
+                root.lastError = "media control failed"
+            root.query()
+        }
     }
 }

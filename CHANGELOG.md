@@ -196,15 +196,32 @@ All notable changes to webb-shell, oldest release last. The format follows
   `~/.local/state/webb-shell/pi-activity.json`; the `pi` bar module renders it and
   a toast reports each settled run with its duration, turns, cost and model. Quick
   Ask (`SUPER+D` → Ask pi, or `qs ipc call ask toggle`) answers one question in a
-  card with no terminal and no session, prefilled from the clipboard.
+  card with no terminal and no lasting session: the run gets a scratch session
+  that the next question wipes, and `Ctrl+S` copies it out to
+  `~/.local/state/webb-shell/ask-saved/` with `pi --session <path>` on the
+  clipboard when a question is worth continuing in a terminal.
 - **Text from Screen** — `bin/ocr.sh` OCRs a region onto the clipboard, with
   `--ask` handing the text straight to pi. Uses `shot` for the capture, and
   reports the missing `tesseract-data-eng` package instead of failing quietly.
-- **KDE Connect** — a `phone` bar module and Phone panel: device battery and
-  reachability, ring, ping, clipboard-to-phone and SMS. `bin/kdeconnect-state.sh`
-  reads the daemon over `busctl` and `bin/kdeconnect-notify.sh` mirrors phone
-  notifications into the shell's own toasts, which `kdeconnectd` cannot do
-  without a Plasma applet.
+- **KDE Connect** — a `phone` bar module and Phone panel: device battery, signal
+  and reachability, plus ring, ping, clipboard-to-phone, mount-and-browse of the
+  phone's storage, SMS and remote play/pause/next for whatever the phone is
+  playing. `bin/kdeconnect-state.sh` reads the daemon over `busctl`
+  (`bin/kdeconnect-do.sh` performs the verbs `kdeconnect-cli` lacks) and
+  `bin/kdeconnect-notify.sh` mirrors phone notifications into the shell's own
+  toasts, which `kdeconnectd` cannot do without a Plasma applet.
+
+### Fixed
+
+- **The phone panel said "not connected" for a paired, reachable phone.**
+  kdeconnectd 25.x has no `DeviceNames` property, and the reader that relied on
+  it silently saw zero devices while `kdeconnect-cli -l` listed the phone.
+  Device ids now come from the daemon's `devices()` method, which answers an
+  `as` array of bare ids rather than object paths.
+- **Ask pi was missing from the menu.** Its `when` guard probed `command -v pi`
+  in the systemd unit's environment, which did not contain `~/.pi/agent/bin` —
+  the guard was right and the PATH was wrong. The unit now sets one, so every
+  menu row that probes a user-directory binary sees it.
 
 ### Changed
 

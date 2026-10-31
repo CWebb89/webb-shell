@@ -7,6 +7,7 @@ Rectangle {
     required property string label
     property string icon: ""
     property string variant: "accent"   // accent | tonal | danger | ghost
+    property bool compact: false        // square, icon-only: for transport rows
     signal clicked()
 
     readonly property bool hovered: hov.hovered
@@ -16,7 +17,7 @@ Rectangle {
         : variant === "ghost" ? (hovered ? Colors.textPrimary : Colors.surfaceVariantText)
         : Colors.secondaryContainerText
 
-    implicitWidth: contentRow.implicitWidth + Metrics.spacing * 3
+    implicitWidth: compact ? implicitHeight : contentRow.implicitWidth + Metrics.spacing * 3
     implicitHeight: Metrics.controlHeight
     radius: Metrics.radiusSmall
     color:

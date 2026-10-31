@@ -75,9 +75,22 @@ There is no single mask/dismissal shape for every window:
 ### KDE Connect
 
 - `Quickshell` 0.3.2 **has no generic D-Bus binding** — only `Quickshell.DBusMenu`, for tray menus. Device state therefore comes from `bin/kdeconnect-state.sh`, which asks `busctl` and prints JSON, the same shape as `NmcliService`/`BtService`.
-- The property names used there are the daemon's own declarations, not guesses: `org.kde.kdeconnect.device` (`name`, `type`, `isReachable`, `isPaired`), `org.kde.kdeconnect.device.battery` (`charge`, `isCharging`, `hasBattery`), the daemon's `DeviceNames`, and the notifications plugin at `/modules/kdeconnect/devices/<id>/notifications` emitting `notificationPosted`/`notificationRemoved` with a public id. A wrong member name answers empty, which reads as "no devices" forever.
+- **There is no `DeviceNames` property on kdeconnectd 25.x.** `get-property … org.kde.kdeconnect.daemon DeviceNames` answers `Property … was not found in object /modules/kdeconnect`, so a reader that only asks for it reports zero devices while `kdeconnect-cli -l` happily lists a paired phone — that was the "connected but the panel says not connected" bug. Ids come from the daemon's `devices()` **method**, which answers an `as` array of bare ids (`as 1 "d5f6717…"`), not object paths; a parser that expects `/modules/kdeconnect/devices/<id>` finds nothing in it. `get-property` is silent on an unknown member, so a typo reads as "no devices" forever.
+- The other members used are the daemon's own declarations: `org.kde.kdeconnect.device` (`name`, `type`, `isReachable`, `isPaired`), `.battery` (`charge`, `isCharging`, `hasBattery`), `.connectivity_report` (`cellularNetworkType`, `cellularNetworkStrength`), `.mprisremote` (`title`, `artist`, `isPlaying`), `.sftp` (`mountAndWait`, `mountPoint`, `isMounted`, `getMountError`, `unmount` — all methods), and `.notifications.activeNotifications` returning an `as` whose count is the first field.
+- **`mountAndWait` needs `sshfs`.** KDE Connect's sftp plugin shells out to it and answers `Failed to start sshfs` without the package; the panel surfaces that sentence verbatim instead of opening an empty window.
 - **Mirrored phone notifications are invisible without a client.** `kdeconnectd`'s notifications plugin registers each phone notification as a D-Bus object and emits `notificationPosted`; drawing it is the Plasma applet's job (`plugins/notifications/notificationsplugin.cpp`), and there is no applet on Hyprland. `bin/kdeconnect-notify.sh` is that client: it watches the signal, posts through `org.freedesktop.Notifications` — which is this shell's own server — and closes the toast when the phone dismisses it.
 - Discovery needs `1714:1764 tcp` and `udp` open on the host. `ufw` is active on this machine, so pairing will never find the PC without those rules. That, not the daemon, is the usual cause of "kdeconnect does not work".
+
+### Quick Ask's session contract
+
+- The run is `pi --print --session-id ask-<epochms> --session-dir ~/.local/state/webb-shell/ask`, not `--no-session`: pi then has a real session file to copy out, and the directory is wiped (`find … -mindepth 1 -delete`) before every question, so at most one scratch file exists and nothing reaches `~/.pi/agent/sessions`. Verified: two questions leave one file, and pi's own store never sees an `ask-` id.
+- `Ctrl+S` / `qs ipc call ask save` copies that file to `~/.local/state/webb-shell/ask-saved/` and puts `pi --session <path>` on the clipboard. `--session <path>` is in `pi --help` and was verified to resume the transcript — the copy is not a decoration.
+- The prompt box is empty on every open. It was prefilled from the clipboard for a while; that read as "my last question is still here" on the second open, so the prefill is gone and Ctrl+V (TextInput's own paste) is the deliberate gesture.
+
+### Menu guards
+
+- **Guards evaluate in the shell's environment, which is the systemd unit's, not an interactive shell's.** `systemd/webb-shell.service` therefore sets `Environment=PATH=%h/.local/bin:%h/.pi/agent/bin:…`; without it `command -v pi` answers false and every pi row disappears silently (the row is fine, the environment is not). Any new row that probes a user-directory binary depends on that line — check the unit before doubting the guard.
+- A guard is reproducible outside the popup: `MenuModel.guardPrelude()` plus one `( expr ) && echo i:1 || echo i:0` per `guardExpressions()` entry, run under the PATH from `/proc/<shell-pid>/environ`, then `MenuModel.survives(model, item, guards)`. Same evaluation as `MenuPopup.evaluateGuards`, no UI needed.
 
 ### Hardware telemetry
 

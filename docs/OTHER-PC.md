@@ -399,6 +399,14 @@ part of `--packages`:
   runs while KDE Connect is installed and posts them through the shell's own
   notification server, which is also why they land in notification history.
 
+  **Browsing the phone's files needs `sshfs`.** The panel's Browse files button
+  mounts the share through KDE Connect's sftp plugin, which shells out to sshfs
+  and answers `Failed to start sshfs` without it:
+
+  ```fish
+  sudo pacman -S sshfs
+  ```
+
 ### Step 9 — Fonts, and how theming flows
 
 ```fish

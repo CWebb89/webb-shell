@@ -4,13 +4,14 @@ import "../../state"
 import "../../components"
 import "../../services"
 
-// Phone state in the bar: glyph, battery, and a live dot while reachable. Only
-// present once kdeconnect is installed and a device is known, so a machine
-// without it is unchanged.
+// Phone state in the bar. Present from the moment KDE Connect is installed, so
+// there is always a way into the panel before a phone is paired — the device
+// facts fill in afterwards, and the glyph carries the state instead of gating
+// the whole widget on it.
 Row {
     id: root
 
-    property bool wantsVisible: KdeConnect.available
+    property bool wantsVisible: KdeConnect.installed
     visible: wantsVisible
     spacing: 5
 
@@ -31,9 +32,10 @@ Row {
 
         AppIcon {
             anchors.centerIn: parent
-            text: KdeConnect.activeCharging ? "\uf0e7" : "\uf10b"
+            text: "\uf10b"
             font.pixelSize: 15
-            color: KdeConnect.activeReachable ? Colors.accent : Colors.outline
+            color: KdeConnect.activeReachable ? Colors.accent
+                 : (KdeConnect.active ? Colors.surfaceVariantText : Colors.outline)
         }
     }
 
@@ -42,7 +44,8 @@ Row {
         visible: root.chargeLabel !== ""
         text: root.chargeLabel
         variant: "small"
-        color: KdeConnect.activeCharge <= 15 ? Colors.error : Colors.surfaceVariantText
+        color: KdeConnect.activeCharging ? Colors.accent
+             : (KdeConnect.activeCharge <= 15 ? Colors.error : Colors.surfaceVariantText)
     }
 
     HoverHandler { id: phoneHover; cursorShape: Qt.PointingHandCursor }

@@ -175,8 +175,8 @@ belongs to.
 | **System** | CPU and GPU temperature, load, fan, memory, disk, per-core |
 | **USB Storage** | Mounted drives with safe eject — hidden when there are none |
 | **Agent Usage** | Coding-agent spend for the provider pi used last — OpenRouter spend and credits, DeepSeek balance, local per-provider token and cache breakdowns for any provider; hidden when unavailable |
-| **pi** | Live agent activity — the tool a turn is running right now — and, once a run settles, a toast with its duration, turns, cost and model; click for Quick Ask. Hidden until a pi session publishes |
-| **Phone** | KDE Connect device: battery, reachability, and a panel for ring, ping, clipboard and SMS; hidden when KDE Connect is not installed |
+| **pi** | Live agent activity — the tool a turn is running right now — and, once a run settles, a toast with its duration, turns, cost and model; click for Quick Ask, where the cost is shown. Hidden until a pi session publishes |
+| **Phone** | KDE Connect device: battery, signal and reachable state in the bar; the panel adds phone media control, mount-and-browse of the phone's storage, clipboard push, ring, ping and SMS |
 | **Battery** | Charge card, and it raises itself when the battery is low |
 | **Clock** | The clock OSD |
 | **Glance** | Month calendar and weather, hourly and daily |
@@ -191,10 +191,10 @@ notification daemon with toasts and Do-Not-Disturb, reminders, a tray menu, and 
 3D-printing wallpaper transition that plays when a print starts.
 
 Three things live outside the bar's own surface because they take input: **Quick
-Ask** (one question to pi, answered in a card, prefilled from the clipboard),
-**Phone** (the KDE Connect panel), and **Text from Screen** — `bin/ocr.sh` picks a
-region, OCRs it with tesseract, and puts the text on the clipboard, or hands it
-straight to Quick Ask with `--ask`.
+Ask** (one question to pi, answered in a card; the input starts empty and nothing
+is saved unless `Ctrl+S` asks for it), **Phone** (the KDE Connect panel), and
+**Text from Screen** — `bin/ocr.sh` picks a region, OCRs it with tesseract, and
+puts the text on the clipboard, or hands it straight to Quick Ask with `--ask`.
 
 <br>
 

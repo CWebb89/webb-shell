@@ -36,7 +36,7 @@ CORE_TOOLS="quickshell hyprctl qs matugen grim slurp wl-copy nmcli pactl"
 OPT_TOOLS="fzf fd bluetoothctl pavucontrol-qt cliphist tesseract zbarimg \
 gpu-screen-recorder powerprofilesctl curl file gsettings gtk-update-icon-cache \
 python3 xdg-mime xdg-settings gio ffmpeg hyprpicker notify-send udisksctl \
-lsblk udevadm coredumpctl gdbus kdeconnect-cli"
+lsblk udevadm coredumpctl gdbus kdeconnect-cli sshfs"
 # Called by the Hyprland config rather than the shell: the hardware volume and
 # brightness keys in ~/.config/hypr/modules/binds.lua.
 COMPOSITOR_TOOLS="playerctl brightnessctl"
