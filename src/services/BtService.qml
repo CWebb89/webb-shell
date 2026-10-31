@@ -4,8 +4,25 @@ import Quickshell
 import Quickshell.Io
 import "../state"
 
-// Bluetooth service — pure QML Process-based Bluetooth management
-// Uses bluetoothctl for device control and scanning.
+// Bluetooth service — Bluetooth management through bluetoothctl.
+//
+// Device state comes from three sources that mean different things:
+//   `devices`           every device bluez remembers, paired or not
+//   `devices Paired`    the paired subset
+//   `devices Connected` the connected subset
+// Listing only the paired set hides a device bluez already knows (removed bond,
+// trusted device), so the remembered list is what the popup shows and the
+// paired set only supplies the flag.
+//
+// Commands run in two serialized queues. Adapter state (power, discoverable,
+// pairable, scan) sets its value optimistically and is what a poll could revert,
+// so its queue owns a short window in which no refresh is allowed. Device
+// actions (pair/trust/connect/disconnect/remove) carry no optimistic state and
+// can hold the radio for half a minute, so they run in a second queue that the
+// adapter toggles never wait behind — and refreshes keep running through them,
+// which is how a completed connect shows up. Every command is bounded by
+// `timeout`: an unbounded `bluetoothctl pair` blocks its queue forever and the
+// UI then looks broken in a way that never recovers.
 QtObject {
     id: root
 
@@ -15,11 +32,15 @@ QtObject {
     property bool pairable: false
     property string adapterName: ""
     property string adapterAddress: ""
+    property var knownDevices: []
     property var pairedDevices: []
-    property var connectedDevices: []
+    property var connectedDevices: ({})
     property var discoveredDevices: []
     property bool scanning: false
-    property bool loading: false
+    // MAC of the device whose action is running; "" when that queue is idle.
+    property string busyMac: ""
+    // Last failed command's message, shown in the popup until it ages out.
+    property string lastError: ""
 
     // ── Poll timer (continuous state refresh while popup open) ──
     property var pollTimer: Timer {
@@ -35,11 +56,14 @@ QtObject {
         interval: 10000
         repeat: true
         running: true
-        onTriggered: {
-            ctrlProc.running = false; ctrlProc.running = true
-            devProc.running = false; devProc.running = true
-            connProc.running = false; connProc.running = true
-        }
+        onTriggered: refreshState()
+    }
+
+    property var errorTimer: Timer {
+        interval: 8000
+        repeat: false
+        running: false
+        onTriggered: root.lastError = ""
     }
 
     // Only whole words that name headphone-class hardware: a bare "ear" also
@@ -54,9 +78,9 @@ QtObject {
     }
 
     readonly property bool headphonesConnected: {
-        var paired = root.pairedDevices
-        for (var i = 0; i < paired.length; i++) {
-            if (paired[i].connected && root.isHeadphoneName(paired[i].name))
+        var devices = root.allDevices
+        for (var i = 0; i < devices.length; i++) {
+            if (devices[i].connected && root.isHeadphoneName(devices[i].name))
                 return true
         }
         return false
@@ -86,7 +110,6 @@ QtObject {
                     else if (line.indexOf("Discoverable:") === 0) root.discoverable = line.substring(14).trim() === "yes"
                     else if (line.indexOf("Pairable:") === 0) root.pairable = line.substring(9).trim() === "yes"
                 }
-                root.loading = false
             }
         }
     }
@@ -97,65 +120,82 @@ QtObject {
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
-                var text = addrProc.stdout.text || ""
-                var addr = text.trim()
+                var addr = (addrProc.stdout.text || "").trim()
                 if (addr !== "") root.adapterAddress = addr
             }
         }
     }
 
-    // ── Device list (paired + remembered) ───────────────────
-    property var devProc: Process {
-        command: ["bash", "-c", "bluetoothctl devices 2>/dev/null | while read -r _ mac rest; do echo \"$mac|$rest\"; done"]
+    // ── Remembered devices ─────────────────────────────────
+    property var knownProc: Process {
+        command: ["bash", "-c", "bluetoothctl devices 2>/dev/null | while read -r _ mac rest; do printf '%s|%s\\n' \"$mac\" \"$rest\"; done"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
-                var text = devProc.stdout.text || ""
-                var lines = text.trim().split("\n")
-                var result = []
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim()
-                    if (line === "") continue
-                    var sep = line.indexOf("|")
-                    if (sep < 0) continue
-                    var mac = line.substring(0, sep).trim()
-                    var name = line.substring(sep + 1).trim()
-                    if (mac !== "" && name !== "") {
-                        result.push({ mac: mac, name: name, connected: false })
-                    }
-                }
-                // Merge with connection status
-                root.pairedDevices = root._mergeConnected(result)
-                // after any device refresh, propagate real names into the
-                // discovered list so we never show an address when known
-                root.discoveredDevices = root._syncDiscoveredNames()
+                root.knownDevices = root._parseDevices(knownProc.stdout.text)
+                root._resolveUnknownNames()
             }
         }
     }
 
-    // ── Connected devices ──────────────────────────────────
+    // ── Paired subset ──────────────────────────────────────
+    property var pairedProc: Process {
+        command: ["bash", "-c", "bluetoothctl devices Paired 2>/dev/null | while read -r _ mac rest; do printf '%s|%s\\n' \"$mac\" \"$rest\"; done"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: root.pairedDevices = root._parseDevices(pairedProc.stdout.text)
+        }
+    }
+
+    // ── Connected subset ───────────────────────────────────
     property var connProc: Process {
-        command: ["bash", "-c", "bluetoothctl devices Connected 2>/dev/null | while read -r _ mac rest; do echo \"$mac|$rest\"; done"]
+        command: ["bash", "-c", "bluetoothctl devices Connected 2>/dev/null | while read -r _ mac rest; do printf '%s|%s\\n' \"$mac\" \"$rest\"; done"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
-                var text = connProc.stdout.text || ""
-                var lines = text.trim().split("\n")
-                var connectedMacs = {}
+                var lines = (connProc.stdout.text || "").trim().split("\n")
+                var macs = ({})
                 for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim()
-                    if (line === "") continue
-                    var sep = line.indexOf("|")
+                    var sep = lines[i].indexOf("|")
                     if (sep < 0) continue
-                    var mac = line.substring(0, sep).trim()
-                    if (mac !== "") connectedMacs[mac] = true
+                    var mac = lines[i].substring(0, sep).trim()
+                    if (mac !== "") macs[mac] = true
                 }
-                root.connectedDevices = connectedMacs
-                // Update paired devices with connection status
-                root.pairedDevices = root._mergeConnected(root.pairedDevices.slice())
+                root.connectedDevices = macs
             }
         }
     }
+
+    // ── Name resolver ──────────────────────────────────────
+    // A device bluez has no remote name for is listed with the MAC in dashes as
+    // its name, by `devices` and by a scan line alike. `bluetoothctl info`
+    // carries `Name:` once bluez has one (after a bond, or after the device
+    // answered a GATT query), so ask for every device still nameless — one
+    // process for all of them, and each MAC once per panel opening or scan.
+    property var nameProc: Process {
+        command: []
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = (nameProc.stdout.text || "").trim().split("\n")
+                var names = ({})
+                for (var i = 0; i < lines.length; i++) {
+                    var sep = lines[i].indexOf("|")
+                    if (sep < 0) continue
+                    var mac = lines[i].substring(0, sep).trim()
+                    var name = lines[i].substring(sep + 1).trim()
+                    if (mac !== "" && name !== "" && !root._looksLikeAddress(name)) names[mac] = name
+                }
+                root.knownDevices = root._rename(root.knownDevices, names)
+                root.discoveredDevices = root._rename(root.discoveredDevices, names)
+            }
+        }
+    }
+
+    property var _nameTried: ({})
+    // Devices a `remove` is running for: they are gone from the list at once,
+    // and a poll that lands before the command finishes must not bring them back.
+    property var _removing: ({})
 
     // ── Scan process (bounded; --timeout flushes device lines over a pipe) ──
     property var scanProc: Process {
@@ -163,41 +203,44 @@ QtObject {
         running: false
         stdout: SplitParser {
             onRead: function(line) {
-                // Modern bluetoothctl discovery lines:
-                //   [NEW] Device <MAC> [Name]
-                //   [CHG] Device <MAC> Name: MyDevice
-                //   [CHG] Device <MAC> RSSI: -50
-                // The display name rides on the "Device <MAC> <Name>" tail
-                // or a later "Name: <name>" update. Strip ANSI, find the MAC,
-                // grab the tail, and keep the REAL name instead of the address.
+                // Lines bluetoothctl emits during discovery:
+                //   [NEW] Device <MAC> <Name>      (name is the dashes MAC if none)
+                //   [CHG] Device <MAC> Name: <Name>
+                //   [CHG] Device <MAC> RSSI: -50   (every other property)
+                // Only NEW and a Name/Alias change carry a name; treating any
+                // other CHG tail as the name put "RSSI: -50" in the list.
                 var t = line.replace(/\x1b\[[0-9;]*m/g, "").trim()
                 var di = t.indexOf("Device ")
                 if (di < 0) return
                 var rest = t.substring(di + 7).trim()
                 var sp = rest.indexOf(" ")
                 var mac = (sp < 0 ? rest : rest.substring(0, sp)).trim()
-                if (!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(mac)) return
+                if (!root._macPattern.test(mac)) return
 
                 var tail = sp < 0 ? "" : rest.substring(sp + 1).trim()
                 var name = ""
-                if (tail.indexOf("Name:") === 0)
+                if (t.indexOf("[NEW]") === 0) {
+                    if (tail !== "" && !/^[A-Za-z][A-Za-z ]*: /.test(tail)) name = tail
+                } else if (tail.indexOf("Name:") === 0) {
                     name = tail.substring(5).trim()
-                else
-                    name = tail
+                } else if (tail.indexOf("Alias:") === 0) {
+                    name = tail.substring(6).trim()
+                } else {
+                    return
+                }
+                if (root._looksLikeAddress(name)) name = ""
 
                 var current = root.discoveredDevices.slice()
-                var found = false
                 for (var i = 0; i < current.length; i++) {
-                    if (current[i].mac === mac) {
-                        // update name when a later line reports it
-                        if (name !== "" && (current[i].name === "" || current[i].name === mac))
-                            current[i] = { mac: mac, name: name, connected: current[i].connected }
-                        found = true; break
-                    }
+                    if (current[i].mac !== mac) continue
+                    if (name === "" || current[i].name !== "") return
+                    current[i] = { mac: mac, name: name }
+                    root.discoveredDevices = current
+                    return
                 }
-                if (!found)
-                    current.push({ mac: mac, name: name, connected: false })
+                current.push({ mac: mac, name: name })
                 root.discoveredDevices = current
+                if (name === "") root._resolveUnknownNames()
             }
         }
         onStarted: { root.scanning = true; root.scanTimer.restart() }
@@ -206,130 +249,264 @@ QtObject {
             // after discovery settles, pull real names for anything just
             // found (it may not have reported a name mid-scan)
             Delay.run(600, function() {
-                root.discoveredDevices = root._syncDiscoveredNames()
+                root._resolveUnknownNames()
                 root.refreshState()
             })
         }
     }
 
-    // Replace empty/MAC-only names on discovered devices with any known
-    // name (from the adapter's remembered device list), so we never show an
-    // address when bluetoothctl has the real name.
-    function _syncDiscoveredNames() {
-        var known = {}
-        var paired = root.pairedDevices
-        for (var i = 0; i < paired.length; i++)
-            if (paired[i].name) known[paired[i].mac] = paired[i].name
-        var out = root.discoveredDevices.slice()
-        for (var j = 0; j < out.length; j++) {
-            if (out[j].name === "" || out[j].name === out[j].mac) {
-                var real = known[out[j].mac]
-                if (real)
-                    out[j] = { mac: out[j].mac, name: real, connected: out[j].connected }
+    // ── Adapter queue (optimistic state; blocks refreshes while it runs) ──
+    property var systemProc: Process {
+        command: []
+        running: false
+        stdout: StdioCollector { onStreamFinished: root._sysOutput = this.text || "" }
+        stderr: StdioCollector { onStreamFinished: root._sysErrors = this.text || "" }
+        onExited: function(exitCode) {
+            var job = root._systemQueue.shift()
+            root._systemBusy = false
+            root._finish(job, exitCode, root._sysOutput, root._sysErrors)
+            root._pumpSystem()
+            if (root._systemQueue.length === 0)
+                Delay.run(250, refreshState)
+        }
+    }
+    property var _systemQueue: []
+    property bool _systemBusy: false
+    property string _sysOutput: ""
+    property string _sysErrors: ""
+
+    // ── Device queue (no optimistic state; refreshes keep running) ──
+    property var actionProc: Process {
+        command: []
+        running: false
+        stdout: StdioCollector { onStreamFinished: root._actOutput = this.text || "" }
+        stderr: StdioCollector { onStreamFinished: root._actErrors = this.text || "" }
+        onExited: function(exitCode) {
+            var job = root._deviceQueue.shift()
+            root._deviceBusy = false
+            if (job.mac && job.mac !== "")
+                root._removing = root._withoutKey(root._removing, job.mac)
+            root._finish(job, exitCode, root._actOutput, root._actErrors)
+            root._pumpDevice()
+            if (root._deviceQueue.length === 0) {
+                root.busyMac = ""
+                Delay.run(350, refreshState)
             }
+        }
+    }
+    property var _deviceQueue: []
+    property bool _deviceBusy: false
+    property string _actOutput: ""
+    property string _actErrors: ""
+
+    function _enqueueSystem(command, label, quiet) {
+        _systemQueue.push({ command: command, label: label, quiet: quiet === true })
+        _pumpSystem()
+    }
+
+    function _pumpSystem() {
+        if (_systemBusy || _systemQueue.length === 0) return
+        _systemBusy = true
+        systemProc.command = _systemQueue[0].command
+        systemProc.running = true
+    }
+
+    function _enqueueDevice(command, mac, label) {
+        _deviceQueue.push({ command: command, mac: mac, label: label, quiet: false })
+        _pumpDevice()
+    }
+
+    function _pumpDevice() {
+        if (_deviceBusy || _deviceQueue.length === 0) return
+        var job = _deviceQueue[0]
+        _deviceBusy = true
+        root.busyMac = job.mac
+        actionProc.command = job.command
+        actionProc.running = true
+    }
+
+    function _finish(job, exitCode, out, err) {
+        if (exitCode === 0) {
+            if (!job.quiet) root.lastError = ""
+            // the bond or the connection is what gives bluez the remote name,
+            // so a device asked earlier without one deserves a second ask
+            if (job.mac && job.mac !== "") delete root._nameTried[job.mac]
+            return
+        }
+        if (job.quiet) return
+        root.lastError = root._errorText(job, out, err)
+        root.errorTimer.restart()
+        root._dropQueued(job.mac)
+    }
+
+    function _dropQueued(mac) {
+        if (!mac || mac === "") return
+        var kept = []
+        for (var i = 0; i < _deviceQueue.length; i++) {
+            if (_deviceQueue[i].mac !== mac) kept.push(_deviceQueue[i])
+        }
+        _deviceQueue = kept
+        root._removing = root._withoutKey(root._removing, mac)
+    }
+
+    function _withoutKey(map, key) {
+        var out = ({})
+        for (var k in map) if (k !== key) out[k] = map[k]
+        return out
+    }
+
+    function _errorText(job, out, err) {
+        var raw = (String(err || "").trim() !== "" ? err : out).replace(/\x1b\[[0-9;]*m/g, "")
+        var lines = String(raw).trim().split("\n")
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim()
+            if (line !== "") return line
+        }
+        return "Bluetooth " + job.label + " failed"
+    }
+
+    // ── Internal helpers ────────────────────────────────────
+    readonly property var _macPattern: /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/
+
+    function _looksLikeAddress(name) {
+        var n = String(name || "").trim()
+        return n === "" || /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(n)
+    }
+
+    function _parseDevices(text) {
+        var lines = String(text || "").trim().split("\n")
+        var out = []
+        for (var i = 0; i < lines.length; i++) {
+            var sep = lines[i].indexOf("|")
+            if (sep < 0) continue
+            var mac = lines[i].substring(0, sep).trim()
+            if (!root._macPattern.test(mac)) continue
+            var name = lines[i].substring(sep + 1).trim()
+            out.push({ mac: mac, name: root._looksLikeAddress(name) ? "" : name })
         }
         return out
     }
 
-    // ── Action process (serialized queue — rapid actions must not overwrite) ──
-    property var actionProc: Process {
-        command: []
-        running: false
-        onExited: { root._actionBusy = false; root._pump() }
-    }
-    property var _actionQueue: []
-    property bool _actionBusy: false
-
-    function _runAction(cmd) {
-        _actionQueue.push(cmd)
-        _pump()
-    }
-
-    function _pump() {
-        if (_actionBusy || _actionQueue.length === 0) return
-        _actionBusy = true
-        actionProc.command = _actionQueue.shift()
-        actionProc.running = true
-    }
-
-    // ── Internal helpers ────────────────────────────────────
-    function _mergeConnected(devices) {
-        var conn = root.connectedDevices
-        if (typeof conn !== "object") return devices
-        for (var i = 0; i < devices.length; i++) {
-            devices[i].connected = conn[devices[i].mac] === true
+    function _rename(devices, names) {
+        var changed = false
+        var out = devices.slice()
+        for (var i = 0; i < out.length; i++) {
+            var real = names[out[i].mac]
+            if (real && out[i].name !== real) {
+                out[i] = { mac: out[i].mac, name: real }
+                changed = true
+            }
         }
-        return devices
+        return changed ? out : devices
+    }
+
+    function _resolveUnknownNames() {
+        if (nameProc.running) return
+        var macs = []
+        var seen = ({})
+        var pool = root.knownDevices.concat(root.pairedDevices).concat(root.discoveredDevices)
+        for (var i = 0; i < pool.length; i++) {
+            var dev = pool[i]
+            if (dev.name !== "" || seen[dev.mac] || root._nameTried[dev.mac]) continue
+            seen[dev.mac] = true
+            macs.push(dev.mac)
+        }
+        if (macs.length === 0) return
+        for (var j = 0; j < macs.length; j++) root._nameTried[macs[j]] = true
+        nameProc.command = ["bash", "-c",
+            "for m in \"$@\"; do out=$(bluetoothctl info \"$m\" 2>/dev/null); " +
+            "n=$(printf '%s\\n' \"$out\" | sed -n 's/^[[:space:]]*Name: //p' | head -1); " +
+            "[ -z \"$n\" ] && n=$(printf '%s\\n' \"$out\" | sed -n 's/^[[:space:]]*Alias: //p' | head -1); " +
+            "[ -n \"$n\" ] && printf '%s|%s\\n' \"$m\" \"$n\"; done", "bt-names"].concat(macs)
+        nameProc.running = false
+        nameProc.running = true
     }
 
     // ── Public API ───────────────────────────────────────────
+    // Called by the popup when it opens: forget which devices were already
+    // asked for a name, so one that gained a name since the last look gets it.
+    function panelOpened() {
+        root._nameTried = ({})
+        refreshState()
+    }
+
     function refreshState() {
-        root.loading = true
+        if (_systemBusy || _systemQueue.length > 0) return
         ctrlProc.running = false; ctrlProc.running = true
         addrProc.running = false; addrProc.running = true
-        devProc.running = false; devProc.running = true
+        knownProc.running = false; knownProc.running = true
+        pairedProc.running = false; pairedProc.running = true
         connProc.running = false; connProc.running = true
     }
 
     function startScan() {
         if (root.scanning || !root.btEnabled) return
         root.discoveredDevices = []
+        root._nameTried = ({})
         // rfkill unblock is a no-op if already unblocked; ensures a soft-blocked
         // radio (stale between toggle and scan) doesn't fail silently.
-        _runAction(["rfkill", "unblock", "bluetooth"])
+        _enqueueSystem(["timeout", "5", "rfkill", "unblock", "bluetooth"], "scan", true)
         Delay.run(400, function() { scanProc.running = false; scanProc.running = true })
     }
 
     function stopScan() {
         if (!root.scanning) return
-        // Stop scan by sending scan off through a separate process
-        _runAction(["bluetoothctl", "scan", "off"])
+        // BlueZ answers `scan off` with org.bluez.Error.Failed when discovery
+        // already ended on its own, which is the normal end of a bounded scan
+        // rather than a failure worth showing.
+        _enqueueSystem(["timeout", "5", "bluetoothctl", "scan", "off"], "scan", true)
         scanProc.running = false
         root.scanning = false
-        // Refresh device list after scan
-        Delay.run(800, function() { root.refreshState() })
     }
 
     function setPowered(on) {
         // Unblock rfkill when turning on — a soft-blocked radio rejects `power on`
         // with org.bluez.Error.Failed. No-op if already unblocked; no sudo needed.
         if (on)
-            _runAction(["rfkill", "unblock", "bluetooth"])
-        _runAction(["bluetoothctl", "power", on ? "on" : "off"])
+            _enqueueSystem(["timeout", "5", "rfkill", "unblock", "bluetooth"], "power")
+        _enqueueSystem(["timeout", "8", "bluetoothctl", "power", on ? "on" : "off"], "power")
         root.btEnabled = on
-        Delay.run(800, function() { root.refreshState() })
+        if (!on) {
+            root.discoverable = false
+            root.pairable = false
+            root.scanning = false
+            root.discoveredDevices = []
+        }
     }
 
     function setDiscoverable(on) {
-        _runAction(["bluetoothctl", "discoverable", on ? "on" : "off"])
+        _enqueueSystem(["timeout", "8", "bluetoothctl", "discoverable", on ? "on" : "off"], "discoverable")
         root.discoverable = on
-        Delay.run(800, function() { root.refreshState() })
     }
 
     function setPairable(on) {
-        _runAction(["bluetoothctl", "pairable", on ? "on" : "off"])
+        _enqueueSystem(["timeout", "8", "bluetoothctl", "pairable", on ? "on" : "off"], "pairable")
         root.pairable = on
-        Delay.run(800, function() { root.refreshState() })
     }
 
     function connectDevice(mac) {
-        _runAction(["bluetoothctl", "connect", mac])
-        Delay.run(1500, function() { root.refreshState() })
+        _enqueueDevice(["timeout", "25", "bluetoothctl", "connect", mac], mac, "connect")
     }
 
     function disconnectDevice(mac) {
-        _runAction(["bluetoothctl", "disconnect", mac])
-        Delay.run(1000, function() { root.refreshState() })
+        _enqueueDevice(["timeout", "10", "bluetoothctl", "disconnect", mac], mac, "disconnect")
     }
 
     function removeDevice(mac) {
-        _runAction(["bluetoothctl", "remove", mac])
-        Delay.run(1000, function() { root.refreshState() })
+        root.knownDevices = root.knownDevices.filter(function(d) { return d.mac !== mac })
+        root.pairedDevices = root.pairedDevices.filter(function(d) { return d.mac !== mac })
+        root.discoveredDevices = root.discoveredDevices.filter(function(d) { return d.mac !== mac })
+        root._removing[mac] = true
+        delete root._nameTried[mac]
+        _enqueueDevice(["timeout", "8", "bluetoothctl", "remove", mac], mac, "remove")
     }
 
+    // Pairing without trust leaves a device that will not reconnect on its own;
+    // pair, then trust, then connect, the same sequence blueman and gnome run.
     function pairDevice(mac) {
-        _runAction(["bluetoothctl", "pair", mac])
-        Delay.run(3000, function() { root.refreshState() })
+        _enqueueDevice(["timeout", "35", "bluetoothctl", "pair", mac], mac, "pair")
+        _enqueueDevice(["timeout", "10", "bluetoothctl", "trust", mac], mac, "trust")
+        _enqueueDevice(["timeout", "25", "bluetoothctl", "connect", mac], mac, "connect")
     }
 
     function deviceIcon(name) {
@@ -345,31 +522,46 @@ QtObject {
         return "\uf294"
     }
 
-    // Combined list of all devices (paired + discovered). Names that are
-    // really just the adapter address in dashes-form get a friendly label
-    // instead of a raw MAC, so the list never shows a bare address as a name.
+    // Every device bluez remembers (paired or not) plus whatever a scan turned
+    // up. Connected first, then paired, then devices that actually reported a
+    // name — a name is more use than an address — then alphabetically.
     readonly property var allDevices: {
-        var map = {}
-        var result = []
+        var out = []
+        var seen = ({})
+        var pairedSet = ({})
         var paired = root.pairedDevices
-        for (var i = 0; i < paired.length; i++) {
-            map[paired[i].mac] = true
-            result.push({ mac: paired[i].mac, name: root.displayName(paired[i]), connected: paired[i].connected, paired: true })
-        }
-        var discovered = root.discoveredDevices
-        for (var j = 0; j < discovered.length; j++) {
-            if (!map[discovered[j].mac]) {
-                result.push({ mac: discovered[j].mac, name: root.displayName(discovered[j]), connected: false, paired: false })
-            }
-        }
-        return result
-    }
+        for (var p = 0; p < paired.length; p++) pairedSet[paired[p].mac] = true
 
-    // Show the real name when present; otherwise a friendly label, never a MAC.
-    function displayName(dev) {
-        if (!dev) return "Unknown device"
-        var n = String(dev.name || "")
-        if (n === "" || /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(n)) return "Unnamed device"
-        return n
+        var names = ({})
+        var discovered = root.discoveredDevices
+        for (var d = 0; d < discovered.length; d++)
+            if (discovered[d].name !== "") names[discovered[d].mac] = discovered[d].name
+        for (var k = 0; k < paired.length; k++)
+            if (paired[k].name !== "") names[paired[k].mac] = paired[k].name
+
+        function row(mac, fallbackName, isPaired) {
+            var name = names[mac] || fallbackName || ""
+            var named = !root._looksLikeAddress(name)
+            return { mac: mac, name: named ? name : mac, named: named,
+                     connected: root.connectedDevices[mac] === true, paired: isPaired }
+        }
+
+        var known = root.knownDevices
+        for (var i = 0; i < known.length; i++) {
+            if (root._removing[known[i].mac]) continue
+            seen[known[i].mac] = true
+            out.push(row(known[i].mac, known[i].name, pairedSet[known[i].mac] === true))
+        }
+        for (var j = 0; j < discovered.length; j++) {
+            if (seen[discovered[j].mac] || root._removing[discovered[j].mac]) continue
+            out.push(row(discovered[j].mac, discovered[j].name, pairedSet[discovered[j].mac] === true))
+        }
+        out.sort(function(a, b) {
+            if (a.connected !== b.connected) return a.connected ? -1 : 1
+            if (a.paired !== b.paired) return a.paired ? -1 : 1
+            if (a.named !== b.named) return a.named ? -1 : 1
+            return a.name.localeCompare(b.name)
+        })
+        return out
     }
 }

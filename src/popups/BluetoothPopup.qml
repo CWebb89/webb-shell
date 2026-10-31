@@ -16,7 +16,7 @@ PanelWindow {
         target: Popups
         function onBtOpenChanged() {
             if (Popups.btOpen)
-                BtService.refreshState()
+                BtService.panelOpened()
         }
     }
 
@@ -173,6 +173,22 @@ PanelWindow {
                 }
 
                 Rectangle {
+                    visible: BtService.lastError !== ""
+                    width: parent.width; height: 34; radius: 0
+                    color: Colors.errorDim
+                    border.color: Colors.error
+                    border.width: Metrics.borderWidth
+                    AppText {
+                        anchors.left: parent.left; anchors.leftMargin: 10
+                        anchors.right: parent.right; anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        elide: Text.ElideRight
+                        variant: "small"; color: Colors.error
+                        text: BtService.lastError
+                    }
+                }
+
+                Rectangle {
                     width: parent.width
                     height: root.devListH
                     visible: BtService.btEnabled && BtService.allDevices.length > 0
@@ -189,17 +205,24 @@ PanelWindow {
                         boundsBehavior: Flickable.StopAtBounds
 
                         delegate: Rectangle {
+                            id: devRow
                             required property var modelData
                             width: ListView.view.width; height: 56
                             radius: 0
-                            color: modelData.connected ? Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.12)
-                                                       : (devMa.containsMouse ? Colors.rowHover : Colors.surfaceContainer)
-                            border.color: modelData.connected ? Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.5)
-                                                              : Colors.outlineVariant
+
+                            readonly property bool connected: modelData.connected
+                            readonly property bool busy: BtService.busyMac === modelData.mac
+
+                            color: connected ? Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.12)
+                                             : (devHover.hovered ? Colors.rowHover : Colors.surfaceContainer)
+                            border.color: connected ? Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.5)
+                                                    : Colors.outlineVariant
                             border.width: Metrics.borderWidth
-                            opacity: 1
 
                             Behavior on color { ColorAnimation { duration: 130 } }
+                            Behavior on border.color { ColorAnimation { duration: 130 } }
+
+                            HoverHandler { id: devHover }
 
                             Item {
                                 id: devIconWrap
@@ -208,80 +231,129 @@ PanelWindow {
                                 anchors.leftMargin: 12
                                 anchors.verticalCenter: parent.verticalCenter
                                 Rectangle { anchors.fill: parent; radius: 0
-                                    color: modelData.connected ? Colors.accentDim : Colors.surfaceContainerHigh }
+                                    color: devRow.connected ? Colors.accentDim : Colors.surfaceContainerHigh }
                                 AppIcon { anchors.centerIn: parent
                                     text: BtService.deviceIcon(modelData.name)
-                                    color: modelData.connected ? Colors.accentBlue : root.deviceColor(modelData.name)
+                                    color: devRow.connected ? Colors.accentBlue : root.deviceColor(modelData.name)
                                     font.pixelSize: 17 }
                             }
 
                             Column {
                                 anchors.left: parent.left
                                 anchors.leftMargin: 60
-                                anchors.right: statusCol.left
-                                anchors.rightMargin: 8
+                                anchors.right: controls.left
+                                anchors.rightMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: 3
                                 AppText {
                                     width: parent.width; elide: Text.ElideRight
-                                    variant: "body"; font.pixelSize: 18; font.bold: modelData.connected
-                                    color: modelData.connected ? Colors.accentBlue : Colors.textPrimary
+                                    variant: "body"; font.pixelSize: 18; font.bold: devRow.connected
+                                    color: devRow.connected ? Colors.accentBlue : Colors.textPrimary
                                     text: modelData.name
                                 }
                                 AppText {
                                     width: parent.width; elide: Text.ElideRight
                                     variant: "small"
-                                    color: modelData.connected ? Colors.secondary : Colors.surfaceVariantText
-                                    text: modelData.connected ? "connected"
-                                          : (modelData.paired ? "paired" : "available to pair")
+                                    color: devRow.connected ? Colors.secondary : Colors.surfaceVariantText
+                                    text: devRow.busy ? "working…"
+                                          : (modelData.connected ? "connected"
+                                             : (modelData.paired ? "paired"
+                                                                 : (modelData.named ? "available to pair" : "no name reported by the device")))
                                 }
                             }
 
-                            Column {
-                                id: statusCol
+                            Row {
+                                id: controls
                                 anchors.right: parent.right
                                 anchors.rightMargin: 12
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 4
-                                PillButton {
-                                    height: 26
-                                    icon: ""
-                                    label: modelData.connected ? "Disconnect"
-                                          : (modelData.paired ? "Connect" : "Pair")
-                                    variant: modelData.connected ? "ghost" : "accent"
-                                    onClicked: {
-                                        if (!BtService.btEnabled) return
-                                        if (modelData.connected) BtService.disconnectDevice(modelData.mac)
-                                        else if (modelData.paired) BtService.connectDevice(modelData.mac)
-                                        else BtService.pairDevice(modelData.mac)
+                                spacing: 6
+
+                                Rectangle {
+                                    id: actBtn
+                                    width: 118; height: 30
+                                    radius: Metrics.radiusSmall
+
+                                    readonly property bool hovered: actHover.hovered
+                                    readonly property bool solid: !devRow.busy && !devRow.connected
+                                                                  && (!modelData.paired || hovered)
+                                    readonly property color fgColor: devRow.busy ? Colors.surfaceVariantText
+                                        : devRow.connected ? (hovered ? Colors.error : Colors.accentBlue)
+                                        : solid ? Colors.primaryText
+                                        : (hovered ? Colors.accentBlue : Colors.textPrimary)
+                                    readonly property string glyph: devRow.busy ? "\uf110"
+                                        : devRow.connected ? "\uf127"
+                                        : (modelData.paired ? "\uf0c1" : "\uf0c1")
+                                    readonly property string caption: devRow.busy ? "Working…"
+                                        : (devRow.connected ? "Disconnect"
+                                                            : (modelData.paired ? "Connect" : "Pair"))
+
+                                    color: devRow.busy ? Colors.surfaceContainerHigh
+                                        : devRow.connected ? (hovered ? Colors.errorDim : Colors.accentDim)
+                                        : solid ? (hovered ? Colors.primary : Colors.accent)
+                                        : (hovered ? Colors.accentDim : Colors.surfaceContainerHigh)
+                                    border.width: Metrics.borderWidth
+                                    border.color: devRow.busy ? Colors.outlineVariant
+                                        : devRow.connected ? (hovered ? Colors.error : Colors.accentBlue)
+                                        : solid ? "transparent"
+                                        : (hovered ? Colors.accent : Colors.outlineVariant)
+                                    scale: actPress.pressed ? 0.96 : 1
+                                    opacity: devRow.busy ? 0.75 : 1
+
+                                    Behavior on color { ColorAnimation { duration: 110 } }
+                                    Behavior on border.color { ColorAnimation { duration: 110 } }
+                                    Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 110 } }
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 5
+                                        AppIcon {
+                                            id: actGlyph
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: actBtn.glyph
+                                            font.pixelSize: 11
+                                            color: actBtn.fgColor
+                                            RotationAnimator on rotation {
+                                                running: devRow.busy
+                                                from: 0; to: 360; duration: 900; loops: Animation.Infinite
+                                            }
+                                        }
+                                        AppText {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            variant: "small"
+                                            font.bold: true
+                                            color: actBtn.fgColor
+                                            text: actBtn.caption
+                                        }
+                                    }
+
+                                    HoverHandler { id: actHover; cursorShape: devRow.busy ? Qt.ArrowCursor : Qt.PointingHandCursor }
+                                    TapHandler {
+                                        id: actPress
+                                        enabled: !devRow.busy
+                                        onTapped: {
+                                            if (!BtService.btEnabled) return
+                                            if (modelData.connected) BtService.disconnectDevice(modelData.mac)
+                                            else if (modelData.paired) BtService.connectDevice(modelData.mac)
+                                            else BtService.pairDevice(modelData.mac)
+                                        }
                                     }
                                 }
+
                                 Item {
-                                    width: 20; height: 20
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    opacity: devMa.containsMouse ? 1 : 0.35
-                                    Behavior on opacity { NumberAnimation { duration: 130 } }
+                                    width: 26; height: 30
                                     AppIcon {
                                         anchors.centerIn: parent
-                                        font.pixelSize: 11
+                                        font.pixelSize: 13
                                         text: "\uf1f8"
                                         color: trashHover.hovered ? Colors.error : Colors.surfaceVariantText
+                                        opacity: devHover.hovered || trashHover.hovered ? 1 : 0.4
+                                        Behavior on opacity { NumberAnimation { duration: 130 } }
+                                        Behavior on color { ColorAnimation { duration: 130 } }
                                     }
                                     HoverHandler { id: trashHover; cursorShape: Qt.PointingHandCursor }
                                     TapHandler { onTapped: BtService.removeDevice(modelData.mac) }
-                                }
-                            }
-
-                            MouseArea {
-                                id: devMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (!BtService.btEnabled) return
-                                    if (modelData.connected) BtService.disconnectDevice(modelData.mac)
-                                    else if (modelData.paired) BtService.connectDevice(modelData.mac)
-                                    else BtService.pairDevice(modelData.mac)
                                 }
                             }
                         }
