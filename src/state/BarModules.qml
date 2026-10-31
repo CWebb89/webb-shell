@@ -68,7 +68,7 @@ QtObject {
         { id: "agents", section: "right", label: "Agent Usage", hint: "Coding-agent limits and spend (hidden when unavailable)",
           widget: "src/bar/widgets/AgentsButton.qml",
           popupKey: "agentsOpen", popup: "src/popups/AgentUsagePopup.qml", anchor: "center" },
-        { id: "pi", section: "right", label: "pi", hint: "Live pi activity and last-run cost; click for Quick Ask (hidden until a pi session publishes)",
+        { id: "pi", section: "right", label: "pi", hint: "Quick Ask, plus live pi activity while a session runs",
           widget: "src/bar/widgets/PiWidget.qml",
           popupKey: "askOpen", popup: "src/popups/AskPopup.qml", anchor: "top-right" },
         { id: "phone", section: "right", label: "Phone", hint: "KDE Connect device: battery, ring, clipboard, SMS (hidden without kdeconnect)",

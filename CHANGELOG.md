@@ -222,6 +222,13 @@ All notable changes to webb-shell, oldest release last. The format follows
   in the systemd unit's environment, which did not contain `~/.pi/agent/bin` —
   the guard was right and the PATH was wrong. The unit now sets one, so every
   menu row that probes a user-directory binary sees it.
+- **The Ask pi bar button appeared and vanished with pi sessions.** Its
+  `wantsVisible` was `PiActivity.present`, so ending a session removed the button
+  and starting one brought it back — a launcher that is only sometimes there.
+  It is now always in the bar, and Bar Settings (`SUPER+SHIFT+B`) is the only
+  thing that takes it away. The live tool display stays; the question it opens
+  was, and remains, its own scratch session rather than the one you are working
+  in.
 
 ### Changed
 

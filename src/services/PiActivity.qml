@@ -46,6 +46,10 @@ QtObject {
     property FileView activityFile: FileView {
         path: root.activityPath
         watchChanges: true
+        // No file is the normal state between sessions, and the poll below asks
+        // once a second: with errors printed this logged a warning per second,
+        // forever, in a journal nobody reads. onLoadFailed still clears state.
+        printErrors: false
         onLoaded: root.apply(text())
         onLoadFailed: root.clear()
     }

@@ -175,7 +175,7 @@ belongs to.
 | **System** | CPU and GPU temperature, load, fan, memory, disk, per-core |
 | **USB Storage** | Mounted drives with safe eject — hidden when there are none |
 | **Agent Usage** | Coding-agent spend for the provider pi used last — OpenRouter spend and credits, DeepSeek balance, local per-provider token and cache breakdowns for any provider; hidden when unavailable |
-| **pi** | Live agent activity — the tool a turn is running right now — and, once a run settles, a toast with its duration, turns, cost and model; click for Quick Ask, where the cost is shown. Hidden until a pi session publishes |
+| **pi** | Always in the bar: click for Quick Ask. While a pi session runs it also shows the tool a turn is running right now, and a settled run produces a toast with its duration, turns, cost and model. Remove it in Bar Settings (`SUPER+SHIFT+B`) — inactivity does not |
 | **Phone** | KDE Connect device: battery, signal and reachable state in the bar; the panel adds phone media control, mount-and-browse of the phone's storage, clipboard push, ring, ping and SMS |
 | **Battery** | Charge card, and it raises itself when the battery is low |
 | **Clock** | The clock OSD |

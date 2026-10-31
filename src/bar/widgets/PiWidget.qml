@@ -7,9 +7,15 @@ import "../../services"
 // What pi is doing, straight from the activity file the shell's pi extension
 // writes. Busy: a spinner and the current tool (or "thinking"). Idle: the glyph
 // and nothing else — the money lives in the Ask card, where a cost can be read
-// with the number it belongs to instead of as a fragment on the bar. Nothing at
-// all when no pi session has published, so the bar is unchanged for anyone who
-// does not use it.
+// with the number it belongs to instead of as a fragment on the bar.
+//
+// **It is a launcher, so it is always in the bar.** It used to appear and vanish
+// with `PiActivity.present`, which meant the icon disappeared the moment a pi
+// session ended — a button that is only there sometimes cannot be learned as the
+// way into Quick Ask. Whether it is there now depends on one thing only: whether
+// the `pi` module sits in ShellConfig's bar layout, i.e. the SUPER+SHIFT+B Bar
+// Settings toggle. The activity it mirrors is read-only and belongs to whatever
+// TUI session is running; the question this opens is a separate scratch session.
 //
 // Clicking opens Quick Ask, which is the only thing here that takes input; the
 // status itself is read-only on purpose — a bar widget that can also cancel a
@@ -18,7 +24,7 @@ Row {
     id: root
 
     // Intent, not `visible`: see BarButton.wantsVisible.
-    property bool wantsVisible: PiActivity.present
+    property bool wantsVisible: true
     visible: wantsVisible
     spacing: 6
 
