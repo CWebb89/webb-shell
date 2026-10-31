@@ -92,6 +92,8 @@ ShellRoot {
     IpcHandler {
         target: "print"
         function start(targetPath: string): void {
+            if (Popups.lockOpen)
+                return
             Popups.closeAll()
             Popups.printTarget = targetPath
             Popups.printAnimRunning = true
@@ -103,7 +105,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("wallpaperOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("wallpaperOpen")
         }
         function hide(): void {
@@ -116,7 +118,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("schemeOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("schemeOpen")
         }
         function hide(): void {
@@ -133,7 +135,7 @@ ShellRoot {
         function toggle(): void {
             ShellState.barVisible = !ShellState.barVisible
         }
-        function show(): void {
+        function open(): void {
             ShellState.barVisible = true
         }
         function hide(): void {
@@ -166,7 +168,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("clockOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("clockOpen")
         }
         function hide(): void {
@@ -179,7 +181,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.togglePlain("batteryOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.showPlain("batteryOpen")
         }
         function hide(): void {
@@ -192,7 +194,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("glanceOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("glanceOpen")
         }
         function hide(): void {
@@ -211,16 +213,11 @@ ShellRoot {
     // to be the only way out. Popups.lockOpen is cleared by PAM success in
     // LockScreen.qml and nowhere else.
     //
-    // `show` is declared but unreachable — the CLI parses a trailing `show` as
-    // its own "print the function list" subcommand, so it prints and exits 0
-    // without calling anything. `engage` exists because a script or keybind
-    // needs the idempotent lock under a name the CLI does not swallow.
+    // `engage` rather than `open` only because this target never had the latter:
+    // the verb predates `open` becoming the house word for "raise this panel".
     IpcHandler {
         target: "lock"
         function engage(): void {
-            Popups.engageLock()
-        }
-        function show(): void {
             Popups.engageLock()
         }
     }
@@ -251,6 +248,8 @@ ShellRoot {
             // One picker at a time: a second select while a session is visible
             // would clobber the active session's file paths and leave its
             // caller waiting out its 30 s bound for nothing.
+            if (Popups.lockOpen)
+                return
             if (Popups.menuOpen && Popups.dmenuSelectionFile !== "")
                 return
             BarModules.whenMounted("menu", function() {
@@ -284,6 +283,8 @@ ShellRoot {
     IpcHandler {
         target: "keybinds"
         function open(): void {
+            if (Popups.lockOpen)
+                return
             if (Popups.menuOpen && Popups.dmenuSelectionFile !== "")
                 return
             BarModules.whenMounted("menu", function() {
@@ -299,7 +300,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("audioOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("audioOpen")
         }
         function hide(): void {
@@ -312,7 +313,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("wifiOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("wifiOpen")
         }
         function hide(): void {
@@ -325,7 +326,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("btOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("btOpen")
         }
         function hide(): void {
@@ -338,7 +339,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("systemMonitorOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("systemMonitorOpen")
         }
         function hide(): void {
@@ -351,7 +352,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("usbOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("usbOpen")
         }
         function hide(): void {
@@ -367,7 +368,7 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("agentsOpen")
         }
-        function show(): void {
+        function open(): void {
             BarModules.show("agentsOpen")
         }
         function hide(): void {
@@ -385,6 +386,8 @@ ShellRoot {
     IpcHandler {
         target: "history"
         function open(): void {
+            if (Popups.lockOpen)
+                return
             historyProc.command = [root.shellDir + "/bin/history.sh"]
             historyProc.running = true
         }
@@ -395,13 +398,12 @@ ShellRoot {
         function toggle(): void {
             BarModules.toggle("findOpen")
         }
-        function show(): void {
-            BarModules.show("findOpen")
-        }
         function hide(): void {
             BarModules.hide("findOpen")
         }
         function open(query: string): void {
+            if (Popups.lockOpen)
+                return
             BarModules.whenMounted("find", function() {
                 Popups.closeAll()
                 Popups.findQuery = query || ""
@@ -460,7 +462,9 @@ ShellRoot {
             Reminders.add(minutes, message)
             return "ok"
         }
-        function show(): string {
+        function open(): string {
+            if (Popups.lockOpen)
+                return "locked"
             Popups.closeAll()
             Popups.reminderOpen = true
             return "ok"
@@ -481,6 +485,8 @@ ShellRoot {
             BarModules.togglePlain("menuOpen")
         }
         function summon(route: string): void {
+            if (Popups.lockOpen)
+                return
             if (Popups.menuOpen)
                 return
             BarModules.whenMounted("menu", function() {
@@ -489,7 +495,7 @@ ShellRoot {
                 Popups.menuOpen = true
             })
         }
-        function show(): void {
+        function open(): void {
             BarModules.showPlain("menuOpen")
         }
         function hide(): void {

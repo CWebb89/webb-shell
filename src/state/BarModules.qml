@@ -246,7 +246,16 @@ QtObject {
 
     // Callers that used to write Popups.<key>Open directly go through these so
     // a removed module's popup still opens for a keybind or IPC call.
+    //
+    // None of them may raise a surface while the lock is up: keybinds cannot
+    // fire there (the lock holds exclusive keyboard focus) and engageLock()
+    // dismisses whatever was open, so the only route left was a deliberate
+    // `qs ipc call <target> open`, which would map an Overlay panel above the
+    // lock. The guard lives here rather than in each handler so a new popup
+    // module is covered the moment it is added.
     function toggle(key) {
+        if (Popups.lockOpen)
+            return
         var id = root.idForKey(key)
         if (id === "") {
             Popups.toggleExclusive(key)
@@ -256,6 +265,8 @@ QtObject {
     }
 
     function show(key) {
+        if (Popups.lockOpen)
+            return
         var id = root.idForKey(key)
         if (id === "") {
             Popups.closeAll()
@@ -276,6 +287,8 @@ QtObject {
     // the same shape: it raises itself on low charge, so it must not close
     // whatever else is on screen.
     function togglePlain(key) {
+        if (Popups.lockOpen)
+            return
         var id = root.idForKey(key)
         if (id === "") {
             Popups[key] = !Popups[key]
@@ -285,6 +298,8 @@ QtObject {
     }
 
     function showPlain(key) {
+        if (Popups.lockOpen)
+            return
         var id = root.idForKey(key)
         if (id === "") {
             Popups[key] = true

@@ -1,6 +1,6 @@
 # AGENTS.md — webb-shell
 
-Personal Quickshell 0.3.1 shell for Hyprland (Arch package `quickshell` 0.3.1-1). It is a live desktop shell, not a demo project.
+Personal Quickshell 0.3.2 shell for Hyprland (Arch package `quickshell` 0.3.2-1). It is a live desktop shell, not a demo project.
 
 ## Ground truth
 
@@ -47,16 +47,20 @@ The theme-token rules, popup exclusivity and input-mask contracts, and the Quick
 
 - Singleton registration belongs in the service/state/theme directory's `qmldir`.
 - `shell.qml` is the authoritative IPC target list. New handlers should only adapt IPC arguments into existing `Popups`, `ShellState`, services, or scripts; do not duplicate feature logic there.
-- Preserve popup exclusivity when adding `toggle`/`show` handlers. Closing with direct `flag = false` is valid.
+- Preserve popup exclusivity when adding `toggle`/`open` handlers. Closing with direct `flag = false` is valid.
 - Idle behaviour has one owner: `src/services/IdleState.qml` holds three
   `IdleMonitor`s (dim, display off, lock), the stay-awake flag and its
   `~/.local/state/webb-shell/idle.json` record, with
   `src/popups/DimOverlay.qml` as the visible stage and
   `ShellConfig.idle*Seconds` as the timeouts. Never add a second idle path
   (hypridle, a unit ordered against `sleep.target`) — the stages would fight.
-- `qs ipc call <target> show` is swallowed by the CLI and calls nothing, so a
-  function that must be reachable from a script needs a name that is not a `qs
-  ipc` subcommand (`engage`, `state`, `stay`). See `AGENTS-REFERENCE.md`.
+- `qs ipc call <target> show` is swallowed by the CLI and calls nothing, so the
+  house verb for raising a panel is `open`, and a function a script must reach
+  needs a name that is not a `qs ipc` subcommand (`open`, `engage`, `state`,
+  `stay`). See `AGENTS-REFERENCE.md`.
+- Openers refuse while `Popups.lockOpen` is set. The guard lives in
+  `BarModules.toggle/show/togglePlain/showPlain` so every popup module inherits
+  it; a handler that sets a flag directly needs its own guard.
 - Use `Delay.run(ms, fn)` for real delays. `Qt.callLater(fn, ms)` does not wait `ms`; it calls `fn` next tick with `ms` as an argument.
 
 ## Menu contract

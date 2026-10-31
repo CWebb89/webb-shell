@@ -193,6 +193,20 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Changed
 
+- **The IPC verb is `open`, and no panel opens over the lock.** Every target
+exposed a `show` that `qs ipc` swallowed — it printed the function list and
+exited 0 without calling anything — so the README, `AGENTS.md`,
+`AGENTS-REFERENCE.md` and `docs/OTHER-PC.md` all documented a call that did
+nothing, and every IpcHandler carried a dead function. `open` replaces it
+everywhere (`find` keeps its argument-taking `open <query>` and loses the dead
+one; `lock` keeps only `engage`). The same pass closes a hole recorded as open
+for weeks: a deliberate `qs ipc call <target> open` could map a panel above a
+locked screen. The guard lives in `BarModules.toggle/show/togglePlain/showPlain`
+so every popup module inherits it, with explicit checks in the `dmenu`,
+`keybinds`, `history`, `find`, `menu summon`, `reminder` and `print` handlers,
+which set flags directly. Keybinds were already safe (the lock holds exclusive
+keyboard focus). Runtime-checked on the live shell: `bar open` exits 0 and
+`bar show` still prints the list.
 - **Media directories are lower-case now** — `~/pictures/wallpapers`,
   `~/pictures/screenshots`, `~/pictures/videos/Recordings`. `install.sh`'s
   default, `ShellConfig`'s fallback, `bin/shot`, `bin/transcode.sh`,

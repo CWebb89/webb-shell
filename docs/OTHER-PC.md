@@ -696,9 +696,11 @@ duplicates while it runs), and `qs kill` removes them.
 
 Two gotchas that waste an hour if you meet them unprepared:
 
-- **`qs ipc call <target> show` does nothing.** The CLI swallows `show`, prints
-  the target's function list and exits 0 *without calling anything*. Use
-  `toggle`, or `engage` on the lock target.
+- **The house verb is `open`, not `show`.** `qs ipc call <target> show` does
+  nothing: the CLI swallows `show`, prints the target's function list and exits 0
+  *without calling anything*, which is why every target exposes `open` instead.
+  `lock` is lock-only and exposes `engage`. Popup openers also refuse while the
+  lock is up, so `qs ipc` cannot map a panel over a locked screen.
 - **A second instance duplicates the bar and background over your live
   workspace.** Always kill it by run id, never `pkill quickshell`.
 

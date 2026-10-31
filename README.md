@@ -6,7 +6,7 @@
 
 <div align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Quickshell-0.3.1-7aa2f7?style=for-the-badge" alt="Quickshell">
+  <img src="https://img.shields.io/badge/Quickshell-0.3.2-7aa2f7?style=for-the-badge" alt="Quickshell">
   <img src="https://img.shields.io/badge/Qt_6-QML-41cd52?style=for-the-badge&logo=qt&logoColor=white" alt="Qt 6">
   <img src="https://img.shields.io/badge/bar_modules-20-7dcfff?style=for-the-badge" alt="20 bar modules">
   <img src="https://img.shields.io/badge/IPC_targets-24-bb9af7?style=for-the-badge" alt="24 IPC targets">
@@ -266,7 +266,7 @@ notification daemon, and the wallpaper record.
 
 | | |
 | --- | --- |
-| **Required** | `quickshell` 0.3.1, `matugen`, `jq`, `NetworkManager`, `wireplumber`, `bluez`, `udisks2`, `grim`, `slurp`, `wl-clipboard` |
+| **Required** | `quickshell` 0.3.2, `matugen`, `jq`, `NetworkManager`, `wireplumber`, `bluez`, `udisks2`, `grim`, `slurp`, `wl-clipboard` |
 | **Video wallpapers** | `qt6-multimedia`, `qt6-multimedia-ffmpeg` |
 | **Media control** | `Quickshell.Services.Mpris` (ships with Quickshell), and `mpv-mpris` for video played through mpv |
 | **Optional** | `pavucontrol-qt`, `fd`, `fzf`, `tesseract`, `zbar`, `gpu-screen-recorder`, `cliphist`, `hyprpicker`, `localsend` |
@@ -356,39 +356,43 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 
 | Target | Functions |
 | --- | --- |
-| `bar` | `toggle` `show` `hide` `settings` `config <args>` |
-| `menu` | `toggle` `summon` `show` `hide` |
-| `find` | `toggle` `show` `hide` `open` |
+| `bar` | `toggle` `open` `hide` `settings` `config <args>` |
+| `menu` | `toggle` `summon` `open` `hide` |
+| `find` | `toggle` `hide` `open <query>` |
 | `notes` | `toggle` `hide` `add <text> [subtext]` |
-| `wallpaper` | `toggle` `show` `hide` |
-| `scheme` | `toggle` `show` `hide` |
-| `clock` | `toggle` `show` `hide` |
-| `battery` | `toggle` `show` `hide` |
-| `glance` | `toggle` `show` `hide` |
-| `lock` | `engage` `show` |
-| `audio` | `toggle` `show` `hide` |
-| `wifi` | `toggle` `show` `hide` |
-| `bluetooth` | `toggle` `show` `hide` |
-| `system` | `toggle` `show` `hide` |
-| `usb` | `toggle` `show` `hide` `refresh` |
-| `usage` | `toggle` `show` `hide` `refresh` |
+| `wallpaper` | `toggle` `open` `hide` |
+| `scheme` | `toggle` `open` `hide` |
+| `clock` | `toggle` `open` `hide` |
+| `battery` | `toggle` `open` `hide` |
+| `glance` | `toggle` `open` `hide` |
+| `lock` | `engage` |
+| `audio` | `toggle` `open` `hide` |
+| `wifi` | `toggle` `open` `hide` |
+| `bluetooth` | `toggle` `open` `hide` |
+| `system` | `toggle` `open` `hide` |
+| `usb` | `toggle` `open` `hide` `refresh` |
+| `usage` | `toggle` `open` `hide` `refresh` |
 | `notify` | `dnd` `toggle` `state` `history` `clear` `dismissAll` `center` `centerHide` |
 | `idle` | `state` `toggle` `stay` `awake` |
-| `reminder` | `set` `show` `list` `clear` |
+| `reminder` | `set` `open` `list` `clear` |
 | `screenshot` | `full` `region` `window` |
 | `print` | `start <path>` |
 | `keybinds` | `open` |
 | `history` | `open` |
 | `dmenu` | `select <options> <selection-file> <done-file> <prompt>` |
 
-`show` is declared on most targets but is **not reachable from `qs ipc`**: the CLI
-parses a trailing `show` as its own "print the function list" subcommand, so
-`ipc call <target> show` prints that table entry, changes nothing, and still exits
-0. Use `toggle`, or `engage` on the lock target, which is the lock-only one:
-`lock engage` is idempotent and `lock` has no function that can clear
-`Popups.lockOpen`, so an IPC call can never unlock an already-locked screen —
-only the password can. This is upstream behaviour, not something the shell can
-work around.
+`open` is the house word for "raise this panel", and it has to be a different
+word than the obvious one: the CLI parses a trailing `show` as its own "print the
+function list" subcommand, so `ipc call <target> show` prints that table entry,
+changes nothing, and still exits 0. Any function a script must reach therefore
+avoids the CLI's own subcommand names (`show`, `call`, `wait`, `listen`, `prop`).
+`lock` is the exception in every direction: it is lock-only, so it exposes
+`engage` and nothing else — no `toggle`, no `hide`, no route that could clear
+`Popups.lockOpen`, which only PAM success in the lock screen can. While the lock
+is up, every opener refuses: keybinds cannot fire there (the lock holds exclusive
+keyboard focus), `engageLock()` dismisses what was open, and the `BarModules`
+openers return early on `Popups.lockOpen`, so a deliberate `qs ipc call audio
+open` cannot map a panel above a locked screen either.
 
 `bin/menu-select.sh` uses the `dmenu` target to reuse the menu popup as a picker
 from arbitrary scripts — clipboard history, Wi-Fi connect, audio device select,
