@@ -23,9 +23,20 @@ QtObject {
     readonly property string stateDir: homeDir !== ""
         ? homeDir + "/.local/state/webb-shell" : ""
 
-    property string wallpaperDir: homeDir !== "" ? homeDir + "/Pictures/Wallpapers" : ""
+    property string wallpaperDir: homeDir !== "" ? homeDir + "/pictures/wallpapers" : ""
     property string matugenColorsFile: homeDir !== ""
         ? homeDir + "/.cache/matugen/webb-shell-colors.json" : ""
+    // The Custom palette's stored snapshot: matugen's own palette JSON, which
+    // bin/palette.sh renders through every template when matugenSource is
+    // "palette". Editing it in the shell and rendering it through matugen is
+    // what keeps the shell and the themed apps on one palette.
+    property string matugenPaletteFile: homeDir !== ""
+        ? homeDir + "/.config/webb-shell/palette.json" : ""
+    // Saved custom palettes: the Custom tab's cards. Written by the picker and
+    // never by install.sh, so it sits beside palette.json rather than in the
+    // generated config.
+    property string paletteLibraryFile: homeDir !== ""
+        ? homeDir + "/.config/webb-shell/palettes.json" : ""
     property string cpuName: "CPU"
     property string gpuName: "GPU"
 
@@ -33,6 +44,15 @@ QtObject {
     // a plain `matugen image <wall>` invocation does (tonal-spot, dark).
     property string matugenScheme: "scheme-tonal-spot"
     property string matugenMode: "dark"
+    // Which colour the palette comes from: the wallpaper image, the solid
+    // colour the SchemeSwitcher's Seed card stores below, or the hand-edited
+    // palette in matugenPaletteFile. "palette" outranks the other two: a
+    // wallpaper change re-renders the stored palette instead of re-deriving.
+    property string matugenSource: "wallpaper"
+    // Exact "#rrggbb" the Custom card applies: the palette's seed and, while
+    // no wallpaper record exists, the flat colour Background.qml draws. Empty
+    // means "themed background" — the palette's own background role.
+    property string solidColor: ""
 
     // The idle chain, in seconds: dim the screen, turn the display off, then
     // lock. A stage whose timeout is 0 is not monitored. The lock defaults to
@@ -97,6 +117,14 @@ QtObject {
         return typeof value === "number" && value >= 0 ? Math.floor(value) : fallback
     }
 
+    // Only a full 6-digit hex reaches the surface and matugen: a hand-edited
+    // "solidColor": "blue" would otherwise be handed straight to both.
+    // Anything unrecognised means "no custom colour".
+    function hexColor(value) {
+        var s = String(value || "").trim()
+        return /^#[0-9a-fA-F]{6}$/.test(s) ? s.toLowerCase() : ""
+    }
+
     function applyText(text) {
         var data = {}
         try {
@@ -105,9 +133,11 @@ QtObject {
             console.warn("webb-shell config parse failed:", e)
             return
         }
-        config.wallpaperDir = data.wallpaperDir || config.homeDir + "/Pictures/Wallpapers"
+        config.wallpaperDir = data.wallpaperDir || config.homeDir + "/pictures/wallpapers"
         config.matugenColorsFile = data.matugenColorsFile
             || (config.homeDir !== "" ? config.homeDir + "/.cache/matugen/webb-shell-colors.json" : "")
+        config.matugenPaletteFile = data.matugenPaletteFile
+            || (config.homeDir !== "" ? config.homeDir + "/.config/webb-shell/palette.json" : "")
         config.cpuName = data.cpuName || "CPU"
         config.gpuName = data.gpuName || "GPU"
         config.cfgExists = true
@@ -115,6 +145,9 @@ QtObject {
         if (scheme.indexOf("scheme-") !== 0) scheme = "scheme-" + scheme
         config.matugenScheme = scheme
         config.matugenMode = data.matugenMode || "dark"
+        config.matugenSource = data.matugenSource === "palette" ? "palette"
+            : data.matugenSource === "custom" ? "custom" : "wallpaper"
+        config.solidColor = config.hexColor(data.solidColor)
         config.idleDimSeconds = config.seconds(data.idleDimSeconds, config.idleDimSeconds)
         config.idleDisplayOffSeconds = config.seconds(data.idleDisplayOffSeconds,
                                                      config.idleDisplayOffSeconds)
@@ -126,7 +159,7 @@ QtObject {
     }
 
     // Whether a config.json already exists on disk (set when the loader runs;
-    // persistMatugen no-ops before install.sh has written one).
+    // persistTheme no-ops before install.sh has written one).
     property bool cfgExists: false
 
     // A machine that has never re-run install.sh has no `bar` key, and both the
@@ -145,14 +178,16 @@ QtObject {
         writeProc.running = true
     }
 
-    // Persist the chosen scheme+mode back to config.json, preserving any
-    // hand-edited keys. jq merges; safe because both values are enums we set.
-    function persistMatugen() {
+    // Persist the theme choice back to config.json, preserving any hand-edited
+    // keys. jq merges; every value is an enum or the picker's validated hex.
+    function persistTheme() {
         if (!config.cfgExists)
             return
         var s = JSON.stringify(config.matugenScheme)
         var m = JSON.stringify(config.matugenMode)
-        saveProc.command = ["sh", "-c", "CFG=\"$HOME/.config/webb-shell/config.json\"; jq '.matugenScheme = " + s + " | .matugenMode = " + m + "' \"$CFG\" > \"$CFG.new\" 2>/dev/null && mv \"$CFG.new\" \"$CFG\""]
+        var src = JSON.stringify(config.matugenSource)
+        var c = JSON.stringify(config.solidColor)
+        saveProc.command = ["sh", "-c", "CFG=\"$HOME/.config/webb-shell/config.json\"; jq '.matugenScheme = " + s + " | .matugenMode = " + m + " | .matugenSource = " + src + " | .solidColor = " + c + "' \"$CFG\" > \"$CFG.new\" 2>/dev/null && mv \"$CFG.new\" \"$CFG\""]
         saveProc.running = false
         saveProc.running = true
     }

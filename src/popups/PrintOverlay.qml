@@ -66,7 +66,15 @@ PanelWindow {
 
         function finishPrint() {
             content.running = false
-            // set the real wallpaper, keep the overlay up until it's applied
+            // set the real wallpaper, keep the overlay up until it's applied.
+                // The palette is about to be seeded from the image again, so
+                // the picker's Seed card must stop claiming to be the applied
+                // source — unless a hand-edited palette owns the colours, in
+                // which case set-wallpaper.sh re-renders it instead.
+                if (ShellConfig.matugenSource !== "palette") {
+                    ShellConfig.matugenSource = "wallpaper"
+                    ShellConfig.persistTheme()
+                }
             commitProc.command = ["bash", Quickshell.shellDir + "/bin/set-wallpaper.sh",
                                   Popups.printTarget, ShellConfig.matugenScheme, ShellConfig.matugenMode]
             commitProc.running = true

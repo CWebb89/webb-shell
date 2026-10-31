@@ -83,7 +83,11 @@ Item {
                 left: true
                 right: true
             }
-            color: root.currentBackground ? "transparent" : Colors.background
+            // With no wallpaper set the surface shows the custom solid colour
+            // when the scheme picker has one, otherwise the themed matugen
+            // background role.
+            color: root.currentBackground ? "transparent"
+                : (ShellConfig.solidColor !== "" ? ShellConfig.solidColor : Colors.background)
             visible: true
             updatesEnabled: true
             exclusionMode: ExclusionMode.Ignore

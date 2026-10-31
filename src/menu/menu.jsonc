@@ -83,7 +83,7 @@
 
   // Theme
   "system.theme":       {"icon":"\uf1fc","label":"Theme","description":"matugen color scheme and mode"},
-  "system.theme.scheme": {"icon":"\uf53f","label":"Scheme & Mode","description":"Pick a matugen palette variant","open":"scheme","aliases":["colors","palette","matugen"]},
+  "system.theme.scheme": {"icon":"\uf53f","label":"Scheme & Mode","description":"Pick a matugen palette variant, or edit every colour under Custom","open":"scheme","aliases":["colors","palette","matugen"]},
 
   "shell":             {"icon":"\uf0c9","label":"Shell","description":"webb-shell controls"},
   "shell.glance":      {"icon":"\uf06e","label":"Glance","open":"glance","description":"Calendar and weather panel"},
@@ -143,7 +143,7 @@
   "shell.reminders.set":  {"icon":"\uf017","label":"Set Reminder","description":"Remind me in N minutes","open":"reminder"},
   "shell.reminders.show": {"icon":"\uf06e","label":"Show Reminders","description":"List active reminders","action":"qs -p @shellDir@ ipc call reminder list"},
   "shell.reminders.clear":{"icon":"\uf00d","label":"Clear Reminders","description":"Forget all active reminders","action":"qs -p @shellDir@ ipc call reminder clear"},
-  "shell.solidwall":   {"icon":"\uf0c8","label":"Solid Color Wallpaper","description":"No wallpaper \u2014 themed flat color","checked":"[[ ! -s \"$HOME/.local/state/webb-shell/background\" ]]","action":"printf '' > \"$HOME/.local/state/webb-shell/background\""},
+  "shell.solidwall":   {"icon":"\uf0c8","label":"Solid Color Wallpaper","description":"No wallpaper \u2014 the Theme picker's Seed colour, Custom palette, or the themed flat colour","checked":"[[ ! -s \"$HOME/.local/state/webb-shell/background\" ]]","action":"printf '' > \"$HOME/.local/state/webb-shell/background\""},
 
   // ── Keybinds ── Catalog of useful shortcuts by tool. Selecting a row
   // copies the key combination to the clipboard; opening config files
@@ -183,7 +183,7 @@
   "binds.webb.bar":    {"icon":"\uf412","label":"SUPER + ; · Toggle bar","action":"printf '%s' 'SUPER + ;' | wl-copy"},
   "binds.webb.barsettings": {"icon":"\uf013","label":"SUPER + SHIFT + B · Bar settings","action":"printf '%s' 'SUPER + SHIFT + B' | wl-copy","description":"Add, remove, reorder and re-anchor bar modules"},
   "binds.webb.paper":  {"icon":"\uf03e","label":"SUPER + W · Cycle wallpaper","action":"printf '%s' 'SUPER + W' | wl-copy"},
-  "binds.webb.scheme": {"icon":"\uf53f","label":"ALT + W · Theme scheme picker","action":"qs -p @shellDir@ ipc call scheme toggle","description":"matugen scheme + dark/light/smart mode"},
+  "binds.webb.scheme": {"icon":"\uf53f","label":"ALT + W · Theme scheme picker","action":"qs -p @shellDir@ ipc call scheme toggle","description":"matugen scheme + dark/light/smart mode, and the Custom palette editor"},
   "binds.webb.find":   {"icon":"\uf002","label":"ALT + SPACE · File search (fd)","action":"printf '%s' 'ALT + SPACE' | wl-copy"},
   "binds.webb.clock":  {"icon":"\uf017","label":"SUPER + C · OSD clock","action":"printf '%s' 'SUPER + C' | wl-copy"},
   "binds.webb.glance": {"icon":"\uf06e","label":"SUPER + G · Glance panel","action":"printf '%s' 'SUPER + G' | wl-copy"},
@@ -341,7 +341,7 @@
   "capture.screen":    {"icon":"\uf030","label":"Screenshot","action":"qs -p @shellDir@ ipc call screenshot full","description":"Fullscreen capture"},
   "capture.region":    {"icon":"\uf047","label":"Region","action":"qs -p @shellDir@ ipc call screenshot region","description":"Pick an area with the mouse"},
   "capture.window":    {"icon":"\uf2d0","label":"Window","action":"qs -p @shellDir@ ipc call screenshot window","description":"Active window"},
-  "capture.copy":      {"icon":"\uf0c5","label":"Copy Last","action":"f=$(ls -t $HOME/Pictures/screenshots/*.png 2>/dev/null | head -1); [ -n \"$f\" ] && wl-copy --type image/png < \"$f\"","description":"Copy most recent screenshot to clipboard"},
+  "capture.copy":      {"icon":"\uf0c5","label":"Copy Last","action":"f=$(ls -t $HOME/pictures/screenshots/*.png 2>/dev/null | head -1); [ -n \"$f\" ] && wl-copy --type image/png < \"$f\"","description":"Copy most recent screenshot to clipboard"},
   "capture.color":     {"icon":"\uf1fb","label":"Pick Colour","description":"Copy a hex value from the screen (needs hyprpicker)","when":"command -v hyprpicker >/dev/null","action":"setsid @shellDir@/bin/pick-color.sh >/dev/null 2>&1 &"},
 
   // Screen recording (bin/screenrecord.sh; needs gpu-screen-recorder)

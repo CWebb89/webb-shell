@@ -18,5 +18,18 @@ if [[ $wall =~ \.(mp4|m4v|mov|webm|mkv|avi)$ ]]; then
 fi
 
 if [[ -n ${2:-} && -n ${3:-} ]]; then
-  "$(dirname "$0")/matugen-apply.sh" "$wall" "$2" "$3" || true
+  self_dir="$(dirname "$0")"
+  cfg="$HOME/.config/webb-shell/config.json"
+  palette="$HOME/.config/webb-shell/palette.json"
+  source_kind=""
+  if [[ -f $cfg ]]; then
+    source_kind="$(jq -r '.matugenSource // "wallpaper"' "$cfg" 2>/dev/null || true)"
+  fi
+  if [[ $source_kind == palette && -f $palette ]]; then
+    # A hand-set palette outranks the image: the wallpaper changes, the
+    # colours stay exactly what Custom applied.
+    "$self_dir/palette.sh" render "$palette" || true
+  else
+    "$self_dir/matugen-apply.sh" "$wall" "$2" "$3" || true
+  fi
 fi
