@@ -78,9 +78,13 @@ Rectangle {
         onClicked: row.toggled()
     }
 
+    // The row and the switch are separate hit targets: one click must produce
+    // exactly one toggled(), never a toggle followed by its own undo.
     MouseArea {
         id: ma
         anchors.fill: parent
+        anchors.right: sw.left
+        anchors.rightMargin: Metrics.popupContentMargin
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: row.toggled()

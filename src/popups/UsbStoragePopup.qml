@@ -235,7 +235,9 @@ PanelWindow {
                                 InfoRow {
                                     visible: driveCard.mounted
                                     label: "Used / Free"
-                                    value: Model.formatBytes(driveCard.part.used) + " / " + Model.formatBytes(driveCard.part.avail)
+                                    value: driveCard.part
+                                        ? Model.formatBytes(driveCard.part.used) + " / " + Model.formatBytes(driveCard.part.avail)
+                                        : "—"
                                 }
                                 InfoRow {
                                     label: "Filesystem"

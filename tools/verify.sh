@@ -11,11 +11,22 @@
 # file reports "not declared as singleton in qmldir". Absolute paths silence all
 # ten of those false reports and leave only the real warnings. Do not
 # "tidy" the paths below back to relative.
+#
+# It must also be the Qt6 qmllint. Where qt5-declarative is installed it owns
+# /usr/bin/qmllint ("qmllint 1.0"), which cannot parse Qt6 QML at all: it exits
+# 255 with no output on every file, so the gate fails while reporting nothing.
+# The Qt6 tool ships in /usr/lib/qt6/bin and is not on a non-login PATH.
 # Usage: ./tools/verify.sh
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
 export REPO
+
+QMLINT="$(command -v qmllint 2>/dev/null || echo qmllint)"
+if [ -x /usr/lib/qt6/bin/qmllint ]; then
+  QMLINT=/usr/lib/qt6/bin/qmllint
+fi
+export QMLINT
 
 fail=0
 fail_step() { printf '%s\n' "$1" | sed 's/^/      /'; }
@@ -33,7 +44,7 @@ check() {
   fi
 }
 
-check "qmllint" bash -O globstar -c 'qmllint --silent "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml'
+check "qmllint" bash -O globstar -c '"$QMLINT" --silent "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml'
 # bin/webb-shell has no .sh suffix because that is the name the compositor's
 # autostart and the docs call it by, so the glob does not reach it.
 check "shell syntax" bash -c 'bash -n install.sh portabilize.sh bin/*.sh bin/webb-shell'
@@ -75,7 +86,7 @@ done
 
 echo
 echo "--- qmllint warnings (advisory, not a failure) ---"
-warnings="$(bash -O globstar -c 'qmllint "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml' 2>&1 || true)"
+warnings="$(bash -O globstar -c '"$QMLINT" "$REPO"/shell.qml "$REPO"/Bar.qml "$REPO"/src/**/*.qml' 2>&1 || true)"
 summary="$(printf '%s\n' "$warnings" | grep -E '^(Warning|Error):' || true)"
 if [ -n "$summary" ]; then
   printf '%s\n' "$summary" | sed 's/^/      /'
