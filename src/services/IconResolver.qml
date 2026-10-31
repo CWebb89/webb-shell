@@ -17,6 +17,11 @@ import "../theme"
 // calls into a single run. A name that was asked for and is not in the output
 // is cached as a miss, so an icon the theme genuinely lacks is not re-asked on
 // every repaint.
+//
+// `urlFor` is deliberately pure and `request` does the queueing: a binding that
+// calls a function which writes a property becomes dependent on that property,
+// so the old single-function version re-entered its own `Image.source` binding
+// and logged `Binding loop detected` at 60 hits per session.
 QtObject {
     id: root
 
@@ -34,10 +39,21 @@ QtObject {
         if (n.charAt(0) === "/")
             return "file://" + n
         var hit = root.paths[n]
-        if (hit !== undefined)
-            return hit === "" ? "" : "file://" + hit
-        root.queue(n)
-        return ""
+        if (hit === undefined)
+            return ""
+        return hit === "" ? "" : "file://" + hit
+    }
+
+    // True for a name that is neither cached nor waiting for the resolver.
+    function isUnknown(name) {
+        var n = String(name || "")
+        return n !== "" && n.charAt(0) !== "/" && root.paths[n] === undefined
+    }
+
+    function request(name) {
+        if (!root.isUnknown(name))
+            return
+        root.queue(String(name))
     }
 
     function queue(name) {

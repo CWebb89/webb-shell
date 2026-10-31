@@ -239,6 +239,22 @@ PanelWindow {
                         height: row.modelData.isSeparator ? 9 : root.rowHeight
                         opacity: row.modelData.enabled === false ? 0.4 : 1.0
 
+                        property string iconSource: ""
+
+                        function resolveIcon() {
+                            const url = IconResolver.urlFor(row.modelData.icon)
+                            row.iconSource = url
+                            if (url === "")
+                                IconResolver.request(row.modelData.icon)
+                        }
+
+                        Component.onCompleted: row.resolveIcon()
+
+                        Connections {
+                            target: IconResolver
+                            function onPathsChanged() { row.resolveIcon() }
+                        }
+
                         Rectangle {
                             anchors.fill: parent
                             visible: !row.modelData.isSeparator
@@ -278,7 +294,7 @@ PanelWindow {
                             height: 22
                             sourceSize.width: 22
                             sourceSize.height: 22
-                            source: IconResolver.urlFor(row.modelData.icon)
+                            source: row.iconSource
                         }
 
                         AppIcon {

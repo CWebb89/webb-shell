@@ -40,6 +40,22 @@ Row {
             visible: String(traySlot.modelData.icon || "") !== ""
                      && root.hiddenIds.indexOf(traySlot.modelData.id) === -1
 
+            property string iconSource: ""
+
+            function resolveIcon() {
+                const url = IconResolver.urlFor(traySlot.modelData.icon)
+                traySlot.iconSource = url
+                if (url === "")
+                    IconResolver.request(traySlot.modelData.icon)
+            }
+
+            Component.onCompleted: traySlot.resolveIcon()
+
+            Connections {
+                target: IconResolver
+                function onPathsChanged() { traySlot.resolveIcon() }
+            }
+
             Rectangle {
                 anchors.fill: parent
                 radius: Metrics.radiusSmall
@@ -62,7 +78,7 @@ Row {
                 sourceSize.height: 22
                 smooth: true
                 visible: trayIcon.status === Image.Ready
-                source: IconResolver.urlFor(traySlot.modelData.icon)
+                source: traySlot.iconSource
             }
 
             AppIcon {
