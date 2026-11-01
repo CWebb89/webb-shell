@@ -722,7 +722,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(Colors.accentPurple.r, Colors.accentPurple.g, Colors.accentPurple.b, 0.06) }
         Flickable {
             id: flick
 
@@ -1046,6 +1046,10 @@ PanelWindow {
 
                 Item { width: 1; height: 12 }
             }
+        }
+
+        ScrollFade {
+            target: flick
         }
     }
 }

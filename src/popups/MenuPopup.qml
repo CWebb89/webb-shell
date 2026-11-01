@@ -12,6 +12,8 @@ import "../menu/MenuModel.js" as MenuModel
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentPurple
+
     readonly property int cardWidth: 520
     readonly property int rowHeight: 60
     readonly property int headerHeight: dmenuActive ? 30 : 24
@@ -509,7 +511,7 @@ PanelWindow {
             ? BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
             : Item.Center
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Behavior on opacity {
             AnimNumber { type: Anim.standard }
         }
@@ -856,6 +858,10 @@ PanelWindow {
                     color: Colors.surfaceVariantText
                     text: root.filterText !== "" ? "No matches" : "Empty"
                 }
+            }
+
+            ScrollFade {
+                target: rowList
             }
         }
     }

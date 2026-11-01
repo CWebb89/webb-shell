@@ -13,6 +13,8 @@ import "../components"
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentBlue
+
     Connections {
         target: Popups
         function onWifiOpenChanged() {
@@ -118,7 +120,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Column {
             id: contentCol
             width: card.width - Metrics.popupContentMargin * 2
@@ -290,7 +292,7 @@ PanelWindow {
                 }
 
                 // ═══ NETWORKS ═══
-                SectionLabel { label: "NETWORKS"; color: Colors.accentBlue; pixelSize: 20; showLine: true }
+                SectionLabel { label: "NETWORKS"; color: root.hue; pixelSize: 20; showLine: true }
 
                 Rectangle {
                     width: parent.width
@@ -414,13 +416,18 @@ PanelWindow {
                             }
                         }
 
-                        Text {
+                        EmptyState {
                             anchors.centerIn: parent
+                            width: parent.width - 32
                             visible: NmcliService.networks.length === 0
+                            glyph: NmcliService.scanning ? "\uf021" : "\uf1eb"
                             text: NmcliService.scanning ? "Scanning…" : "No networks found"
-                            color: Colors.surfaceVariantText
-                            font.pixelSize: 13; font.family: Type.family
+                            hint: NmcliService.scanning ? "" : "Move closer to an access point, or rescan from the bar module."
                         }
+                    }
+
+                    ScrollFade {
+                        target: netList
                     }
                 }
 
@@ -544,7 +551,7 @@ PanelWindow {
                 // ═══ SAVED NETWORKS ═══
                 SectionLabel {
                     label: "SAVED NETWORKS"
-                    color: Colors.accentBlue; pixelSize: 20; showLine: true
+                    color: root.hue; pixelSize: 20; showLine: true
                     visible: root.savedNetworks.length > 0 || !NmcliService.wifiEnabled
                 }
 
@@ -553,9 +560,28 @@ PanelWindow {
                     delegate: Rectangle {
                         id: savedRow
                         required property var modelData
+                        required property int index
                         width: parent.width; height: 40
                         radius: 0
                         readonly property bool hovered: savedMa.containsMouse
+
+                        // Rows arrive in sequence rather than all at once. Only
+                        // Repeater-built rows get this: ListView delegates are
+                        // created during scrolling, so staggering them would
+                        // replay the entrance every time you drag the list.
+                        property real entry: 1
+                        opacity: savedRow.entry
+
+                        SequentialAnimation on entry {
+                            running: true
+                            PauseAnimation { duration: Math.min(savedRow.index, 8) * 12 }
+                            NumberAnimation {
+                                from: 0; to: 1
+                                duration: Math.max(1, Anim.standard.duration)
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
                         color: savedRow.hovered ? Colors.rowHover : Colors.surfaceContainer
                         border.color: savedRow.hovered ? Colors.accent : Colors.outlineVariant
                         border.width: Metrics.borderWidth
@@ -580,7 +606,6 @@ PanelWindow {
                                 y: savedRow.hovered ? -1 : 0
                                 Behavior on y { AnimNumber { type: Anim.fast } }
                             }
-
                             Item {
                                 width: 26; height: 26
                                 anchors.left: parent.left

@@ -355,6 +355,10 @@ PanelWindow {
                 }
             }
 
+            ScrollFade {
+                target: list
+            }
+
             AppText {
                 anchors.centerIn: parent
                 width: parent.width - Metrics.spacing * 4

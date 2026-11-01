@@ -14,6 +14,8 @@ import "../services/UsbStorageModel.js" as Model
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentCyan
+
     Connections {
         target: Popups
         function onUsbOpenChanged() {
@@ -99,7 +101,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Flickable {
             id: flick
             anchors.fill: parent
@@ -151,12 +153,12 @@ PanelWindow {
                     }
                 }
 
-                AppText {
+                EmptyState {
                     width: parent.width
                     visible: root.driveCount === 0
-                    variant: "small"
-                    color: Colors.surfaceVariantText
-                    text: "No USB drives connected."
+                    glyph: "\uf287"
+                    text: "No USB drives connected"
+                    hint: "Plug one in and this panel picks it up on its own."
                 }
 
                 Repeater {
@@ -165,6 +167,22 @@ PanelWindow {
                     delegate: Rectangle {
                         id: driveCard
                         required property var modelData
+                        required property int index
+
+                        // Same sequential entrance as the saved-network rows —
+                        // Repeater-built, so it plays once per open.
+                        property real entry: 1
+                        opacity: driveCard.entry
+
+                        SequentialAnimation on entry {
+                            running: true
+                            PauseAnimation { duration: Math.min(driveCard.index, 8) * 12 }
+                            NumberAnimation {
+                                from: 0; to: 1
+                                duration: Math.max(1, Anim.standard.duration)
+                                easing.type: Easing.OutCubic
+                            }
+                        }
 
                         readonly property var part: Model.primaryPartition(driveCard.modelData)
                         readonly property bool mounted: !!(driveCard.part && driveCard.part.mountpoint)
@@ -314,6 +332,10 @@ PanelWindow {
 
                 Item { height: 12; width: 1 }
             }
+        }
+
+        ScrollFade {
+            target: flick
         }
     }
 

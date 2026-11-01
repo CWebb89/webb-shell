@@ -13,6 +13,8 @@ import "../components"
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentBlue
+
     Connections {
         target: Popups
         function onGlanceOpenChanged() {
@@ -134,7 +136,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Column {
             id: content
             x: root.margin
@@ -155,7 +157,7 @@ PanelWindow {
 
                     SectionLabel {
                         label: "CALENDAR"
-                        color: Colors.accentBlue
+                        color: root.hue
                         pixelSize: 20
                     }
 
@@ -293,7 +295,7 @@ PanelWindow {
 
             SectionLabel {
                 label: "HOURLY"
-                color: Colors.accentBlue
+                color: root.hue
                 pixelSize: 20
             }
 

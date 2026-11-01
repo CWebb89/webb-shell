@@ -1018,7 +1018,9 @@ PanelWindow {
     Rectangle {
         id: scrim
         anchors.fill: parent
-        color: "transparent"
+        // Dims the desktop, so the carousel has a surface to sit on rather than
+        // competing with whatever is behind it.
+        color: Qt.rgba(0, 0, 0, 0.45)
         opacity: content.opacity
         MouseArea {
             anchors.fill: parent
@@ -1491,6 +1493,10 @@ PanelWindow {
                                     onClicked: root.selectToken(rowItem.token)
                                 }
                             }
+                        }
+
+                        ScrollFade {
+                            target: tokenList
                         }
                     }
 

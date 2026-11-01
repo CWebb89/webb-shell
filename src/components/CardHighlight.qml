@@ -17,6 +17,8 @@ import "../theme"
 // and the hairline (z: 1) sits above them. Every popup card already instantiates
 // this, so the treatment is applied once rather than file by file.
 Item {
+    id: root
+
     anchors {
         left: parent.left
         right: parent.right
@@ -27,6 +29,11 @@ Item {
     }
     height: 96
 
+    // The wash is white at 3.5% unless a popup passes its own accent at low
+    // alpha, which gives each panel a colour identity while its content stays on
+    // the theme's text colours.
+    property color wash: Qt.rgba(1, 1, 1, 0.035)
+
     Rectangle {
         anchors {
             left: parent.left
@@ -35,8 +42,11 @@ Item {
         }
         height: 96
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.035) }
-            GradientStop { position: 1.0; color: "transparent" }
+            GradientStop { position: 0.0; color: root.wash }
+            GradientStop {
+                position: 1.0
+                color: Qt.rgba(root.wash.r, root.wash.g, root.wash.b, 0.0)
+            }
         }
     }
 

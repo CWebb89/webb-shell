@@ -366,12 +366,12 @@ PanelWindow {
                 width: flick.width
                 spacing: root.rowSpacing
 
-                AppText {
+                EmptyState {
                     width: parent.width
                     visible: root.noteCount === 0
-                    variant: "small"
-                    color: Colors.surfaceVariantText
-                    text: "No notes yet. Write one above and press Enter."
+                    glyph: "\uf249"
+                    text: "No notes yet"
+                    hint: "Write one above and press Enter."
                 }
 
                 Repeater {
@@ -380,6 +380,22 @@ PanelWindow {
                     delegate: Rectangle {
                         id: noteRow
                         required property var modelData
+                        required property int index
+
+                        // Repeater-built, so this plays once per open rather than
+                        // on every scroll like a ListView delegate would.
+                        property real entry: 1
+                        opacity: noteRow.entry
+
+                        SequentialAnimation on entry {
+                            running: true
+                            PauseAnimation { duration: Math.min(noteRow.index, 8) * 12 }
+                            NumberAnimation {
+                                from: 0; to: 1
+                                duration: Math.max(1, Anim.standard.duration)
+                                easing.type: Easing.OutCubic
+                            }
+                        }
 
                         readonly property bool editing: root.editingId === noteRow.modelData.id
                         readonly property bool justCopied: root.copiedId === noteRow.modelData.id
@@ -481,6 +497,10 @@ PanelWindow {
                     }
                 }
             }
+        }
+
+        ScrollFade {
+            target: flick
         }
     }
 }

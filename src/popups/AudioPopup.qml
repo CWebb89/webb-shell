@@ -17,6 +17,11 @@ import "../components"
 PanelWindow {
     id: root
 
+    // Panel identity: one accent for the card wash and the section labels. The
+    // content keeps the theme's text colours, so this reads as "which panel is
+    // this" from peripheral vision without turning the shell into a rainbow.
+    readonly property color hue: Colors.accentCyan
+
     Connections {
         target: Popups
         function onAudioOpenChanged() {
@@ -153,7 +158,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Flickable {
             id: flick
             anchors.fill: parent
@@ -171,7 +176,7 @@ PanelWindow {
                 Item { height: 12; width: 1 }
 
                 // ═══ OUTPUT ═══
-                SectionLabel { label: "OUTPUT"; color: Colors.accentBlue; pixelSize: 20 }
+                SectionLabel { label: "OUTPUT"; color: root.hue; pixelSize: 20 }
 
                 ChannelCard {
                     id: outputCard
@@ -187,7 +192,7 @@ PanelWindow {
                 }
 
                 // ═══ INPUT ═══
-                SectionLabel { label: "INPUT"; color: Colors.accentBlue; pixelSize: 20 }
+                SectionLabel { label: "INPUT"; color: root.hue; pixelSize: 20 }
 
                 ChannelCard {
                     device: root.defaultSource
@@ -332,6 +337,10 @@ PanelWindow {
 
                 Item { height: 12; width: 1 }
             }
+        }
+
+        ScrollFade {
+            target: flick
         }
     }
 

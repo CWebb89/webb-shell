@@ -22,6 +22,19 @@ PanelWindow {
     WlrLayershell.namespace: "webb-shell:wallpaper"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
+    // The carousel used to float on the raw wallpaper, so its card edges had
+    // nothing to sit against and a busy wallpaper competed with the art. Both
+    // pickers now dim the desktop behind them; this one had no scrim at all.
+    Rectangle {
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.45)
+        opacity: flow.opacity
+        MouseArea {
+            anchors.fill: parent
+            onClicked: Popups.wallpaperOpen = false
+        }
+    }
+
     // grab keyboard focus once the picker is actually up
     Timer {
         interval: 120
@@ -178,5 +191,27 @@ PanelWindow {
         variant: "small"
         color: Colors.surfaceVariantText
         text: flow.currentName
+    }
+
+    // The cards either side are sliced by the screen edge mid-glyph. Fading the
+    // outer bands into the scrim reads as "the carousel continues" instead.
+    Rectangle {
+        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+        width: Math.round(parent.width * 0.13)
+        opacity: flow.opacity
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
+        }
+    }
+
+    Rectangle {
+        anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+        width: Math.round(parent.width * 0.13)
+        opacity: flow.opacity
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.0) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.45) }
+        }
     }
 }

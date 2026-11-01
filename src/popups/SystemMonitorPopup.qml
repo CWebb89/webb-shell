@@ -12,6 +12,8 @@ import "../components"
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentRose
+
     Connections {
         target: Popups
         function onSystemMonitorOpenChanged() {
@@ -90,7 +92,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Column {
             anchors.fill: parent
             anchors.margins: Metrics.popupContentMargin

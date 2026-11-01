@@ -359,5 +359,9 @@ PanelWindow {
                 }
             }
         }
+
+        ScrollFade {
+            target: flick
+        }
     }
 }

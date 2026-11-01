@@ -12,6 +12,8 @@ import "../components"
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentPurple
+
     Connections {
         target: Popups
         function onBtOpenChanged() {
@@ -114,7 +116,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Column {
             id: contentCol
             width: card.width - Metrics.popupContentMargin * 2
@@ -198,7 +200,7 @@ PanelWindow {
 
                 // ═══ DEVICES ═══
                 SectionLabel {
-                    label: "DEVICES"; color: Colors.accentBlue; pixelSize: 20; showLine: true
+                    label: "DEVICES"; color: root.hue; pixelSize: 20; showLine: true
                     visible: BtService.btEnabled
                 }
 
@@ -388,6 +390,10 @@ PanelWindow {
                                 }
                             }
                         }
+                    }
+
+                    ScrollFade {
+                        target: btList
                     }
                 }
 

@@ -25,6 +25,8 @@ import "../components"
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentCyan
+
     readonly property var days: AgentUsage.days
     readonly property var models: AgentUsage.models
 
@@ -227,7 +229,7 @@ PanelWindow {
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
         Behavior on scale { AnimNumber { type: Anim.standard } }
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Flickable {
             id: flick
             anchors.fill: parent
@@ -417,7 +419,7 @@ PanelWindow {
                 // every provider's total is one row down in PROVIDERS.
                 SectionLabel {
                     label: "LOCAL PI LOGS · " + root.providerName(AgentUsage.activeProvider).toUpperCase()
-                    color: Colors.accentBlue; pixelSize: 20
+                    color: root.hue; pixelSize: 20
                     visible: AgentUsage.ok
                 }
 
@@ -477,7 +479,7 @@ PanelWindow {
                 // appears here after its first message with no code change, and
                 // the one pi called last is marked rather than assumed.
                 SectionLabel {
-                    label: "PROVIDERS · LOCAL TRAFFIC"; color: Colors.accentBlue; pixelSize: 20
+                    label: "PROVIDERS · LOCAL TRAFFIC"; color: root.hue; pixelSize: 20
                     visible: AgentUsage.ok && AgentUsage.providers.length > 0
                 }
 
@@ -582,7 +584,7 @@ PanelWindow {
 
                 SectionLabel {
                     label: "LAST 7 ACTIVE DAYS · " + root.providerName(AgentUsage.activeProvider).toUpperCase()
-                    color: Colors.accentBlue; pixelSize: 20
+                    color: root.hue; pixelSize: 20
                     visible: AgentUsage.ok && root.days.length > 0
                 }
 
@@ -805,6 +807,10 @@ PanelWindow {
                     }
                 }
             }
+        }
+
+        ScrollFade {
+            target: flick
         }
     }
 }

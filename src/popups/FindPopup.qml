@@ -14,6 +14,8 @@ import "FindBackend.js" as Backend
 PanelWindow {
     id: root
 
+    readonly property color hue: Colors.accentBlue
+
     readonly property int cardWidth: Math.min(880, Math.max(0, root.width - 48))
     readonly property int cardMargin: Metrics.spacing * 2
     readonly property int headerH: 52
@@ -551,7 +553,7 @@ PanelWindow {
         scale: Popups.findOpen ? 1 : 0.97
         transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
 
-        CardHighlight { }
+        CardHighlight { wash: Qt.rgba(root.hue.r, root.hue.g, root.hue.b, 0.06) }
         Behavior on opacity {
             AnimNumber { type: Anim.standard }
         }
@@ -1042,6 +1044,10 @@ PanelWindow {
                     }
                 }
 
+                ScrollFade {
+                    target: resultList
+                }
+
                 Column {
                     anchors.centerIn: parent
                     spacing: Metrics.spacing
@@ -1128,6 +1134,10 @@ PanelWindow {
                             }
                         }
                     }
+                }
+
+                ScrollFade {
+                    target: keybindGrid
                 }
             }
 

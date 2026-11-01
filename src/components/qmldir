@@ -8,3 +8,5 @@ PillButton 1.0 PillButton.qml
 ToggleSetting 1.0 ToggleSetting.qml
 BarButton 1.0 BarButton.qml
 CardHighlight 1.0 CardHighlight.qml
+ScrollFade 1.0 ScrollFade.qml
+EmptyState 1.0 EmptyState.qml
