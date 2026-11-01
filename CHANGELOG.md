@@ -7,6 +7,14 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **Type is a scale with three axes, not a list of pixel sizes.** `Type` now
+  names a weight and a tracking value beside every size, and `AppText` resolves a
+  variant to all three at once, so a surface asks for a role instead of choosing
+  a size. Uppercase section labels gain 1.2px of tracking and use
+  `Type.weightBold`, which is the visible half; the rest is that a new panel can
+  no longer invent a font size. Weight stays a per-site `font.bold` on purpose —
+  `font.weight` and `font.bold` write the same property, and a base-component
+  weight un-bolded every heading in the shell until it was caught in a capture.
 - **The bar and the panels now answer questions they used to stay silent on.**
   The workspace indicator is one pill that slides between digits instead of a
   rectangle appearing under each, so a workspace switch shows which way you

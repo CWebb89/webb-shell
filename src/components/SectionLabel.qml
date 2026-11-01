@@ -19,8 +19,9 @@ Item {
         anchors.leftMargin: root.center ? -t.implicitWidth / 2 : 0
         anchors.verticalCenter: parent.verticalCenter
         variant: "small"
-        font.bold: true
+        font.weight: Type.weightBold
         font.pixelSize: root.pixelSize
+        font.letterSpacing: Type.trackingLabel
         color: root.color
         text: root.label
     }

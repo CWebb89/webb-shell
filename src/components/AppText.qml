@@ -15,13 +15,26 @@ Text {
     property color glowColor: Colors.primary
     property real glowStrength: 1.0
 
+    // The variant picks a role; the role picks size, weight and tracking
+    // together so those three cannot drift apart per surface.
+    readonly property int roleSize: variant === "caption" || variant === "label" ? Type.sizeCaption
+                                 : variant === "small" ? Type.sizeSmall
+                                 : variant === "medium" ? Type.sizeMedium
+                                 : variant === "large" ? Type.sizeLarge
+                                 : variant === "heading" ? Type.sizeHeading
+                                 : variant === "xlarge" ? Type.sizeXLarge
+                                 : Type.sizeBody
+    readonly property real roleTracking: variant === "caption" || variant === "label"
+                                         ? Type.trackingLabel : Type.trackingBody
+
+    // Deliberately no `font.weight` here. Sites still say `font.bold: true`,
+    // and weight and bold write the same underlying font property: whichever is
+    // evaluated last wins, so a base-component weight silently un-bolds 20 files'
+    // worth of headings. Weight stays a per-site decision until every site is
+    // migrated to `Type.weight*` in one pass.
     font.family: Type.family
-    font.pixelSize: variant === "small" ? Type.sizeSmall
-                    : variant === "medium" ? Type.sizeMedium
-                    : variant === "large" ? Type.sizeLarge
-                    : variant === "heading" ? Type.sizeHeading
-                    : variant === "xlarge" ? Type.sizeXLarge
-                    : Type.sizeBody
+    font.pixelSize: roleSize
+    font.letterSpacing: roleTracking
     color: Colors.textPrimary
 
     layer.enabled: glow && text !== ""

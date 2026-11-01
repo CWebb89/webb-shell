@@ -30,7 +30,7 @@ the four are one-off systems rather than surfaces.
 | 1 | Motion tokens | ½ day | shipped |
 | 2 | Popup card elevation | ½ day | shipped |
 | 3 | Interaction polish set | 1 day | shipped |
-| 4 | Type scale + Material Symbols | 1 day | planned |
+| 4 | Type scale | 4 h | shipped |
 
 ### 1. Motion tokens
 
@@ -72,20 +72,21 @@ menu rows (12 ms apart, capped at eight), sparkline area fills, media art
 crossfade and a 320 ms wallpaper crossfade for stills. Phone and Reminder gained
 the fade and scale they were missing.
 
-### 4. Type scale + Material Symbols
+### 4. Type scale
 
-`Type.qml` today is eight fixed pixel sizes with no weight, tracking or
-line-height, and the names are inverted (`sizeLarge 20 < sizeMedium 24`). Replace
-with `display / title / heading / body / caption` plus weight and letter-spacing
-pairs and a mono-vs-display family split.
+Shipped as the scale only. `Type` carries weight and tracking beside every size
+and `AppText` resolves a variant to all three; section labels gained 1.2px of
+tracking and use `Type.weightBold`.
 
-Icons are all Nerd Font glyphs (`\uf00a`…), and glyph coverage has already bitten
-this repo once. `ttf-material-symbols-variable` is installed and unused; a
-`Glyph.qml` wrapper over a curated codepoint map gives consistent stroke weight
-and no plane-15 dependency.
+**Material Symbols was declined.** Swapping 190 Nerd Font glyph sites for
+Material Symbols codepoints would change the shell's whole visual character and
+needs a codepoint map plus the fontTools coverage check that has already bitten
+this repo once. `ttf-material-symbols-variable` stays installed and unused; if
+it is ever wanted, do the bar first and judge it there.
 
-Files: `src/theme/Type.qml`, `src/components/AppText.qml`, `AppIcon.qml`,
-`Glyph.qml` (new).
+Still open from this item: the size names are out of order (`sizeLarge` 20 <
+`sizeMedium` 24), kept because renumbering moves every surface at once. New code
+uses the `sizeTitle`/`sizeSection`/`sizeDisplay` aliases.
 
 ---
 
