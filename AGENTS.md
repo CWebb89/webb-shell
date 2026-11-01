@@ -6,7 +6,7 @@ Personal Quickshell 0.3.2 shell for Hyprland (Arch package `quickshell` 0.3.2-1)
 
 - Current code is authoritative. `reference/` holds the historical audit sweeps and is read-only history; `~/dev/templates/webb-shell-base/` is a very stale template. Neither is a specification.
 - **The running shell hot-reloads every QML edit.** A half-written file is live on Curtis's desktop the moment it is saved, so a syntax error or stray line takes the bar and every panel with it. After editing, read the live run's log: `qs list --all` for the run id, then `$XDG_RUNTIME_DIR/quickshell/by-id/<id>/log.log` (plain text; `log.qslog` is binary). Every throwaway `quickshell -p .` leaves its own directory, so pick the newest.
-- There is no feature-backlog file. The old four-note backlog was retired 2026-10-12 because most of it had shipped and what remained was re-derivable from the code; the tree is the plan.
+- `docs/ROADMAP.md` is the one exception to "the tree is the plan": a queue of candidate features, ordered by value, with every refusal recorded so it is not re-proposed. It is curated by hand and is not a specification — the code is. The older four-note backlog was still retired on 2026-10-12; this replaced it on 2026-11-01 at Curtis's request.
 - Durable decisions and hard-won gotchas live in `~/.pi/agent/projects-memory/webb-shell/MEMORY.md`. Fresh code and runtime evidence beat stale memory. Record only non-obvious discoveries, dead ends, and decisions there when they occur.
 - webb-shell is independent of the archived scotia-shell project.
 
