@@ -280,7 +280,9 @@ PanelWindow {
                 id: composerRow
                 width: parent.width
                 height: Metrics.controlHeight
-                spacing: Metrics.spacing
+                // The Add pill sat 8px off the detail field's border, which reads
+                // as two controls colliding rather than a field with a button.
+                spacing: Metrics.spacing * 2
 
                 Rectangle {
                     Layout.fillWidth: true

@@ -77,6 +77,7 @@ PanelWindow {
 
         readonly property int cardWidth: Math.min(750, Math.round(width * 0.45))
         readonly property int cardHeight: Math.round(cardWidth * 480 / 750)
+        property string currentName: ""
         highlightRangeMode: PathView.StrictlyEnforceRange
         preferredHighlightBegin: 0.5
         preferredHighlightEnd: 0.5
@@ -106,6 +107,18 @@ PanelWindow {
             scale: PathView.itemScale
             z: PathView.itemZ
 
+            // The caption under the carousel names the card the path has centred.
+            // Driven by the index comparison rather than by isCurrentItem: the
+            // attached property has no change signal to hang a handler on, and a
+            // Binding keyed on it never re-fired. currentIndex notifies.
+            Binding {
+                target: flow
+                property: "currentName"
+                value: String(fileName)
+                when: index === flow.currentIndex
+                restoreMode: Binding.RestoreNone
+            }
+
             Image {
                 anchors.fill: parent
                 source: fileUrl
@@ -129,5 +142,41 @@ PanelWindow {
                 visible: isVideo
             }
         }
+    }
+
+    // Title, key hints and the selected file's name. The carousel alone had no
+    // chrome at all — images floating mid-screen with no way to tell what the
+    // centre one was called — where the scheme picker has all three. Same header
+    // shape, sitting just above the centre card.
+    Column {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: flow.height / 2 - flow.cardHeight / 2 - height - 20
+        spacing: Metrics.spacing
+        opacity: flow.opacity
+        visible: flow.opacity > 0
+
+        AppText {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Wallpaper"
+            variant: "medium"
+            color: Colors.textPrimary
+        }
+
+        AppText {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "← → pick · ⏎ set · esc close"
+            variant: "small"
+            color: Colors.surfaceVariantText
+        }
+    }
+
+    AppText {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: flow.height / 2 + flow.cardHeight / 2 + 18
+        opacity: flow.opacity
+        visible: flow.opacity > 0
+        variant: "small"
+        color: Colors.surfaceVariantText
+        text: flow.currentName
     }
 }

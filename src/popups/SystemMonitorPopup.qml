@@ -361,6 +361,24 @@ PanelWindow {
                 if (n === 0) return
 
                 var x0 = 2, x1 = width - 2
+
+                // Faint horizontal guides at the quarter marks. With no guides an
+                // idle card is a large empty panel with one hairline near the
+                // bottom, which reads as a broken chart instead of a flat one.
+                // Solid, not dashed: the usage series is the dashed one, and a
+                // second dashed line read as another data series.
+                ctx.save()
+                ctx.lineWidth = 1
+                ctx.strokeStyle = Colors.outlineVariant
+                ctx.globalAlpha = 0.5
+                for (var g = 1; g <= 3; g++) {
+                    var gy = spark.yOf(g * 25)
+                    ctx.beginPath()
+                    ctx.moveTo(x0, gy)
+                    ctx.lineTo(x1, gy)
+                    ctx.stroke()
+                }
+                ctx.restore()
                 var usPts = [], tpPts = []
                 for (var i = 0; i < n; i++) {
                     var x = x0 + (x1 - x0) * (i / (n - 1))

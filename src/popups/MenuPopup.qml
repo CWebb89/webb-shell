@@ -614,6 +614,17 @@ PanelWindow {
                         visible: root.filterText !== ""
                         text: root.filterText
                     }
+
+                    // An empty bar was a magnifier in a wide empty box, which
+                    // reads as a broken input rather than an invitation to type.
+                    AppText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        variant: "body"
+                        color: Colors.surfaceVariantText
+                        opacity: 0.7
+                        visible: root.filterText === ""
+                        text: "Search"
+                    }
                 }
             }
 

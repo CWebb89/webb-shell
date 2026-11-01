@@ -21,7 +21,10 @@ PanelWindow {
     readonly property int chipsH: 38
     readonly property int sortH: 26
     readonly property int countH: 24
-    readonly property int rowH: 56
+    // 48, not 56: a result row carries one line when its parent directory is
+    // home (the common case now that a bare "~" is not printed), and at 56 the
+    // list read as airy rather than dense.
+    readonly property int rowH: 48
 
     property string filterText: ""
     property int selectedIndex: 0
@@ -999,6 +1002,12 @@ PanelWindow {
 
                             Text {
                                 width: parent.width
+                                // A row whose only parent is home printed a lone
+                                // "~" under the name — a speck at 13px that read
+                                // as a rendering artefact. The sub-line is for
+                                // telling two same-named results apart, so it is
+                                // shown only when it carries a real path.
+                                visible: rowRoot.dir !== "" && rowRoot.dir !== "~"
                                 text: rowRoot.dir
                                 color: Colors.textPrimary
                                 opacity: 0.5

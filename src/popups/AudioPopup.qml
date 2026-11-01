@@ -360,7 +360,11 @@ PanelWindow {
         readonly property bool showsDeviceList: ch.devices && ch.devices.length > 1
 
         width: parent ? parent.width : 0
-        height: col.height
+        // The column carries the card's padding, so the card is the column plus
+        // that padding. Without the vertical halves the last child — the port
+        // chips — ended on the card's bottom border while the header above it
+        // still read as padded, because its own 44px box centres the glyph.
+        height: col.height + 40
         radius: 0
         color: Colors.surfaceContainerLow
         border.color: Colors.outlineVariant
@@ -370,13 +374,14 @@ PanelWindow {
             id: col
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.top: parent.top
             anchors.margins: 20
             spacing: 16
 
             // header: device glyph · name · %
             Item {
                 width: parent.width
-                height: 58
+                height: 44
 
                 AppIcon {
                     anchors.left: parent.left
