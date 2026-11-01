@@ -97,11 +97,11 @@ could show for near-zero cost. Small, high-return, no new surfaces.
 
 | # | Item | Effort | Status |
 |---|---|---|---|
-| 5 | Stay Awake indicator | 2 h | planned |
+| 5 | Stay Awake indicator | 2 h | declined (2026-11-01) |
 | 6 | Recording suppresses idle | 2 h | shipped |
-| 7 | Updates badge | 3 h | planned |
-| 8 | Network throughput | 3 h | planned |
-| 9 | Bluetooth device battery | 2 h | planned |
+| 7 | Updates badge | 3 h | deferred (2026-11-01) |
+| 8 | Network throughput | 3 h | deferred (2026-11-01) |
+| 9 | Bluetooth device battery | 2 h | shipped |
 | 10 | Power profile indicator | 2 h | planned |
 | 11 | Battery health + conservation | 4 h | planned |
 | 12 | SMART health row | 3 h | planned |
@@ -139,8 +139,15 @@ no subprocess on an always-on timer, per the idle-CPU rule.
 
 ### 9. Bluetooth device battery
 
-`bluetoothctl info <mac>` carries `Battery Percentage: 0x64 (100)`. `BtService`
-already special-cases headphones; this is the missing number on the row.
+Shipped. `BtService.refreshBatteries()` reads `Battery Percentage` out of
+`bluetoothctl info` for connected devices when the panel opens and when a device
+action settles — not on the 3 s poll, which would fork `bluetoothctl` per device
+for a number that barely moves. The connected row's subtitle reads
+`connected · 87%`.
+
+Verified against a stub `bluetoothctl` on PATH (the parse returns `100` for a
+synthetic `Battery Percentage: 0x64 (100)` line) because no Bluetooth device was
+connected at build time, so the live row has not shown a real percentage yet.
 
 ### 10. Power profile indicator
 

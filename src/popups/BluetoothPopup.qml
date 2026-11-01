@@ -260,7 +260,8 @@ PanelWindow {
                                     variant: "small"
                                     color: devRow.connected ? Colors.secondary : Colors.surfaceVariantText
                                     text: devRow.busy ? "working…"
-                                          : (modelData.connected ? "connected"
+                                          : (modelData.connected
+                                             ? (modelData.battery >= 0 ? "connected · " + modelData.battery + "%" : "connected")
                                              : (modelData.paired ? "paired"
                                                                  : (modelData.named ? "available to pair" : "no name reported by the device")))
                                 }

@@ -193,6 +193,47 @@ QtObject {
     }
 
     property var _nameTried: ({})
+
+    // Battery1 is reported inside `bluetoothctl info` and only over an active
+    // connection, so it is sampled when the panel opens and when a device
+    // action settles — never on the 3 s poll, which would fork bluetoothctl per
+    // device for a number that barely moves.
+    property var batteryLevels: ({})
+
+    property var batteryProc: Process {
+        command: []
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = (batteryProc.stdout.text || "").trim().split("\n")
+                var levels = ({})
+                for (var i = 0; i < lines.length; i++) {
+                    var sep = lines[i].indexOf("|")
+                    if (sep < 0) continue
+                    var mac = lines[i].substring(0, sep).trim()
+                    var pct = parseInt(lines[i].substring(sep + 1).trim(), 10)
+                    if (mac !== "" && !isNaN(pct)) levels[mac] = pct
+                }
+                root.batteryLevels = levels
+            }
+        }
+    }
+
+    function refreshBatteries() {
+        if (batteryProc.running) return
+        var macs = []
+        for (var mac in root.connectedDevices)
+            if (root.connectedDevices[mac] === true) macs.push(mac)
+        if (macs.length === 0) {
+            root.batteryLevels = ({})
+            return
+        }
+        batteryProc.command = ["bash", "-c",
+            "for m in \"$@\"; do out=$(bluetoothctl info \"$m\" 2>/dev/null); " +
+            "p=$(printf '%s\\n' \"$out\" | sed -n 's/^[[:space:]]*Battery Percentage: 0x[0-9A-Fa-f]* (\([0-9]*\)).*/\\1/p' | head -1); " +
+            "[ -n \"$p\" ] && printf '%s|%s\\n' \"$m\" \"$p\"; done", "bt-battery"].concat(macs)
+        batteryProc.running = true
+    }
     // Devices a `remove` is running for: they are gone from the list at once,
     // and a poll that lands before the command finishes must not bring them back.
     property var _removing: ({})
@@ -291,6 +332,7 @@ QtObject {
             if (root._deviceQueue.length === 0) {
                 root.busyMac = ""
                 Delay.run(350, refreshState)
+                Delay.run(700, refreshBatteries)
             }
         }
     }
@@ -428,6 +470,7 @@ QtObject {
     function panelOpened() {
         root._nameTried = ({})
         refreshState()
+        refreshBatteries()
     }
 
     function refreshState() {
@@ -542,8 +585,10 @@ QtObject {
         function row(mac, fallbackName, isPaired) {
             var name = names[mac] || fallbackName || ""
             var named = !root._looksLikeAddress(name)
+            var pct = root.batteryLevels[mac]
             return { mac: mac, name: named ? name : mac, named: named,
-                     connected: root.connectedDevices[mac] === true, paired: isPaired }
+                     connected: root.connectedDevices[mac] === true, paired: isPaired,
+                     battery: typeof pct === "number" ? pct : -1 }
         }
 
         var known = root.knownDevices

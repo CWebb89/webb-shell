@@ -7,6 +7,12 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **The Bluetooth panel shows a connected device's battery.** `Battery1` arrives
+  inside `bluetoothctl info` and only over an active connection, so
+  `BtService.refreshBatteries()` samples the connected devices when the panel
+  opens and again when a device action settles — never on the 3 s poll, which
+  would fork `bluetoothctl` per device for a number that barely moves. The
+  connected row's subtitle reads `connected · 87%`.
 - **A capture in progress holds off the idle chain.** `Recorder.recording` was
   read by the bar's dot and nothing else, so a long recording dimmed and then
   locked mid-take. `IdleState.held` is now `stayAwake || Recorder.recording`, all
