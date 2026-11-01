@@ -31,6 +31,32 @@ PanelWindow {
         return Colors.surfaceVariantText
     }
 
+    // Two devices can advertise the same name — this box has two `BTH661` entries
+    // with different MACs — and their rows were indistinguishable. When a name
+    // occurs more than once the last two MAC octets are appended; a unique name
+    // stays exactly as the device reports it.
+    readonly property var duplicateNames: {
+        const counts = {}
+        const list = BtService.allDevices
+        for (let i = 0; i < list.length; i++) {
+            const devName = String(list[i].name || "")
+            counts[devName] = (counts[devName] || 0) + 1
+        }
+        const dup = {}
+        for (const key in counts)
+            if (counts[key] > 1)
+                dup[key] = true
+        return dup
+    }
+
+    function deviceLabel(dev) {
+        if (!dev) return ""
+        var mac = String(dev.mac || "")
+        if (root.duplicateNames[dev.name] === true && mac.length >= 5)
+            return dev.name + " · " + mac.slice(-5).replace(":", "")
+        return dev.name
+    }
+
     readonly property int devListH: BtService.btEnabled
         ? Math.min(BtService.allDevices.length * 58, 480)
         : 0
@@ -253,7 +279,7 @@ PanelWindow {
                                     width: parent.width; elide: Text.ElideRight
                                     variant: "body"; font.pixelSize: 18; font.bold: devRow.connected
                                     color: devRow.connected ? Colors.accentBlue : Colors.textPrimary
-                                    text: modelData.name
+                                    text: root.deviceLabel(modelData)
                                 }
                                 AppText {
                                     width: parent.width; elide: Text.ElideRight

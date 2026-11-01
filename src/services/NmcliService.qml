@@ -135,13 +135,25 @@ QtObject {
     }
 
     // ── Detail fetch process ─────────────────────────────────
+    // The device is resolved in the same call rather than cached from a previous
+    // answer. `nmcli device show` with no device argument prints every device,
+    // loopback included, and the parse below keeps the LAST match — so the first
+    // refresh cached `lo` and every later one asked about loopback, reporting
+    // 127.0.0.1 as the Wi-Fi address for the rest of the session.
     property var detailProc: Process {
         command: []
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 var text = detailProc.stdout.text || ""
-                if (text === "") return
+                if (text === "") {
+                    root.ipAddress = ""
+                    root.gateway = ""
+                    root.dns = ""
+                    root.macAddress = ""
+                    root.interfaceName = ""
+                    return
+                }
                 var ip = "", gw = "", dnsList = "", mac = ""
                 var lines = text.split("\n")
                 for (var i = 0; i < lines.length; i++) {
@@ -243,10 +255,10 @@ QtObject {
     }
 
     function refreshDetails() {
-        if (root.interfaceName !== "")
-            detailProc.command = ["nmcli", "device", "show", root.interfaceName]
-        else
-            detailProc.command = ["sh", "-c", "nmcli -t device show | head -40"]
+        detailProc.command = ["sh", "-c",
+            "dev=$(nmcli -t -f DEVICE,TYPE,STATE device status "
+            + "| grep -m1 -E ':(wifi|ethernet):connected$' | cut -d: -f1); "
+            + "[ -n \"$dev\" ] && nmcli -t device show \"$dev\""]
         detailProc.running = false
         detailProc.running = true
     }
