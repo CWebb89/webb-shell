@@ -223,28 +223,6 @@ install_helper() {
 install_helper "$REPO/bin/webb-shell" "$HOME/.local/bin/webb-shell"
 install_helper "$REPO/bin/shot" "$HOME/.local/bin/shot"
 
-# ── 4b. pi activity extension ──────────────────────────────────────────────
-# The bar's pi module and its completion toast read a state file only pi can
-# write, so the shell ships the extension and installs it where pi looks. Only
-# when a pi config directory exists: a machine without pi should not grow a
-# ~/.pi tree from this installer. pi loads extensions per session, so a new
-# session is needed before the module shows anything.
-PI_EXT="$HOME/.pi/agent/extensions/webb-shell-activity.ts"
-if [ -d "$HOME/.pi/agent" ]; then
-  mkdir -p "$(dirname "$PI_EXT")"
-  if [ ! -f "$PI_EXT" ]; then
-    install -m644 "$REPO/contrib/pi-extension/webb-shell-activity.ts" "$PI_EXT" \
-      && echo "  installed the pi activity extension"
-  elif ! cmp -s "$REPO/contrib/pi-extension/webb-shell-activity.ts" "$PI_EXT"; then
-    install -m644 "$REPO/contrib/pi-extension/webb-shell-activity.ts" "$PI_EXT" \
-      && echo "  updated the pi activity extension (was different)"
-  else
-    echo "  pi activity extension already current"
-  fi
-else
-  echo "  no ~/.pi/agent — skipping the pi activity extension"
-fi
-
 # ── 5. systemd user units ──────────────────────────────────────────────────
 # The shell's launch path, versioned in systemd/ rather than hand-written under
 # $HOME. The unit owns the process so a crash restarts it; the wrapper the

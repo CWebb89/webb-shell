@@ -507,6 +507,8 @@ hl.bind(mainMod .. " + M",         hl.dsp.exec_cmd(wb("audio", "toggle")))
 hl.bind(mainMod .. " + A",         hl.dsp.exec_cmd(wb("usage", "toggle")))
 hl.bind("ALT + SPACE",             hl.dsp.exec_cmd(wb("find", "toggle")))
 hl.bind("ALT + W",                 hl.dsp.exec_cmd(wb("scheme", "toggle")))
+hl.bind("ALT + N",                 hl.dsp.exec_cmd(wb("notify", "centerToggle")),
+        { description = "Notification center" })
 hl.bind(mainMod .. " + V",         hl.dsp.exec_cmd(shellDir .. "/bin/clipboard.sh"),
         { description = "Clipboard history picker" })
 

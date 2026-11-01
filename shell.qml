@@ -81,7 +81,6 @@ ShellRoot {
     ModulePopup { moduleId: "system" }
     ModulePopup { moduleId: "usb" }
     ModulePopup { moduleId: "agents" }
-    ModulePopup { moduleId: "pi" }
     ModulePopup { moduleId: "phone" }
     ModulePopup { moduleId: "battery" }
     ModulePopup { moduleId: "clock" }
@@ -382,18 +381,6 @@ ShellRoot {
     }
 
     IpcHandler {
-        target: "pi"
-        function state(): string {
-            return JSON.stringify({ present: PiActivity.present, busy: PiActivity.busy,
-                                    phase: PiActivity.phase, tool: PiActivity.tool,
-                                    turns: PiActivity.turns, cost: PiActivity.runCost,
-                                    model: PiActivity.model, pid: PiActivity.pid,
-                                    updated: PiActivity.updatedAt,
-                                    summary: PiActivity.lastSummary.slice(0, 120) })
-        }
-    }
-
-    IpcHandler {
         target: "phone"
         function toggle(): void {
             BarModules.toggle("phoneOpen")
@@ -414,34 +401,6 @@ ShellRoot {
         }
         function refresh(): void {
             KdeConnect.refresh()
-        }
-    }
-
-    IpcHandler {
-        target: "ask"
-        function toggle(): void {
-            BarModules.toggle("askOpen")
-        }
-        function open(): void {
-            BarModules.show("askOpen")
-        }
-        function hide(): void {
-            BarModules.hide("askOpen")
-        }
-        function question(text: string): void {
-            if (Popups.lockOpen)
-                return
-            BarModules.show("askOpen")
-            PiAsk.ask(text)
-        }
-        function save(): void {
-            PiAsk.saveSession()
-        }
-        function state(): string {
-            return JSON.stringify({ running: PiAsk.running, exit: PiAsk.exitCode,
-                                    chars: PiAsk.answer.length,
-                                    elapsed: Math.round(PiAsk.elapsedMs),
-                                    failure: PiAsk.failure.slice(0, 160) })
         }
     }
 
@@ -515,6 +474,14 @@ ShellRoot {
         function center(): string {
             BarModules.toggle("notifOpen")
             return "ok"
+        }
+        function centerToggle(): string {
+            if (Popups.notifOpen) {
+                Popups.notifOpen = false
+                return "off"
+            }
+            BarModules.toggle("notifOpen")
+            return "on"
         }
         function centerHide(): string {
             BarModules.hide("notifOpen")

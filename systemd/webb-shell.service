@@ -19,9 +19,9 @@ After=graphical-session.target
 Type=simple
 # The shell inherits this unit's environment, not an interactive shell's, and the
 # menu's `when` guards ask `command -v` about tools that live in user
-# directories. Without ~/.pi/agent/bin the Ask pi rows evaluate false and vanish
-# with no message anywhere — the guard is not wrong, the PATH was. %h keeps the
-# line machine-neutral.
+# directories. Without ~/.pi/agent/bin the agent-selection rows evaluate false
+# and vanish with no message anywhere — the guard is not wrong, the PATH was.
+# %h keeps the line machine-neutral.
 Environment=PATH=%h/.local/bin:%h/.pi/agent/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=@QS@ -p @REPO@
 Restart=on-failure

@@ -6,13 +6,11 @@
 # between "OCR is broken" and "one package is missing".
 #
 #   ocr.sh            pick a region, copy the text
-#   ocr.sh --ask      pick a region, then hand the text to pi in Quick Ask
 #
 # The capture goes through `shot` (the one capture tool on this machine) into a
 # temp directory: OCR input is a means, not a screenshot worth keeping.
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$0")/.." && pwd)"
 LANG_CODE="${OCR_LANG:-eng}"
 
 note() {
@@ -46,10 +44,5 @@ if [ -z "$text" ]; then
 fi
 
 printf '%s' "$text" | wl-copy
-
-if [ "${1:-}" = "--ask" ]; then
-  qs -p "$REPO" ipc call ask question "$text"
-  exit 0
-fi
 
 note "Copied ${#text} characters" low "${text:0:120}"
