@@ -124,6 +124,9 @@ Item {
                     player.play()
             }
 
+            // sourceSize caps the decode at the surface's own size. Without it a
+            // 3840x2160 wallpaper decodes to 33 MB and a 7680x4320 one to 130 MB,
+            // only for PreserveAspectCrop to throw the excess away at upload.
             Image {
                 anchors.fill: parent
                 source: root.currentBackground
@@ -131,6 +134,8 @@ Item {
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: false
+                sourceSize.width: panel.width
+                sourceSize.height: panel.height
             }
 
             // AnimatedImage is the GIF-animating type; plain Image decodes
@@ -142,6 +147,8 @@ Item {
                 playing: !panel.coverRequested
                 fillMode: Image.PreserveAspectCrop
                 cache: false
+                sourceSize.width: panel.width
+                sourceSize.height: panel.height
             }
 
             Item {

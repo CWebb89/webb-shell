@@ -103,6 +103,7 @@ PanelWindow {
                 fillMode: Image.PreserveAspectCrop
                 sourceSize.width: content.width
                 sourceSize.height: content.height
+                cache: false
             }
         }
 

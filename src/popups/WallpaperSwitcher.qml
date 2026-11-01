@@ -111,8 +111,11 @@ PanelWindow {
                 source: fileUrl
                 asynchronous: true
                 fillMode: Image.PreserveAspectCrop
-                sourceSize.width: flow.cardWidth
-                sourceSize.height: flow.cardHeight
+                // Three-quarter-resolution previews: a 750-wide card at 0.8 MB
+                // per delegate instead of 1.4 MB, and every card in the
+                // carousel is decoded while it is on the path.
+                sourceSize.width: Math.round(flow.cardWidth * 0.75)
+                sourceSize.height: Math.round(flow.cardHeight * 0.75)
                 cache: false
             }
 

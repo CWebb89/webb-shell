@@ -23,11 +23,27 @@ PanelWindow {
     implicitWidth: 380
     implicitHeight: Math.max(toastColumn.childrenRect.height, 1)
     color: "transparent"
-    // Mapped continuously except while locked: a toast card sits on the
-    // Overlay layer, the same one the lock screen occupies, so leaving it up
-    // would both leak notification contents and put its action buttons in the
-    // pointer path ahead of the lock.
-    visible: !Popups.lockOpen
+    // Mapped only while a toast is on screen, and never while locked: a toast
+    // card sits on the Overlay layer, the same one the lock screen occupies, so
+    // leaving it up would both leak notification contents and put its action
+    // buttons in the pointer path ahead of the lock. A mapped layer surface
+    // costs ~15 MB of driver-side buffers whether or not it draws anything, so
+    // the idle shell does not keep one; `keepMapped()` covers the entrance and
+    // exit frames around a card.
+    property bool settle: false
+
+    Timer {
+        id: unmapDelay
+        interval: 220
+        onTriggered: root.settle = false
+    }
+
+    function keepMapped() {
+        root.settle = true
+        unmapDelay.restart()
+    }
+
+    visible: !Popups.lockOpen && (popupModel.count > 0 || root.settle)
     exclusionMode: ExclusionMode.Ignore
 
     // Only capture input on the actual toast cards; clicks in the rest of the
@@ -51,7 +67,10 @@ PanelWindow {
     ListModel {
         id: popupModel
 
-        onCountChanged: NotificationState.liveToasts = root.countOnScreen()
+        onCountChanged: {
+            NotificationState.liveToasts = root.countOnScreen()
+            root.keepMapped()
+        }
     }
 
     // Replayed history rows and the "nothing to replay" placeholder fill the
@@ -142,6 +161,7 @@ PanelWindow {
         }
         // Qt.callLater avoids the Repeater crashing when the model is mutated
         // mid-incubation while a toast is landing.
+        root.keepMapped()
         Qt.callLater(function() {
             popupModel.insert(0, snap)
         })
