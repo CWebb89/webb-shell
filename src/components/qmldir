@@ -7,3 +7,4 @@ VolumeSlider 1.0 VolumeSlider.qml
 PillButton 1.0 PillButton.qml
 ToggleSetting 1.0 ToggleSetting.qml
 BarButton 1.0 BarButton.qml
+CardHighlight 1.0 CardHighlight.qml

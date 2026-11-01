@@ -709,7 +709,7 @@ PanelWindow {
         x: root.place.x
         y: root.place.y + (Popups.barSettingsOpen ? 0 : root.place.dy)
         radius: 0
-        color: Colors.surface
+        color: Colors.cardSurface
         // Twice the hairline every other panel uses: at this size a 1px
         // outlineVariant edge reads as no edge at all against the wallpaper.
         border.color: Colors.outline
@@ -719,6 +719,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Flickable {
             id: flick
 

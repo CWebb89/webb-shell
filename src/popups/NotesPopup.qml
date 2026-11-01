@@ -166,7 +166,7 @@ PanelWindow {
         height: root.pad * 2 + root.headerH + root.gap * 2 + root.composerBlockH + card.listH
         x: root.place.x
         radius: 0
-        color: Colors.surface
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
         opacity: Popups.notesOpen ? 1 : 0
@@ -177,6 +177,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Item {
             id: header
             x: root.pad

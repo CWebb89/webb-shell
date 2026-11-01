@@ -120,7 +120,7 @@ PanelWindow {
         width: root.contentWidth + root.margin * 2
         height: content.implicitHeight + root.margin * 2
         x: root.place.x
-        color: Colors.surface
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
         clip: true
@@ -131,6 +131,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Column {
             id: content
             x: root.margin

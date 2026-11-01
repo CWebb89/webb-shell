@@ -202,10 +202,11 @@ PanelWindow {
         anchors.horizontalCenterOffset: root.shakeOffset
         anchors.verticalCenter: parent.verticalCenter
         radius: Metrics.radiusMedium
-        color: Colors.surfaceContainer
+        color: Colors.cardSurface
         border.color: root.errorFlash ? Colors.error : Colors.accent
         border.width: Metrics.borderWidth
 
+        CardHighlight { }
         MouseArea {
             anchors.fill: parent
             onClicked: root.refocus()

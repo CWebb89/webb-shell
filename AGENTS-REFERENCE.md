@@ -14,6 +14,8 @@ the sections below.
 - Literal durations that survive on purpose, and why: the loop timings in `RecordingDot` and the Bluetooth scan spinner (a pulse and a rotation are not transitions), the three-step `PolkitPopup` shake (its rhythm is the message), and `PrintOverlay`'s computed `totalMs` with its `Easing.Linear`. Anything else with a literal is a regression.
 - A file that animates needs `import "../theme"` even when it already imported `state` or `components` — the sweep that introduced `Anim` failed to load `DimOverlay` for exactly that reason, and Quickshell reported it as `Type DimOverlay unavailable` rather than naming the missing import.
 - `AppText` owns the `variant → pixelSize` ladder. `AppIcon` inherits it and adds Nerd Font rendering; do not duplicate the ladder.
+- A popup's outer card is `Colors.cardSurface` (one step above `surface`) and carries `CardHighlight { }` as a child for the 1px top bevel. Inner cards inside a popup stay on `surfaceContainer` or higher, so the popup still reads as a container. Do not put `CardHighlight` on a translucent card (the OSD clock and battery are 55% alpha over the compositor blur) or on a full-screen picker.
+- **There is no drop shadow anywhere, on purpose.** `layer.effect` sizes a `MultiEffect` to the layer, so a blurred shadow gets a hard-edged halo a few pixels wide instead of a soft falloff; a black shadow is also invisible against this theme's near-black surfaces. A real one needs a native `RectangularShadow`-style type (what Caelestia ships in a C++ plugin) or a nine-slice shadow texture. The elevation in this shell is surface step + 1px bevel + the 1px `outlineVariant` border.
 
 ### Decoded-media budget
 

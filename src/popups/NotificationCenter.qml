@@ -176,7 +176,7 @@ PanelWindow {
         height: Math.min(Math.round(root.height * 0.7),
                          header.height + bodyArea.height + Metrics.spacing * 2)
         x: root.place.x
-        color: Colors.surfaceContainerLow
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: 2
         clip: true
@@ -187,6 +187,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Item {
             id: header
             width: parent.width

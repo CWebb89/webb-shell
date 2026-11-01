@@ -93,10 +93,11 @@ PanelWindow {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
         radius: Metrics.radiusMedium
-        color: Colors.surfaceContainer
+        color: Colors.cardSurface
         border.color: Colors.accent
         border.width: Metrics.borderWidth
 
+        CardHighlight { }
         Item {
             id: keyCatcher
             anchors.fill: parent

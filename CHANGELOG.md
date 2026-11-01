@@ -7,6 +7,14 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **Popup cards sit on their own plane.** `Colors.cardSurface` is one step above
+  `surface`, and every popup card carries `CardHighlight`, a 1px hairline at 6%
+  white along its top edge. A drop shadow was tried first and abandoned: a
+  `MultiEffect` used as `layer.effect` is sized to the layer, so the blur has
+  nowhere to spread and the result is a hard-edged halo a few pixels wide, and a
+  black shadow is invisible against this theme's near-black surfaces. A real one
+  needs a native rectangular-shadow type or a nine-slice texture; see
+  `AGENTS-REFERENCE.md`.
 - **Motion is a token system, not 96 hand-written numbers.** `src/theme/Anim.qml`
   gives five intents — `instant`, `fast`, `standard`, `emphasized`,
   `decelerate` — with a duration and a bezier curve each, and `AnimColor` /

@@ -141,7 +141,7 @@ PanelWindow {
         height: Math.min(flick.contentHeight + 16, Math.round(root.height * 0.94))
         x: root.place.x
         radius: 0
-        color: Colors.surface
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
         opacity: Popups.audioOpen ? 1 : 0
@@ -150,6 +150,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Flickable {
             id: flick
             anchors.fill: parent

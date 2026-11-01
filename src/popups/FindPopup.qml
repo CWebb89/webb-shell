@@ -541,12 +541,13 @@ PanelWindow {
         radius: 0
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
-        color: Colors.surfaceContainerLow
+        color: Colors.cardSurface
         clip: true
 
         opacity: Popups.findOpen ? 1 : 0
         scale: Popups.findOpen ? 1 : 0.96
 
+        CardHighlight { }
         Behavior on opacity {
             AnimNumber { type: Anim.standard }
         }

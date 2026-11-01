@@ -46,6 +46,11 @@ QtObject {
     readonly property color textPrimary: surfaceText
     readonly property color accent: primary
 
+    // The outer plane of a popup card: one step above `surface`, so a panel
+    // reads as raised off the wallpaper without a shadow. Inner cards inside a
+    // popup are already `surfaceContainer` or higher.
+    readonly property color cardSurface: surfaceContainerLow
+
     // Derived tokens (matugen never emits these keys — they follow the theme).
     // Listed so applyColors can refuse them: hasOwnProperty() is true for
     // read-only properties as well, so a hand-edited template carrying a
@@ -55,7 +60,7 @@ QtObject {
     // new writable role missing from an allow-list silently stops theming,
     // while a new derived token missing here only logs.
     readonly property var derivedTokens: [
-        "textPrimary", "accent", "rowHover", "divider", "accentDim", "secondaryDim",
+        "textPrimary", "accent", "cardSurface", "rowHover", "divider", "accentDim", "secondaryDim",
         "errorDim", "tertiaryDim", "tempRamp", "usageRamp", "tempRampMin", "tempRampMax",
         "accentBlue", "accentCyan", "accentPurple", "accentRose"
     ]

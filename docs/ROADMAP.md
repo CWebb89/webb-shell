@@ -28,7 +28,7 @@ the four are one-off systems rather than surfaces.
 | # | Item | Effort | Status |
 |---|---|---|---|
 | 1 | Motion tokens | ½ day | shipped |
-| 2 | Popup chrome + card elevation | 1 day | planned |
+| 2 | Popup card elevation | ½ day | shipped |
 | 3 | Interaction polish set | 1 day | planned |
 | 4 | Type scale + Material Symbols | 1 day | planned |
 
@@ -49,19 +49,20 @@ Files: `src/theme/Anim.qml` (new), `src/theme/qmldir`, then a mechanical sweep
 of every `Behavior`. Hot reload means a broken save takes the desktop: sweep in
 batches and run `./tools/verify.sh` between them.
 
-### 2. Popup chrome + card elevation
+### 2. Popup card elevation
 
-One `PopupFrame.qml` giving all 27 popups the same anatomy — title, subtitle,
-`esc` hint, optional footer action row — plus a drop shadow (`MultiEffect`,
-`shadowBlur` 0.7–1.0, `shadowVerticalOffset` 6–14) and a 1px inner top
-highlight.
+Shipped as the depth half only: `Colors.cardSurface` lifts every popup card one
+step above `surface`, and `CardHighlight` adds a 1px top bevel.
 
-Why: no popup today has a title bar, a close affordance, or a key hint outside
-the README. Mouse users get nothing, and 15 exclusive panels give no visual cue
-about which one is up.
+The blurred drop shadow this item originally called for was tried and does not
+work in Qt Quick without a native type — `layer.effect` clips the blur to a
+hard-edged halo, and a black shadow is invisible on this palette. Caelestia
+handles it with a C++ `RectangularShadow`. If a real shadow is ever wanted it is
+its own item: a native plugin, or a nine-slice shadow texture.
 
-Files: `src/components/PopupFrame.qml` (new), `src/components/qmldir`, then each
-popup's card.
+The **chrome** half — a shared title/subtitle/esc-hint/footer frame for the 27
+popups — was considered and declined. It stays plausible (mouse users have no
+close affordance) but it is not queued.
 
 ### 3. Interaction polish set
 

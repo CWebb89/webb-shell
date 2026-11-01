@@ -78,7 +78,7 @@ PanelWindow {
                 + 160                           // usage row
         x: root.place.x
         radius: 0
-        color: Colors.surface
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
         opacity: Popups.systemMonitorOpen ? 1 : 0
@@ -87,6 +87,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Column {
             anchors.fill: parent
             anchors.margins: Metrics.popupContentMargin

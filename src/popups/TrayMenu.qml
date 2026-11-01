@@ -172,7 +172,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.topMargin: Metrics.barHeight + 4
         anchors.rightMargin: Metrics.spacing
-        color: Colors.surfaceContainerLow
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: 2
         clip: true
@@ -183,6 +183,7 @@ PanelWindow {
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
 
+        CardHighlight { }
         Flickable {
             id: flick
             anchors.fill: parent

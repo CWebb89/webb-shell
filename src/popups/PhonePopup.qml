@@ -78,10 +78,11 @@ PanelWindow {
         x: root.place.x
         y: root.place.y
         radius: 0
-        color: Colors.surface
+        color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
 
+        CardHighlight { }
         Item {
             id: keyCatcher
             anchors.fill: parent

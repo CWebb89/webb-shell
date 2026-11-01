@@ -491,7 +491,7 @@ PanelWindow {
         height: root.cardHeight
         border.color: Colors.outlineVariant
         border.width: 2
-        color: Colors.surfaceContainerLow
+        color: Colors.cardSurface
         clip: true
 
         x: root.usesAnchor ? root.place.x : (parent.width - width) / 2
@@ -500,6 +500,7 @@ PanelWindow {
         opacity: Popups.menuOpen ? 1 : 0
         scale: Popups.menuOpen ? 1 : 0.96
 
+        CardHighlight { }
         Behavior on opacity {
             AnimNumber { type: Anim.standard }
         }
