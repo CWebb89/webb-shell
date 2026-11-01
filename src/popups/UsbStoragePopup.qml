@@ -187,25 +187,50 @@ PanelWindow {
                             anchors.topMargin: 20
                             spacing: 12
 
-                            Column {
+                            Row {
                                 width: parent.width
-                                spacing: 2
+                                height: 44
+                                spacing: 14
 
-                                AppText {
-                                    width: parent.width
-                                    elide: Text.ElideRight
-                                    variant: "body"; font.bold: true; font.pixelSize: 20
-                                    color: Colors.textPrimary
-                                    text: Model.driveTitle(driveCard.modelData)
+                                // same tinted glyph tile the Bluetooth rows and the
+                                // Wi-Fi panel's header use, so a drive card reads as
+                                // one of the shell's cards rather than a form
+                                Item {
+                                    width: 38; height: 38
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    Rectangle { anchors.fill: parent; radius: 0
+                                        color: driveCard.mounted ? Colors.accentDim : Colors.surfaceContainerHigh
+                                        Behavior on color { AnimColor { type: Anim.fast } }
+                                    }
+                                    AppIcon {
+                                        anchors.centerIn: parent
+                                        text: "\uf287"
+                                        font.pixelSize: 19
+                                        color: driveCard.mounted ? Colors.accentBlue : Colors.surfaceVariantText
+                                    }
                                 }
 
-                                AppText {
-                                    width: parent.width
-                                    elide: Text.ElideRight
-                                    visible: text !== ""
-                                    variant: "small"
-                                    color: Colors.surfaceVariantText
-                                    text: Model.driveSubtitle(driveCard.modelData)
+                                Column {
+                                    width: parent.width - 52
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 2
+
+                                    AppText {
+                                        width: parent.width
+                                        elide: Text.ElideRight
+                                        variant: "body"; font.bold: true; font.pixelSize: 20
+                                        color: Colors.textPrimary
+                                        text: Model.driveTitle(driveCard.modelData)
+                                    }
+
+                                    AppText {
+                                        width: parent.width
+                                        elide: Text.ElideRight
+                                        visible: text !== ""
+                                        variant: "small"
+                                        color: Colors.surfaceVariantText
+                                        text: Model.driveSubtitle(driveCard.modelData)
+                                    }
                                 }
                             }
 

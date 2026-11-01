@@ -310,64 +310,92 @@ PanelWindow {
                         spacing: 2
 
                         delegate: Item {
+                            id: netRow
                             width: netList.width
                             height: 40
                             required property var modelData
 
                             readonly property real strength: modelData.signal ?? 0
                             readonly property color strengthColor: root.strengthColor(strength)
+                            readonly property bool hovered: netMa.containsMouse
 
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 0
                                 color: modelData.inUse ? Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.14)
-                                                       : (netMa.containsMouse ? Colors.rowHover : "transparent")
+                                                       : (netRow.hovered ? Colors.rowHover : "transparent")
                                 Behavior on color { AnimColor { type: Anim.fast } }
                             }
 
-                            // signal mini-bar
+                            // signal mini-bar, which doubles as the row's hover rule:
+                            // a second accent line next to it would read as a doubled
+                            // edge, so this one brightens and grows instead.
                             Rectangle {
-                                width: 3; height: 22
+                                width: 3; height: modelData.inUse || netRow.hovered ? 30 : 22
                                 anchors.left: parent.left; anchors.leftMargin: 4
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: modelData.inUse ? Colors.accentBlue : (strength > 40 ? Colors.accentCyan : Colors.outlineVariant)
-                                opacity: modelData.inUse ? 1 : 0.6
+                                color: modelData.inUse || netRow.hovered
+                                    ? Colors.accentBlue
+                                    : (netRow.strength > 40 ? Colors.accentCyan : Colors.outlineVariant)
+                                opacity: modelData.inUse ? 1 : (netRow.hovered ? 1 : 0.6)
+                                Behavior on height { AnimNumber { type: Anim.fast } }
+                                Behavior on opacity { AnimNumber { type: Anim.fast } }
+                                Behavior on color { AnimColor { type: Anim.fast } }
                             }
 
-                            AppIcon {
-                                anchors.left: parent.left; anchors.leftMargin: 16
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "\uf1eb"
-                                color: modelData.inUse ? Colors.accentBlue : parent.strengthColor
-                                font.pixelSize: 15
-                            }
+                            Item {
+                                anchors.fill: parent
+                                transform: Translate {
+                                    y: netRow.hovered ? -1 : 0
+                                    Behavior on y { AnimNumber { type: Anim.fast } }
+                                }
 
-                            AppText {
-                                anchors.left: parent.left; anchors.leftMargin: 44
-                                anchors.verticalCenter: parent.verticalCenter
-                                elide: Text.ElideRight
-                                variant: "body"; font.pixelSize: 18
-                                text: modelData.ssid
-                                color: modelData.inUse ? Colors.accentBlue : Colors.textPrimary
-                                font.bold: modelData.inUse
-                            }
+                                // the glyph carries the same tinted tile as the
+                                // Bluetooth and saved-network rows
+                                Item {
+                                    width: 26; height: 26
+                                    anchors.left: parent.left; anchors.leftMargin: 14
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    Rectangle {
+                                        anchors.fill: parent; radius: 0
+                                        color: modelData.inUse ? Colors.accentDim : Colors.surfaceContainerHigh
+                                        Behavior on color { AnimColor { type: Anim.fast } }
+                                    }
+                                    AppIcon {
+                                        anchors.centerIn: parent
+                                        text: "\uf1eb"
+                                        font.pixelSize: 15
+                                        color: modelData.inUse ? Colors.accentBlue : netRow.strengthColor
+                                    }
+                                }
 
-                            Text {
-                                id: sigPct
-                                anchors.right: lock.left; anchors.rightMargin: 8
-                                anchors.verticalCenter: parent.verticalCenter
-                                font.family: Type.family; font.pixelSize: 12; font.bold: true
-                                color: parent.strengthColor
-                                text: (modelData.signal ?? 0) + "%"
-                            }
+                                AppText {
+                                    anchors.left: parent.left; anchors.leftMargin: 50
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    elide: Text.ElideRight
+                                    variant: "body"; font.pixelSize: 18
+                                    text: modelData.ssid
+                                    color: modelData.inUse ? Colors.accentBlue : Colors.textPrimary
+                                    font.bold: modelData.inUse
+                                }
 
-                            AppIcon {
-                                id: lock
-                                anchors.right: parent.right; anchors.rightMargin: 12
-                                anchors.verticalCenter: parent.verticalCenter
-                                font.pixelSize: 12
-                                text: modelData.secured ? "\uf023" : ""
-                                color: modelData.inUse ? Colors.accentBlue : Colors.outline
+                                Text {
+                                    id: sigPct
+                                    anchors.right: lock.left; anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    font.family: Type.family; font.pixelSize: 12; font.bold: true
+                                    color: netRow.strengthColor
+                                    text: (modelData.signal ?? 0) + "%"
+                                }
+
+                                AppIcon {
+                                    id: lock
+                                    anchors.right: parent.right; anchors.rightMargin: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    font.pixelSize: 12
+                                    text: modelData.secured ? "\uf023" : ""
+                                    color: modelData.inUse ? Colors.accentBlue : Colors.outline
+                                }
                             }
 
                             MouseArea {
@@ -523,52 +551,78 @@ PanelWindow {
                 Repeater {
                     model: root.savedNetworks
                     delegate: Rectangle {
+                        id: savedRow
                         required property var modelData
                         width: parent.width; height: 40
                         radius: 0
-                        color: savedMa.containsMouse ? Colors.rowHover : Colors.surfaceContainer
-                        border.color: Colors.outlineVariant
+                        readonly property bool hovered: savedMa.containsMouse
+                        color: savedRow.hovered ? Colors.rowHover : Colors.surfaceContainer
+                        border.color: savedRow.hovered ? Colors.accent : Colors.outlineVariant
                         border.width: Metrics.borderWidth
 
                         Behavior on color { AnimColor { type: Anim.fast } }
+                        Behavior on border.color { AnimColor { type: Anim.fast } }
 
-                        Item {
-                            width: 26; height: 26
+                        // the row's left rule, grown in on hover
+                        Rectangle {
+                            width: 2
                             anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            Rectangle { anchors.fill: parent; radius: 0; color: Colors.surfaceContainerHigh }
-                            AppIcon { anchors.centerIn: parent; font.pixelSize: 16; text: "\uf1eb"; color: Colors.surfaceVariantText }
-                        }
-
-                        AppText {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 48
-                            anchors.right: forgetBtn.left
-                            anchors.rightMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            elide: Text.ElideRight
-                            variant: "body"; font.pixelSize: 18
-                            text: modelData
-                            color: Colors.textPrimary
-                        }
-
-                        Item {
-                            id: forgetBtn
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 24; height: 24
-                            opacity: savedMa.containsMouse ? 1 : 0.35
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            color: Colors.accent
+                            opacity: savedRow.hovered ? 1 : 0
                             Behavior on opacity { AnimNumber { type: Anim.fast } }
-                            AppIcon {
-                                anchors.centerIn: parent
-                                font.pixelSize: 12
-                                text: "\uf1f8"
-                                color: forgetHover.hovered ? Colors.error : Colors.surfaceVariantText
+                        }
+
+                        Item {
+                            anchors.fill: parent
+                            transform: Translate {
+                                y: savedRow.hovered ? -1 : 0
+                                Behavior on y { AnimNumber { type: Anim.fast } }
                             }
-                            HoverHandler { id: forgetHover; cursorShape: Qt.PointingHandCursor }
-                            TapHandler { onTapped: root.forget(modelData) }
+
+                            Item {
+                                width: 26; height: 26
+                                anchors.left: parent.left
+                                anchors.leftMargin: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                Rectangle { anchors.fill: parent; radius: 0
+                                    color: savedRow.hovered ? Colors.accentDim : Colors.surfaceContainerHigh
+                                    Behavior on color { AnimColor { type: Anim.fast } }
+                                }
+                                AppIcon { anchors.centerIn: parent; font.pixelSize: 16; text: "\uf1eb"
+                                    color: savedRow.hovered ? Colors.accentBlue : Colors.surfaceVariantText }
+                            }
+
+                            AppText {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 50
+                                anchors.right: forgetBtn.left
+                                anchors.rightMargin: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                elide: Text.ElideRight
+                                variant: "body"; font.pixelSize: 18
+                                text: modelData
+                                color: Colors.textPrimary
+                            }
+
+                            Item {
+                                id: forgetBtn
+                                anchors.right: parent.right
+                                anchors.rightMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 24; height: 24
+                                opacity: savedRow.hovered ? 1 : 0.35
+                                Behavior on opacity { AnimNumber { type: Anim.fast } }
+                                AppIcon {
+                                    anchors.centerIn: parent
+                                    font.pixelSize: 12
+                                    text: "\uf1f8"
+                                    color: forgetHover.hovered ? Colors.error : Colors.surfaceVariantText
+                                }
+                                HoverHandler { id: forgetHover; cursorShape: Qt.PointingHandCursor }
+                                TapHandler { onTapped: root.forget(modelData) }
+                            }
                         }
 
                         MouseArea { id: savedMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: NmcliService.connectTo(modelData, "") }
