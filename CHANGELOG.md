@@ -7,6 +7,13 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **A capture in progress holds off the idle chain.** `Recorder.recording` was
+  read by the bar's dot and nothing else, so a long recording dimmed and then
+  locked mid-take. `IdleState.held` is now `stayAwake || Recorder.recording`, all
+  three stages go through it, and a recorder starting while the screen is already
+  dimmed wakes it. `idle state` reports `recording=yes|no` so the hold is visible
+  from the CLI. The hold lags the recorder starting by up to `Recorder`'s 5 s
+  poll, which is far inside the 15 min default dim.
 - **Type is a scale with three axes, not a list of pixel sizes.** `Type` now
   names a weight and a tracking value beside every size, and `AppText` resolves a
   variant to all three at once, so a surface asks for a role instead of choosing

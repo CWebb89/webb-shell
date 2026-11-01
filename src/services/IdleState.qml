@@ -34,6 +34,22 @@ QtObject {
     property bool dimmed: false
     property bool displayOff: false
 
+    // A capture in progress holds the chain off for the same reason Stay Awake
+    // does: a long recording that dims and then locks mid-record loses the take.
+    // `Recorder` polls, so the hold can lag the recorder starting by up to its
+    // 5 s interval — far inside the shortest stage (15 min by default).
+    readonly property bool held: root.stayAwake || Recorder.recording
+
+    // A QtObject has no default property, so a child object has to be declared
+    // as one — the bare `Connections { }` form does not load here.
+    property var recordingWatch: Connections {
+        target: Recorder
+        function onRecordingChanged() {
+            if (Recorder.recording)
+                root.wake()
+        }
+    }
+
     // One line, so the guide's "nothing dimmed, run this" actually answers:
     // which stages are monitored and at what timeout, whether Stay Awake is
     // suppressing them, and whether a stage is in effect right now.
@@ -43,6 +59,7 @@ QtObject {
 
     function state() {
         return "stayAwake=" + (root.stayAwake ? "on" : "off")
+                + " recording=" + (Recorder.recording ? "yes" : "no")
                 + " dimmed=" + (root.dimmed ? "yes" : "no")
                 + " displayOff=" + (root.displayOff ? "yes" : "no")
                 + " dim=" + root.stage(dimMonitor)
@@ -88,20 +105,20 @@ QtObject {
     }
 
     function dim() {
-        if (root.stayAwake)
+        if (root.held)
             return
         root.dimmed = true
     }
 
     function screenOff() {
-        if (root.stayAwake || root.displayOff)
+        if (root.held || root.displayOff)
             return
         root.displayOff = true
         root.run(dpmsOff)
     }
 
     function lock() {
-        if (root.stayAwake)
+        if (root.held)
             return
         Popups.engageLock()
     }

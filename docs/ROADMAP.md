@@ -98,7 +98,7 @@ could show for near-zero cost. Small, high-return, no new surfaces.
 | # | Item | Effort | Status |
 |---|---|---|---|
 | 5 | Stay Awake indicator | 2 h | planned |
-| 6 | Recording suppresses idle | 2 h | planned |
+| 6 | Recording suppresses idle | 2 h | shipped |
 | 7 | Updates badge | 3 h | planned |
 | 8 | Network throughput | 3 h | planned |
 | 9 | Bluetooth device battery | 2 h | planned |
@@ -116,9 +116,14 @@ return. A `BarButton` that appears only while the flag is set; click clears it.
 
 ### 6. Recording suppresses idle
 
-`Recorder.recording` exists and nothing tells idle to hold off, so a long capture
-dims and then locks mid-record. `IdleState` reads the flag the same way it reads
-`stayAwake`.
+Shipped. `IdleState.held` covers `stayAwake || Recorder.recording`, every stage
+checks it, and a recorder starting mid-dim wakes the screen. `idle state` gained
+`recording=yes|no`.
+
+Note the `QtObject` trap met here: a singleton with no default property cannot
+take a bare child object, so `Connections { }` had to be declared as
+`property var recordingWatch: Connections { ... }` or the whole shell fails to
+load with `Cannot assign to non-existent default property`.
 
 ### 7. Updates badge
 
