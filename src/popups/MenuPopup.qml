@@ -642,7 +642,7 @@ PanelWindow {
                     opacity: MenuModel.isDisabled(modelData, guardResults) ? 0.4 : 1.0
 
                     property bool hovered: false
-                    readonly property bool isBind: String(modelData.parent || "").indexOf("binds.") === 0
+                    readonly property bool isBind: String(modelData.parent || "").split(".").indexOf("binds") >= 0
                     readonly property string comboLabel: {
                         var s = modelData.label
                         var i = s.indexOf(" \u00b7 ")
