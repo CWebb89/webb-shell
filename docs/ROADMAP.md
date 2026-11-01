@@ -191,7 +191,7 @@ use, not by size.
 |---|---|---|---|
 | 15 | Emoji picker | 4 h | planned |
 | 16 | Calculator + units in the menu | 4 h | planned |
-| 17 | Clipboard manager with images | 1 day | planned |
+| 17 | Clipboard manager with images | 1 day | partial (type fix shipped) |
 | 18 | Overview / mission control | 2–3 days | planned |
 | 19 | Klipper print module | 1 day | planned |
 | 20 | App grid launcher | 1–2 days | planned |
@@ -211,10 +211,14 @@ test. No `qalc` dependency.
 
 ### 17. Clipboard manager with images
 
-Today `bin/clipboard.sh` → `fzf` → `menu-select`. `cliphist` stores images as
-rows (`cliphist decode <id>` yields a path), so a popup with a text list plus
-image thumbnails, pinning and delete is a real upgrade over a text list, and
-answers "I copied a screenshot, where did it go".
+Partially shipped: the correctness half. `bin/clipboard.sh` now reads the chosen
+entry's MIME and passes `--type` to `wl-copy`, so an image in history pastes as
+an image instead of binary text — that was a bug, not a missing feature, and it
+was the only part that needed fixing for a 750-entry history holding 2 images.
+
+Still open, and a taste question rather than a defect: thumbnails and type
+glyphs so entries are distinguishable, and pin/delete. That is the expensive
+part (~1 day) and there is currently little call for it.
 
 ### 18. Overview / mission control
 

@@ -5,6 +5,16 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **An image in the clipboard history pastes as an image again.**
+  `bin/clipboard.sh` handed `cliphist decode` output straight to `wl-copy` with
+  no type, so the image entries in a 750-entry history came back as binary text.
+  The script now reads the entry's own bytes with `file --mime-type` and passes
+  `--type <mime>` for anything that is not text. `test/clipboard-script.js`
+  stubs `file` and asserts both paths — text copies with no `--type`, an image
+  copies with its MIME — alongside the existing 750-entry SIGPIPE regression.
+
 ### Added
 
 - **The Bluetooth panel shows a connected device's battery.** `Battery1` arrives

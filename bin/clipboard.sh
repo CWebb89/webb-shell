@@ -8,6 +8,12 @@
 # fails the command substitution, `set -e` aborts before wl-copy, and the
 # chosen entry is silently discarded. Bounding upstream keeps the picker's
 # exit status meaningful.
+#
+# The entry's type comes from its own bytes, not from the list line. An image
+# in cliphist is a `[[ binary data ... ]]` placeholder followed by PNG bytes;
+# handing those to a bare `wl-copy` pastes them as text and the target gets
+# binary garbage. `file` reads the decoded entry and the matching --type puts
+# the offer back under the MIME the source app published.
 set -euo pipefail
 
 mapfile -t entries < <(cliphist list)
@@ -16,4 +22,12 @@ entries=("${entries[@]:0:200}")
 
 choice=$(printf '%s\n' "${entries[@]}" | "$(cd "$(dirname "$0")" && pwd)/menu-select.sh" "Clipboard")
 [ -n "$choice" ] || exit 0
-printf '%s' "$choice" | cliphist decode | wl-copy
+
+id="${choice%%$'\t'*}"
+[ -n "$id" ] || exit 0
+
+mime=$(cliphist decode "$id" | file --mime-type --brief - 2>/dev/null || true)
+case "$mime" in
+  text/*|application/json|application/xml|application/x-empty|"") cliphist decode "$id" | wl-copy ;;
+  *) cliphist decode "$id" | wl-copy --type "$mime" ;;
+esac
