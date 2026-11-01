@@ -8,6 +8,20 @@ Item {
 
     property string glyph: ""
     property int glyphSize: 19
+
+    // True while this module's own panel is open. Widgets bind it to their
+    // `Popups` flag so the bar keeps saying which of the exclusive panels is
+    // up after the pointer has moved away — the wash alone only ever reports
+    // hover.
+    property bool active: false
+
+    // Exposed so a widget can drive its own icon — the system monitor spins its
+    // fan glyph, and that animation has to own the AppIcon rather than a copy
+    // of it. `hovered` is the same story for anything that needs the pointer
+    // state outside this component.
+    property alias iconItem: glyphIcon
+    readonly property bool hovered: btnHover.hovered
+
     signal clicked()
 
     // Optional superscript count, drawn over the button rather than laid out
@@ -33,17 +47,33 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Metrics.radiusSmall
-        color: btnHover.hovered ? Colors.surfaceContainerHigh : "transparent"
+        color: btn.active ? Colors.accentDim
+             : (btnHover.hovered ? Colors.surfaceContainerHigh : "transparent")
 
         Behavior on color { AnimColor { type: Anim.fast } }
     }
 
+    // Grows out of the centre rather than sliding in from a side, so the cue
+    // does not read as a direction the icon did not move in.
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        height: 2
+        radius: 0
+        width: btn.active || btnHover.hovered ? parent.width - 10 : 0
+        color: Colors.accent
+
+        Behavior on width { AnimNumber { type: Anim.fast } }
+    }
+
     AppIcon {
+        id: glyphIcon
         anchors.centerIn: parent
         anchors.horizontalCenterOffset: btn.badge !== "" ? -2 : 0
         font.pixelSize: btn.glyphSize
         text: btn.glyph
-        color: btnHover.hovered ? Colors.textPrimary : Colors.tertiary
+        color: btn.active ? Colors.accent
+             : (btnHover.hovered ? Colors.textPrimary : Colors.tertiary)
 
         Behavior on color { AnimColor { type: Anim.fast } }
     }

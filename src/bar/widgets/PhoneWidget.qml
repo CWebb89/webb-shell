@@ -25,7 +25,8 @@ Row {
         Rectangle {
             anchors.fill: parent
             radius: Metrics.radiusSmall
-            color: phoneHover.hovered ? Colors.surfaceContainerHigh : "transparent"
+            color: Popups.phoneOpen ? Colors.accentDim
+                 : (phoneHover.hovered ? Colors.surfaceContainerHigh : "transparent")
 
             Behavior on color { AnimColor { type: Anim.fast } }
         }
@@ -34,8 +35,9 @@ Row {
             anchors.centerIn: parent
             text: "\uf10b"
             font.pixelSize: 15
-            color: KdeConnect.activeReachable ? Colors.accent
-                 : (KdeConnect.active ? Colors.surfaceVariantText : Colors.outline)
+            color: Popups.phoneOpen ? Colors.accent
+                 : (KdeConnect.activeReachable ? Colors.accent
+                 : (KdeConnect.active ? Colors.surfaceVariantText : Colors.outline))
         }
     }
 

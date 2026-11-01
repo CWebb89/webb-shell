@@ -86,6 +86,9 @@ PanelWindow {
 
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
+        scale: Popups.systemMonitorOpen ? 1 : 0.97
+        transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
+        Behavior on scale { AnimNumber { type: Anim.standard } }
 
         CardHighlight { }
         Column {
@@ -369,6 +372,30 @@ PanelWindow {
                 var fillCol = Colors.tempColorAt(last.t)
                 var tempGrad = spark.rampGradient(ctx, Colors.tempRamp)
                 var useGrad = spark.rampGradient(ctx, Colors.usageRamp)
+
+                // Filled area under the temperature trace, drawn before the
+                // strokes so the glow passes sit on top of it. Only the
+                // temperature line is filled: the usage line is dashed and
+                // muted, and an area under it read as a second, louder series.
+                if (n > 1) {
+                    var headX = spark.progress < 1
+                        ? tpPts[n - 2].x + (tpPts[n - 1].x - tpPts[n - 2].x) * spark.progress
+                        : tpPts[n - 1].x
+                    var area = ctx.createLinearGradient(0, 0, 0, height)
+                    area.addColorStop(0, Qt.rgba(fillCol.r, fillCol.g, fillCol.b, 0.20))
+                    area.addColorStop(1, Qt.rgba(fillCol.r, fillCol.g, fillCol.b, 0.0))
+                    ctx.beginPath()
+                    spark.trace(ctx, tpPts, spark.progress)
+                    ctx.lineTo(headX, height)
+                    ctx.lineTo(tpPts[0].x, height)
+                    ctx.closePath()
+                    ctx.fillStyle = area
+                    ctx.fill()
+                    // Canvas does not clear a path when you fill it, and every
+                    // trace below starts a new subpath without beginPath, so the
+                    // area's outline would be re-stroked by the glow passes.
+                    ctx.beginPath()
+                }
 
                 // temperature trace: layered glow passes + core, all stroked
                 // with the heat ramp

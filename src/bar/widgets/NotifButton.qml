@@ -7,6 +7,7 @@ import "../../services"
 // nothing on the bar said that notifications were being silenced, or that any
 // had arrived.
 BarButton {
+    active: Popups.notifOpen
     glyph: NotificationState.dnd ? "\uf1f6" : "\uf0f3"
     badge: NotificationState.liveToasts > 0 ? String(NotificationState.liveToasts) : ""
     onClicked: BarModules.toggle("notifOpen")

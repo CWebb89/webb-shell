@@ -19,7 +19,7 @@ PanelWindow {
         right: true
     }
     color: "transparent"
-    visible: Popups.reminderOpen
+    visible: Popups.reminderOpen || card.opacity > 0
     focusable: true
     exclusionMode: ExclusionMode.Ignore
 
@@ -96,6 +96,12 @@ PanelWindow {
         color: Colors.cardSurface
         border.color: Colors.accent
         border.width: Metrics.borderWidth
+
+        opacity: Popups.reminderOpen ? 1 : 0
+        scale: Popups.reminderOpen ? 1 : 0.97
+
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on scale { AnimNumber { type: Anim.standard } }
 
         CardHighlight { }
         Item {

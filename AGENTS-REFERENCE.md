@@ -24,9 +24,16 @@ Every decoded image is process memory until the window that shows it unmounts, s
 - `sourceSize` set to the size actually drawn (a surface, a card, a thumbnail). Without it Qt decodes the file at native resolution: a 3840×2160 JPEG is 33 MB and a 7680×4320 one 130 MB, which `PreserveAspectCrop` then throws away. `Background.qml` and `WallpaperSwitcher.qml` cap it at the output size and at three-quarter card size respectively.
 - `cache: false` on anything whose `source` changes or that is larger than an icon — wallpaper, album art, screenshots, carousel previews. `Image` caches by default and never evicts, so each distinct `source` costs memory for the life of the process.
 - Small icon `Image`s (≤32 px, bounded `sourceSize`) are deliberately left cached: their entries are a few KB and re-rasterising SVGs on every scroll is the worse trade.
+- A crossfade therefore holds two decodes for its length: the wallpaper's outgoing still (320 ms) and the bar's outgoing album art (300 ms). Both are bounded by `sourceSize`, so the second decode is one screen or one 52 px thumbnail, not a second giant bitmap.
 - A `PanelWindow` is mapped only while it has something to draw. Mapping is the expensive part, not pixels: `implicitWidth: 2` on the volume panel measured identical to its normal 220 px, while unmapping the same panel returned ~20 MB. Panels that open and close gate `visible` on their `Popups` flag (plus a short tail for the exit animation); `NotificationToasts` is the pattern for one that maps on an event rather than a flag.
 
 Measured cost of the whole stack, for calibration: any Quickshell shell on this machine is ~335 MB RSS for a single 40 px bar, and webb-shell adds ~220 MB on top of that (peak heap, i.e. everything `malloc` and `new` see, is only ~61 MB — the rest is driver-side `mmap`). `heaptrack` on a copy attributes the largest single slice to the NVIDIA EGL contexts, and each *mapped* layer surface costs ~15–30 MB of driver buffers regardless of its size: shrinking a window to 2 px saved nothing, unmapping it saved 20 MB. So a surface that has nothing to draw must not stay mapped — see `NotificationToasts.qml`, which maps on arrival and unmaps 220 ms after the last card. Nine hours of use adds ~150 MB anon, so that is the order of magnitude worth chasing, not the floor. That growth is allocator retention, not a leaking object: `MALLOC_ARENA_MAX` and lazy popup mounting were both measured and changed nothing.
+
+### Bar
+
+- A module that opens a panel binds `BarButton.active` to its own `Popups` flag. The active state (`accentDim` wash, accent glyph, the same 2px underline) is what tells you which of the exclusive panels is up after the pointer has moved off the icon, so a widget that adds a popup must add that binding.
+- `BarButton` exposes `iconItem` and `hovered` for widgets that need to drive their own icon — `SystemButton` spins the fan glyph, and the animation has to own the icon rather than a copy of it. Anything larger than that is a custom widget, not a `BarButton`.
+- The workspace indicator is one pill that animates between slots (`Anim.emphasized`); do not go back to a rectangle per slot, which says where you are but not which way you moved.
 
 ### Popup state and exclusivity
 
@@ -37,6 +44,7 @@ Measured cost of the whole stack, for calibration: any Quickshell shell on this 
 - The lock screen is created on the `Overlay` layer and covers the screen, so any other surface left mapped on that layer draws over it. `NotificationToasts` therefore binds `visible: !Popups.lockOpen`. Unmapping that window does not stop `NotificationServer` — a QML object whose lifetime is not tied to window visibility — from capturing into history.
 - Every surface sets `WlrLayershell.namespace` as `webb-shell:<kebab-name>`, the lock screen included, so Hyprland rules can target it and `hyprctl layers` identifies it.
 - Standard animated windows use a transparent `PanelWindow`, `ExclusionMode.Ignore`, state-bound content opacity, and remain visible through the exit animation (`stateOpen || content.opacity > 0`). Follow the nearest same-category popup for exceptions such as `PrintOverlay` and `NotificationToasts`.
+- A card that positions itself with `BarModules.place()` also scales from the corner nearest its anchor: `scale: Popups.XOpen ? 1 : 0.97` plus `transformOrigin: BarModules.transformOrigin(...)`, so it grows out of the edge it is attached to instead of ballooning from its middle. Popups anchored to a fixed corner with no `place()` (`TrayMenu`) hard-code the matching `Item.TopRight`; centred dialogs (`PolkitPopup`, `ReminderPopup`) leave the default centre origin.
 
 ### Popup input patterns
 

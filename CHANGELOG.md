@@ -7,6 +7,27 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **The bar and the panels now answer questions they used to stay silent on.**
+  The workspace indicator is one pill that slides between digits instead of a
+  rectangle appearing under each, so a workspace switch shows which way you
+  moved. Every `BarButton` grows a 2px accent underline on hover and, while its
+  own panel is open, keeps an `accentDim` wash and an accent glyph — with 15
+  exclusive panels, the bar now says which one is up after the pointer leaves
+  the icon. `BarButton` also exposes `iconItem` and `hovered`, which let the
+  system monitor's spinning fan become a `BarButton` instead of a hand-rolled
+  copy of one.
+- **Panels enter from their anchor and their rows cascade.** A card positioned by
+  `BarModules.place()` now scales from the screen corner it opened toward
+  (`BarModules.transformOrigin`), and menu rows fade in 12 ms apart, capped at
+  eight so a row forty deep never waits longer than the card's own fade. Phone
+  and Reminder pick up the fade and scale they were missing, which also makes
+  their windows stay mapped for the exit animation.
+- **The System Monitor graphs have area fills, media art crossfades, and the
+  wallpaper crossfades.** The temperature trace is filled with its own heat ramp
+  faded to transparent, so the graph reads as a shape rather than a hairline;
+  album art keeps the outgoing cover under the incoming one until it decodes;
+  and a still wallpaper change fades over 320 ms instead of cutting, including
+  from the lock screen's blurred backdrop.
 - **Popup cards sit on their own plane.** `Colors.cardSurface` is one step above
   `surface`, and every popup card carries `CardHighlight`, a 1px hairline at 6%
   white along its top edge. A drop shadow was tried first and abandoned: a

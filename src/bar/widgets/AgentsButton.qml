@@ -8,6 +8,7 @@ import "../../services"
 // whole window each time, which reads as "the icon is gone". The icon now stays
 // until a load has actually finished and reported the data unavailable.
 BarButton {
+    active: Popups.agentsOpen
     wantsVisible: !AgentUsage.loaded || AgentUsage.ok
     glyph: "\uf080"
     onClicked: BarModules.toggle("agentsOpen")

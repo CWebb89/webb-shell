@@ -29,7 +29,7 @@ the four are one-off systems rather than surfaces.
 |---|---|---|---|
 | 1 | Motion tokens | ½ day | shipped |
 | 2 | Popup card elevation | ½ day | shipped |
-| 3 | Interaction polish set | 1 day | planned |
+| 3 | Interaction polish set | 1 day | shipped |
 | 4 | Type scale + Material Symbols | 1 day | planned |
 
 ### 1. Motion tokens
@@ -66,19 +66,11 @@ close affordance) but it is not queued.
 
 ### 3. Interaction polish set
 
-Small, independent, each a few hours:
-
-- popup opens with `scale 0.96 → 1` in addition to `opacity`/`y`, scaling from
-  the `PopupAnchor` edge rather than the centre
-- workspace digits get one sliding pill that animates between positions
-- `BarButton` underline grows from the centre on hover
-- the accent pill persists while that module's popup is open
-- media art crossfades on track change; title marquees only when it overflows
-- list rows stagger in on open, capped at ~8 so a 400-row menu does not crawl
-- sparklines get an area gradient under the line
-- wallpaper changes crossfade (300 ms); stills optionally get a slow Ken Burns
-
-Files: `src/bar/widgets/*`, `src/popups/*`, `src/components/BarButton.qml`.
+Shipped. Sliding workspace pill, `BarButton` hover underline and persistent
+active state, popup scale-from-anchor (`BarModules.transformOrigin`), staggered
+menu rows (12 ms apart, capped at eight), sparkline area fills, media art
+crossfade and a 320 ms wallpaper crossfade for stills. Phone and Reminder gained
+the fade and scale they were missing.
 
 ### 4. Type scale + Material Symbols
 

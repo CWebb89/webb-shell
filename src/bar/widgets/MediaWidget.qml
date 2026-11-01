@@ -22,6 +22,26 @@ Row {
     visible: wantsVisible
     spacing: 6
 
+    // Art crossfades instead of swapping: the outgoing cover stays underneath
+    // until the incoming one has decoded and faded in, so a track change is not
+    // a frame of empty square. `shownArt` is what the front image last held,
+    // which is what makes the outgoing source knowable after `art` changed.
+    readonly property string art: (root.player && root.player.trackArtUrl) ? root.player.trackArtUrl : ""
+    property string shownArt: ""
+    property string leavingArt: ""
+
+    onArtChanged: {
+        root.leavingArt = root.shownArt
+        root.shownArt = root.art
+        leavingTimer.restart()
+    }
+
+    Timer {
+        id: leavingTimer
+        interval: 300
+        onTriggered: root.leavingArt = ""
+    }
+
     Item {
         id: mediaInfo
         width: 152
@@ -48,12 +68,29 @@ Row {
             anchors.verticalCenter: parent.verticalCenter
             width: 26
             height: 26
-            source: root.player ? root.player.trackArtUrl : ""
+            source: root.leavingArt
             fillMode: Image.PreserveAspectCrop
             sourceSize.width: 52
             sourceSize.height: 52
             clip: true
             cache: false
+        }
+
+        Image {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 26
+            height: 26
+            source: root.art
+            fillMode: Image.PreserveAspectCrop
+            sourceSize.width: 52
+            sourceSize.height: 52
+            clip: true
+            cache: false
+            asynchronous: true
+            opacity: status === Image.Ready ? 1 : 0
+
+            Behavior on opacity { AnimNumber { type: Anim.standard } }
         }
 
         AppText {

@@ -545,7 +545,8 @@ PanelWindow {
         clip: true
 
         opacity: Popups.findOpen ? 1 : 0
-        scale: Popups.findOpen ? 1 : 0.96
+        scale: Popups.findOpen ? 1 : 0.97
+        transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
 
         CardHighlight { }
         Behavior on opacity {

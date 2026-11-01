@@ -29,6 +29,19 @@ Item {
 
     property string currentBackground: ""
 
+    // The still that is being replaced, kept on screen under the incoming one
+    // for the length of the crossfade. Only a still-to-still change is worth
+    // crossfading: a video or GIF has its own motion, and holding its last frame
+    // under a new still just looks like a smear.
+    property string shownBackground: ""
+    property string leavingBackground: ""
+
+    Timer {
+        id: crossfadeTimer
+        interval: 320
+        onTriggered: root.leavingBackground = ""
+    }
+
     function isVideo(path) {
         return /\.(mp4|m4v|mov|webm|mkv|avi)$/i.test(String(path || ""))
     }
@@ -41,6 +54,12 @@ Item {
         var path = String(raw || "").trim()
         if (path === root.currentBackground)
             return
+        const wasStill = root.shownBackground !== ""
+            && !root.isVideo(root.shownBackground) && !root.isGif(root.shownBackground)
+        const isStill = path !== "" && !root.isVideo(path) && !root.isGif(path)
+        root.leavingBackground = (wasStill && isStill) ? root.shownBackground : ""
+        root.shownBackground = path
+        crossfadeTimer.restart()
         root.currentBackground = path
     }
 
@@ -127,6 +146,20 @@ Item {
             // sourceSize caps the decode at the surface's own size. Without it a
             // 3840x2160 wallpaper decodes to 33 MB and a 7680x4320 one to 130 MB,
             // only for PreserveAspectCrop to throw the excess away at upload.
+            // The outgoing still, held underneath until the incoming one has
+            // decoded. It has no opacity animation of its own: it is simply
+            // replaced by the front image fading in above it.
+            Image {
+                anchors.fill: parent
+                source: root.leavingBackground
+                visible: source !== ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false
+                sourceSize.width: panel.width
+                sourceSize.height: panel.height
+            }
+
             Image {
                 anchors.fill: parent
                 source: root.currentBackground
@@ -136,6 +169,9 @@ Item {
                 cache: false
                 sourceSize.width: panel.width
                 sourceSize.height: panel.height
+                opacity: status === Image.Ready ? 1 : 0
+
+                Behavior on opacity { AnimNumber { type: Anim.standard } }
             }
 
             // AnimatedImage is the GIF-animating type; plain Image decodes

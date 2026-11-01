@@ -58,6 +58,10 @@ PanelWindow {
     property var navStack: []
     property string filterText: ""
     property int selectedIndex: 0
+
+    // Bumped on every open so the rows can stagger in once per appearance
+    // instead of only the first time the delegate is created.
+    property int revealGen: 0
     property int frozenTop: -1
 
     // Header reflects where the keyboard currently is: the full path of the
@@ -398,6 +402,8 @@ PanelWindow {
         function onMenuOpenChanged() {
             if (!Popups.menuOpen)
                 root.frozenTop = -1
+            else
+                root.revealGen++
         }
     }
 
@@ -498,7 +504,10 @@ PanelWindow {
         y: root.usesAnchor ? root.place.y : root.effectiveTop
 
         opacity: Popups.menuOpen ? 1 : 0
-        scale: Popups.menuOpen ? 1 : 0.96
+        scale: Popups.menuOpen ? 1 : 0.97
+        transformOrigin: root.usesAnchor
+            ? BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
+            : Item.Center
 
         CardHighlight { }
         Behavior on opacity {
@@ -637,10 +646,38 @@ PanelWindow {
                 currentIndex: root.selectedIndex
 
                 delegate: Rectangle {
+                    id: row
                     width: rowList.width
                     height: root.rowHeight
                     color: index === root.selectedIndex || hovered ? Colors.surfaceVariant : "transparent"
-                    opacity: MenuModel.isDisabled(modelData, guardResults) ? 0.4 : 1.0
+                    opacity: (MenuModel.isDisabled(modelData, guardResults) ? 0.4 : 1.0)
+                             * (row.revealed ? 1 : 0)
+
+                    // Rows arrive in a short cascade: 12ms apart, capped at eight
+                    // so a row forty deep never waits longer than the card's own
+                    // fade. The cap is the whole trick — uncapped, the last row
+                    // of a 400-row list would appear half a second late.
+                    property bool revealed: false
+
+                    function restartReveal() {
+                        row.revealed = false
+                        revealTimer.restart()
+                    }
+
+                    Component.onCompleted: row.restartReveal()
+
+                    Timer {
+                        id: revealTimer
+                        interval: Math.min(index, 8) * 12
+                        onTriggered: row.revealed = true
+                    }
+
+                    Connections {
+                        target: root
+                        function onRevealGenChanged() { row.restartReveal() }
+                    }
+
+                    Behavior on opacity { AnimNumber { type: Anim.fast } }
 
                     property bool hovered: false
                     readonly property bool isBind: String(modelData.parent || "").split(".").indexOf("binds") >= 0

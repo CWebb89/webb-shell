@@ -179,9 +179,12 @@ PanelWindow {
 
         opacity: Popups.trayMenuOpen ? 1 : 0
         y: Popups.trayMenuOpen ? 0 : -20
+        scale: Popups.trayMenuOpen ? 1 : 0.97
+        transformOrigin: Item.TopRight
 
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
+        Behavior on scale { AnimNumber { type: Anim.standard } }
 
         CardHighlight { }
         Flickable {

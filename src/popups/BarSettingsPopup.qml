@@ -718,6 +718,9 @@ PanelWindow {
 
         Behavior on opacity { AnimNumber { type: Anim.standard } }
         Behavior on y { AnimNumber { type: Anim.standard } }
+        scale: Popups.barSettingsOpen ? 1 : 0.97
+        transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
+        Behavior on scale { AnimNumber { type: Anim.standard } }
 
         CardHighlight { }
         Flickable {

@@ -187,6 +187,18 @@ QtObject {
         return PopupAnchor.resolve(root.anchor(id), winW, winH, cardW, cardH, options)
     }
 
+    // Which corner a popup card should scale out of, so a card opening under the
+    // bar grows downward from the bar rather than ballooning from its middle.
+    // Nearest screen corner to the card's centre — `place()` already guarantees
+    // the card sits toward one of the four.
+    function transformOrigin(winW, winH, cardX, cardY, cardW, cardH) {
+        const left = cardX + cardW / 2 < winW / 2
+        const top = cardY + cardH / 2 < winH / 2
+        if (top)
+            return left ? Item.TopLeft : Item.TopRight
+        return left ? Item.BottomLeft : Item.BottomRight
+    }
+
     // ── Popup mounting ──────────────────────────────────────────────────────
     // A module's popup is mounted while the module sits in the bar, while its
     // config asks for it to stay loaded, or while a force-load is outstanding.

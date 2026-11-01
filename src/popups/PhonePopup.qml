@@ -49,7 +49,7 @@ PanelWindow {
 
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
-    visible: Popups.phoneOpen
+    visible: Popups.phoneOpen || card.opacity > 0
     focusable: true
     exclusionMode: ExclusionMode.Ignore
 
@@ -81,6 +81,13 @@ PanelWindow {
         color: Colors.cardSurface
         border.color: Colors.outlineVariant
         border.width: Metrics.borderWidth
+
+        opacity: Popups.phoneOpen ? 1 : 0
+        scale: Popups.phoneOpen ? 1 : 0.97
+        transformOrigin: BarModules.transformOrigin(root.width, root.height, root.place.x, root.place.y, card.width, card.height)
+
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on scale { AnimNumber { type: Anim.standard } }
 
         CardHighlight { }
         Item {
