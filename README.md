@@ -8,8 +8,8 @@
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/badge/Quickshell-0.3.2-7aa2f7?style=for-the-badge" alt="Quickshell">
   <img src="https://img.shields.io/badge/Qt_6-QML-41cd52?style=for-the-badge&logo=qt&logoColor=white" alt="Qt 6">
-  <img src="https://img.shields.io/badge/bar_modules-20-7dcfff?style=for-the-badge" alt="20 bar modules">
-  <img src="https://img.shields.io/badge/IPC_targets-24-bb9af7?style=for-the-badge" alt="24 IPC targets">
+  <img src="https://img.shields.io/badge/bar_modules-21-7dcfff?style=for-the-badge" alt="21 bar modules">
+  <img src="https://img.shields.io/badge/IPC_targets-25-bb9af7?style=for-the-badge" alt="25 IPC targets">
   <img src="https://img.shields.io/badge/Hyprland-Wayland-58e1ff?style=for-the-badge" alt="Hyprland">
   <img src="https://img.shields.io/github/last-commit/CWebb89/webb-shell?style=for-the-badge&color=teal" alt="Last commit">
 </div>
@@ -33,8 +33,8 @@
 
 ---
 
-webb-shell is a desktop shell for [Hyprland](https://hyprland.org/). One bar, 19
-modules you can drag anywhere in it, and 24 popup panels: a command menu, file
+webb-shell is a desktop shell for [Hyprland](https://hyprland.org/). One bar, 21
+modules you can drag anywhere in it, and 27 popup panels: a command menu, file
 search, audio and media, Wi-Fi, Bluetooth, a system monitor, a calendar, a
 wallpaper carousel, a theme picker, a notification daemon, a lock screen, a
 Polkit agent and a coding-agent spend panel.
@@ -156,7 +156,7 @@ still missing.
 
 ## ✦ What it puts on screen
 
-The bar is a catalogue of 22 modules. Each one is either always visible, or hides
+The bar is a catalogue of 21 modules. Each one is either always visible, or hides
 itself when it has nothing to say — and the whole arrangement is yours to change
 from Bar Settings, including per-module placement and which section of the bar it
 belongs to.
@@ -429,16 +429,14 @@ non-zero on any failure, and finishes with an advisory pass that prints the
 ```bash
 bash -O globstar -c 'qmllint --silent shell.qml Bar.qml src/**/*.qml'
 bash -n install.sh portabilize.sh bin/*.sh bin/webb-shell
-node test/menu-model.js          # menu tree, guards, search ranking, JSONC
-node test/bar-config.js          # bar config writer
-node test/bar-layout.js          # drag/drop index maths
-node test/popup-anchor.js        # 3x3 anchor grid
-node test/mpris-model.js         # which player is active
-node test/usb-storage-model.js   # udev event to drive list
-node test/find-backend.js        # file search parsing
-node test/clipboard-script.js    # clipboard history pipeline
-node test/icon-resolve.js        # tray icon lookup order and size scoring
+for f in test/*.js; do node "$f" || exit 1; done
 ```
+
+The test line globs rather than naming files, because a hand-kept list here and
+in `AGENTS.md` has drifted from `test/` twice. Today it covers the menu tree,
+quick guards and search ranking, the bar config writer and drag maths, popup
+anchors, MPRIS player choice, USB udev event handling, find-backend parsing, the
+clipboard pipeline, tray icon lookup, and the palette library and token table.
 
 Two of the gate's steps have no shell one-liner worth writing: it renders the unit
 to a temp directory and checks it with `systemd-analyze --user verify`, reading

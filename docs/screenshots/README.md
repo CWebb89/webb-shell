@@ -18,7 +18,7 @@ section uses all twelve.
 | `keybinds.png` | Keybind browser, grouped by Hyprland / Webb Shell / Neovim / Pi / Herdr / Kitty / Yazi |
 | `history.png` | Command history |
 
-Two panels are deliberately absent:
+A few panels are deliberately absent:
 
 - **Bluetooth** and **Notifications** were captured and dropped. With nothing
   paired and no notifications pending they render "No devices found" and "No

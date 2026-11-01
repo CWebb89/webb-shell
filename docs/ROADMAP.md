@@ -16,6 +16,14 @@ Two entries were considered and refused, so they are not repeated below:
   shell feedback.
 - **Frosted glass / blurred popup cards.** Opaque cards stay.
 
+Four bar ideas were proposed on 2026-11-01 and **refused**, so they are not to be
+re-proposed:
+
+- An always-visible state dot on every bar module.
+- A CPU sparkline in the bar.
+- A playhead hairline under the media module.
+- A digit-roll animation on the clock.
+
 Status values: `planned`, `in progress`, `shipped`.
 
 ---
@@ -71,6 +79,12 @@ active state, popup scale-from-anchor (`BarModules.transformOrigin`), staggered
 menu rows (12 ms apart, capped at eight), sparkline area fills, media art
 crossfade and a 320 ms wallpaper crossfade for stills. Phone and Reminder gained
 the fade and scale they were missing.
+
+Follow-up sweep, also shipped: `ScrollFade` at every scrolling container's edges,
+a 45% scrim under both full-screen pickers with the carousels' outer bands fading
+into it, a per-panel accent on the card wash and section labels, sequenced
+`Repeater` rows (saved networks, USB drives, notes), and one `EmptyState` shape
+for the three panels that had invented their own.
 
 ### 4. Type scale
 
@@ -245,8 +259,10 @@ name, progress, remaining time, nozzle and bed temperature, with pause/cancel on
 hover. Multiple printers become chips, the way MPRIS players already do. Click
 opens klipshell.
 
-Also fixes a README claim: the docs advertise a "3D-printing wallpaper
-transition" that has not existed since 2026-09-27.
+Also fixes a README claim: the docs advertised a "3D-printing wallpaper
+transition" as removed when it is still wired (`PrintOverlay`, the `print` IPC
+target, `WallpaperSwitcher.selectCurrent`). Nothing to remove there — but a
+printer module would give that animation a reason to exist for live prints.
 
 ### 20. App grid launcher
 
@@ -260,7 +276,7 @@ layout.
 
 One grid for the six things done most: Wi-Fi, Bluetooth, DND, Stay Awake,
 Night Light, Power Profile, plus volume and brightness sliders and hand-offs to
-the full panels. The 15 exclusive panels stay exactly as they are behind it.
+the full panels. The 16 exclusive panels stay exactly as they are behind it.
 
 Depends on items 7, 10 and 11 for its toggles to have state.
 
@@ -360,13 +376,20 @@ re-evaluate — the master layout and `gaps_out = 8` leave little horizontal roo
 
 | # | Item | Effort | Status |
 |---|---|---|---|
-| 0 | Documentation truth pass | ½ h | planned |
+| 0 | Documentation truth pass | ½ h | shipped |
 
-README counts have drifted from the tree: it claims 19, 20 and 22 bar modules
-(actual 21), 24 popup panels (actual 27) and 24 IPC targets (actual 25), and it
-still advertises the removed 3D-printing wallpaper transition. It should be
-corrected, or better, made checkable. The missing screenshots are `usb`,
-`bluetooth`, `notify`, `recording`, `lock` and `toasts`.
+Shipped 2026-11-01. README counts now match the tree (21 bar modules, 27 popup
+panels, 25 IPC targets — the three places that carried the old numbers were
+corrected), and its hand-kept list of `test/*.js` files is replaced by the same
+glob `AGENTS.md` and `tools/verify.sh` use, since that list had drifted twice.
+
+**One claim in the original entry was wrong and is corrected here:** the
+3D-printing wallpaper transition was *not* removed. `src/popups/PrintOverlay.qml`,
+`Popups.printAnimRunning`, `WallpaperSwitcher.selectCurrent()` and the `print` IPC
+target are all still wired, so README's mention of it is accurate and stays.
+
+Still open: the missing screenshots are `usb`, `bluetooth`, `notify`,
+`recording`, `lock` and `toasts`.
 
 ---
 

@@ -14,8 +14,45 @@ All notable changes to webb-shell, oldest release last. The format follows
   `--type <mime>` for anything that is not text. `test/clipboard-script.js`
   stubs `file` and asserts both paths — text copies with no `--type`, an image
   copies with its MIME — alongside the existing 750-entry SIGPIPE regression.
+- **The Wi-Fi panel reported `127.0.0.1` as the interface address.**
+  `NmcliService.interfaceName` starts empty, so the first fetch ran
+  `nmcli device show` with no device — which prints every device including
+  loopback — and the line parser keeps the last match, so it cached `lo` for the
+  rest of the session. The fetch now resolves the connected wifi/ethernet device
+  in the same call (`nmcli -t -f DEVICE,TYPE,STATE device status`) and clears the
+  fields when nothing is connected.
+- **Two Bluetooth devices with the same name were indistinguishable.** The panel
+  now appends the MAC tail (`BTH661 · BB6D`) only when a name occurs more than
+  once, so a single device is still just its name.
+- **The workspace pill no longer steals a slot from the digits.** It was a child
+  of the digits' `Row`, and a positioner hands every visible child a slot: the
+  digits sat one slot-width right and that phantom slot's width tracked the
+  focused digit's glyph. It is now drawn behind the row instead of inside it.
 
 ### Added
+
+- **Scrolling panels fade at their edges instead of being sliced.** `ScrollFade`
+  is a gradient at a container's top and bottom edge, shown only while there is
+  content past that edge, and a sibling of the `Flickable` rather than a child so
+  it does not scroll with the content. It carries no input handlers, so wheel and
+  drag events pass through it. Fifteen containers across thirteen panels.
+- **Each panel has an accent instead of every label being blue.**
+  `CardHighlight` takes a `wash` colour — the top wash is now the panel's accent
+  at 6% alpha — and the panel's section labels use the same hue: audio and agent
+  usage cyan, Wi-Fi/find/glance blue, Bluetooth/menu/bar settings purple, system
+  monitor rose.
+- **Both full-screen pickers dim the desktop at 45%.** The wallpaper picker had
+  no scrim at all and the scheme picker's was a transparent click-catcher, so
+  their cards competed with whatever wallpaper sat behind them; the carousels'
+  outer bands now fade into that scrim, so the neighbour cards stop being sliced
+  mid-glyph at the screen edge.
+- **Repeater-built rows arrive in sequence.** Saved networks, USB drives and
+  notes fade in 12 ms apart, capped at eight. `ListView` delegates deliberately
+  do not: they are created during scrolling, so the entrance would replay on
+  every drag.
+- **"Nothing here yet" looks the same everywhere.** `EmptyState` is one glyph +
+  line + hint shape, used by Wi-Fi's no-networks, USB's no-drives and Notes'
+  no-notes states, which each had a different shape before.
 
 - **The Bluetooth panel shows a connected device's battery.** `Battery1` arrives
   inside `bluetoothctl info` and only over an active connection, so
@@ -42,7 +79,7 @@ All notable changes to webb-shell, oldest release last. The format follows
   The workspace indicator is one pill that slides between digits instead of a
   rectangle appearing under each, so a workspace switch shows which way you
   moved. Every `BarButton` grows a 2px accent underline on hover and, while its
-  own panel is open, keeps an `accentDim` wash and an accent glyph — with 15
+  own panel is open, keeps an `accentDim` wash and an accent glyph — with 16
   exclusive panels, the bar now says which one is up after the pointer leaves
   the icon. `BarButton` also exposes `iconItem` and `hovered`, which let the
   system monitor's spinning fan become a `BarButton` instead of a hand-rolled
