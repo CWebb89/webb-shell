@@ -210,9 +210,28 @@ All notable changes to webb-shell, oldest release last. The format follows
   (`bin/kdeconnect-do.sh` performs the verbs `kdeconnect-cli` lacks) and
   `bin/kdeconnect-notify.sh` mirrors phone notifications into the shell's own
   toasts, which `kdeconnectd` cannot do without a Plasma applet.
+- **The Notification Center has a keybind.** `ALT + N` toggles the panel through
+  a new `notify centerToggle` IPC function; the `open`-only `center` and
+  `centerHide` stay for scripts and menu rows.
 
 ### Fixed
 
+- **One phone notification could fill the screen with toasts.** Every copy of
+  `bin/kdeconnect-notify.sh` subscribes to kdeconnectd and posts its own
+  `Notify` for the same `notificationPosted`, and copies leaked: a hot reload or
+  a killed `quickshell -p .` SIGKILLs the wrapper while the `busctl` reader
+  behind it is orphaned and keeps posting forever (15 were alive, one burst
+  measured 15 toasts in 120 ms). The script now takes a `flock` on
+  `$XDG_RUNTIME_DIR/webb-shell-kdeconnect-notify.lock`, runs the reader as a
+  `coproc` that `exec`s `busctl`, and a watchdog kills it within 2 s of either
+  the wrapper or its shell disappearing.
+- **The toast window held ~15 MB of driver buffers around the clock for nothing.**
+  An empty stack still needs a mapped layer surface, and a mapped surface costs
+  the same whether it draws a card or a single transparent pixel. The overlay is
+  now mapped on arrival (before the first frame of the card) and unmapped 220 ms
+  after the last one leaves, which measured 546 MB against 556 MB for a freshly
+  started shell and released 4 MB of Wayland buffers. Locking still unmaps it
+  first, so no notification content can sit above the lock.
 - **The phone panel said "not connected" for a paired, reachable phone.**
   kdeconnectd 25.x has no `DeviceNames` property, and the reader that relied on
   it silently saw zero devices while `kdeconnect-cli -l` listed the phone.
@@ -232,6 +251,15 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Changed
 
+- **The `SUPER+D` menu is grouped by function instead of by accretion.** Eight
+  sections — Apps, Panels, System, Settings, Software, Services, Capture,
+  Reference — with every shell surface under Panels, every configuration row
+  under Settings, package management lifted out of System, and keybinds plus
+  documentation merged into Reference. The Software catalogue also loses its
+  54-row per-package Uninstall mirror: removal is now two fzf pickers over the
+  installed packages (`bin/pkg-remove.sh`, `bin/pkg-aur-remove.sh`), which reach
+  more packages than the mirror did. A duplicate `capture.ocr` row that silently
+  shadowed the working one is gone; 434 rows became 385.
 - **The IPC verb is `open`, and no panel opens over the lock.** Every target
 exposed a `show` that `qs ipc` swallowed — it printed the function list and
 exited 0 without calling anything — so the README, `AGENTS.md`,
@@ -498,6 +526,17 @@ with evidence and a reproduction.
   `qs ipc call <target> show` prints the target list, changes nothing and
   exits 0. Use `toggle` (or `hide`). Affects `clock`, `battery`, `glance`,
   `lock`, `audio`, `wifi`, `bluetooth` and `system`; no shipped caller uses it.
+
+### Removed
+
+- **The pi integration: Quick Ask, the `pi` bar module, its completion toast,
+  the `pi`/`ask` IPC targets, the `ocr.sh --ask` hand-off, and the
+  `webb-shell-activity.ts` pi extension (`contrib/` is gone, along with the
+  `install.sh` step that copied it into `~/.pi/agent/extensions/`).** A terminal
+  pi session was the preferred way in, so the popup, the widget, the
+  `PiAsk`/`PiActivity` services, their three menu rows and the `ask`/`pi` IPC
+  handlers are deleted. `bin/ocr.sh` now only copies OCR text, and the unit's
+  PATH comment no longer describes the removed rows.
 
 ## [1.0.0] — 2026-10-05
 

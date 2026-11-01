@@ -175,7 +175,6 @@ belongs to.
 | **System** | CPU and GPU temperature, load, fan, memory, disk, per-core |
 | **USB Storage** | Mounted drives with safe eject — hidden when there are none |
 | **Agent Usage** | Coding-agent spend for the provider pi used last — OpenRouter spend and credits, DeepSeek balance, local per-provider token and cache breakdowns for any provider; hidden when unavailable |
-| **pi** | Always in the bar: click for Quick Ask. While a pi session runs it also shows the tool a turn is running right now, and a settled run produces a toast with its duration, turns, cost and model. Remove it in Bar Settings (`SUPER+SHIFT+B`) — inactivity does not |
 | **Phone** | KDE Connect device: battery, signal and reachable state in the bar; the panel adds phone media control, mount-and-browse of the phone's storage, clipboard push, ring, ping and SMS |
 | **Battery** | Charge card, and it raises itself when the battery is low |
 | **Clock** | The clock OSD |
@@ -190,11 +189,9 @@ Not everything is a bar module. There is also a lock screen, a Polkit agent, a
 notification daemon with toasts and Do-Not-Disturb, reminders, a tray menu, and a
 3D-printing wallpaper transition that plays when a print starts.
 
-Three things live outside the bar's own surface because they take input: **Quick
-Ask** (one question to pi, answered in a card; the input starts empty and nothing
-is saved unless `Ctrl+S` asks for it), **Phone** (the KDE Connect panel), and
-**Text from Screen** — `bin/ocr.sh` picks a region, OCRs it with tesseract, and
-puts the text on the clipboard, or hands it straight to Quick Ask with `--ask`.
+Two things live outside the bar's own surface because they take input: **Phone**
+(the KDE Connect panel) and **Text from Screen** — `bin/ocr.sh` picks a region,
+OCRs it with tesseract, and puts the text on the clipboard.
 
 <br>
 
@@ -202,10 +199,15 @@ puts the text on the clipboard, or hands it straight to Quick Ask with `--ask`.
 
 ## ✦ The menu
 
-`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 427
-rows, and the logic that reads them is a pure JS module with no QML in it.
+`SUPER+D` opens a menu whose entire contents live in `src/menu/menu.jsonc` — 382
+rows, and the logic that reads them is a pure JS module with no QML in it. Eight
+sections hold them: **Apps**, **Panels**, **System**, **Settings**, **Software**,
+**Services**, **Capture**, **Reference**. A row belongs under Panels when it
+raises a shell surface; anything that changes shell or desktop configuration
+belongs under Settings; package management never sits under System.
 
-Hierarchy comes from dotted IDs (`system.lock` is a child of `system`), and the
+Hierarchy comes from dotted IDs (`system.session.lock` is a child of
+`system.session`, which sits under `system`), and the
 kind of a row is inferred from which key it carries: `action` runs something,
 `open` hands off to a panel the shell already has, `toggle` flips state, and
 children make it a submenu. `@shellDir@` expands to the repository path at load
@@ -380,10 +382,8 @@ qs -p /path/to/webb-shell ipc call <target> <fn> [args]
 | `system` | `toggle` `open` `hide` |
 | `usb` | `toggle` `open` `hide` `refresh` |
 | `usage` | `toggle` `open` `hide` `refresh` |
-| `pi` | `state` |
-| `ask` | `toggle` `open` `hide` `question <text>` `state` |
 | `phone` | `toggle` `open` `hide` `state` `ring` `refresh` |
-| `notify` | `dnd` `toggle` `state` `history` `clear` `dismissAll` `center` `centerHide` |
+| `notify` | `dnd` `toggle` `state` `history` `clear` `dismissAll` `center` `centerToggle` `centerHide` |
 | `idle` | `state` `toggle` `stay` `awake` |
 | `reminder` | `set` `open` `list` `clear` |
 | `screenshot` | `full` `region` `window` |
