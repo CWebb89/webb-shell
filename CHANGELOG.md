@@ -7,6 +7,16 @@ All notable changes to webb-shell, oldest release last. The format follows
 
 ### Added
 
+- **Motion is a token system, not 96 hand-written numbers.** `src/theme/Anim.qml`
+  gives five intents — `instant`, `fast`, `standard`, `emphasized`,
+  `decelerate` — with a duration and a bezier curve each, and `AnimColor` /
+  `AnimNumber` are the two animation types every call site now uses instead of
+  its own `ColorAnimation`/`NumberAnimation` with a literal duration. The old
+  numbers spread over 60–600 ms in five easing families with no shared rhythm,
+  so two panels opening together did not read as the same shell. Four literals
+  survive on purpose and are documented in `AGENTS-REFERENCE.md`: the recording
+  dot and Bluetooth scan loops, the Polkit shake sequence, and the print
+  overlay's computed `totalMs`.
 - **The scheme picker edits the whole palette, and saved palettes become
   cards.** Its fourth tab is Custom: the door card opens an editor over all 50
   tokens, with a side panel naming what each colour repaints in the shell, the

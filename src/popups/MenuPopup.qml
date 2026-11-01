@@ -501,16 +501,16 @@ PanelWindow {
         scale: Popups.menuOpen ? 1 : 0.96
 
         Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
         Behavior on scale {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
         Behavior on width {
-            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
         Behavior on y {
-            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
 
         Item {

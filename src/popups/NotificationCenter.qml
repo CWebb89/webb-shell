@@ -184,8 +184,8 @@ PanelWindow {
         opacity: Popups.notifOpen ? 1 : 0
         y: root.place.y + (Popups.notifOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Item {
             id: header

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "../theme"
 import "../state"
 import "../services"
 
@@ -34,6 +35,6 @@ PanelWindow {
         anchors.fill: parent
         color: "black"
         opacity: root.darkening ? 0.55 : 0
-        Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.emphasized } }
     }
 }

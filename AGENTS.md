@@ -14,7 +14,7 @@ Personal Quickshell 0.3.2 shell for Hyprland (Arch package `quickshell` 0.3.2-1)
 
 - `shell.qml`: `ShellRoot`, window instances, processes shared at the root, and authoritative IPC handlers.
 - `Bar.qml`: top bar and its live status consumers.
-- `src/theme/`: `Colors`, `Metrics`, and `Type` singletons.
+- `src/theme/`: `Anim`, `Colors`, `Metrics`, and `Type` singletons.
 - `src/state/`: live shell state (`ShellState`), popup state/exclusivity (`Popups`), per-machine configuration (`ShellConfig`), and the bar module catalogue (`BarModules`: widget file, popup file and default anchor per module).
 - `src/services/`: singleton integrations and polling; register them in `src/services/qmldir`.
 - `src/components/`: reusable visual controls; register QML types in the sibling `qmldir`.

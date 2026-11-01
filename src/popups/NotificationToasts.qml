@@ -413,7 +413,7 @@ PanelWindow {
                 opacity: closing ? 0 : 1
 
                 Behavior on opacity {
-                    NumberAnimation { duration: 180 }
+                    AnimNumber { type: Anim.standard }
                 }
 
                 Timer {

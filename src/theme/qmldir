@@ -1,3 +1,6 @@
+singleton Anim 1.0 Anim.qml
+AnimColor 1.0 AnimColor.qml
+AnimNumber 1.0 AnimNumber.qml
 singleton Colors 1.0 Colors.qml
 singleton Metrics 1.0 Metrics.qml
 singleton Type 1.0 Type.qml

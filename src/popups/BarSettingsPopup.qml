@@ -304,7 +304,7 @@ PanelWindow {
             border.width: Metrics.borderWidth
             border.color: sbtn.active ? sbtn.tone : "transparent"
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { AnimColor { type: Anim.fast } }
         }
 
         AppText {
@@ -388,7 +388,7 @@ PanelWindow {
                 border.color: modelData === grid.current ? Colors.accentPurple : Colors.outlineVariant
                 opacity: grid.pickable ? 1 : 0.4
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { AnimColor { type: Anim.fast } }
 
                 HoverHandler {
                     id: cellHover
@@ -428,7 +428,7 @@ PanelWindow {
         // chips below it, which is what the drop index is computed against.
         visible: !chip.dragging
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
 
         AppIcon {
             id: grip
@@ -470,7 +470,7 @@ PanelWindow {
                 color: removeHover.hovered ? Colors.error : Colors.surfaceVariantText
             }
 
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { AnimNumber { type: Anim.fast } }
 
             HoverHandler { id: removeHover; cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: root.runBarCmd(["remove", chip.moduleId]) }
@@ -619,7 +619,7 @@ PanelWindow {
         border.color: Colors.accentCyan
         visible: !BarModules.inBar(addChip.moduleId)
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
 
         AppText {
             id: addLabel
@@ -716,8 +716,8 @@ PanelWindow {
         border.width: 2
         opacity: Popups.barSettingsOpen ? 1 : 0
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Flickable {
             id: flick

@@ -180,8 +180,8 @@ PanelWindow {
         opacity: Popups.trayMenuOpen ? 1 : 0
         y: Popups.trayMenuOpen ? 0 : -20
 
-        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Flickable {
             id: flick

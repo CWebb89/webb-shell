@@ -82,8 +82,8 @@ PanelWindow {
         opacity: Popups.btOpen ? 1 : 0
         y: root.place.y + (Popups.btOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Column {
             id: contentCol
@@ -219,8 +219,8 @@ PanelWindow {
                                                     : Colors.outlineVariant
                             border.width: Metrics.borderWidth
 
-                            Behavior on color { ColorAnimation { duration: 130 } }
-                            Behavior on border.color { ColorAnimation { duration: 130 } }
+                            Behavior on color { AnimColor { type: Anim.fast } }
+                            Behavior on border.color { AnimColor { type: Anim.fast } }
 
                             HoverHandler { id: devHover }
 
@@ -300,10 +300,10 @@ PanelWindow {
                                     scale: actPress.pressed ? 0.96 : 1
                                     opacity: devRow.busy ? 0.75 : 1
 
-                                    Behavior on color { ColorAnimation { duration: 110 } }
-                                    Behavior on border.color { ColorAnimation { duration: 110 } }
-                                    Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
-                                    Behavior on opacity { NumberAnimation { duration: 110 } }
+                                    Behavior on color { AnimColor { type: Anim.fast } }
+                                    Behavior on border.color { AnimColor { type: Anim.fast } }
+                                    Behavior on scale { AnimNumber { type: Anim.fast } }
+                                    Behavior on opacity { AnimNumber { type: Anim.fast } }
 
                                     Row {
                                         anchors.centerIn: parent
@@ -349,8 +349,8 @@ PanelWindow {
                                         text: "\uf1f8"
                                         color: trashHover.hovered ? Colors.error : Colors.surfaceVariantText
                                         opacity: devHover.hovered || trashHover.hovered ? 1 : 0.4
-                                        Behavior on opacity { NumberAnimation { duration: 130 } }
-                                        Behavior on color { ColorAnimation { duration: 130 } }
+                                        Behavior on opacity { AnimNumber { type: Anim.fast } }
+                                        Behavior on color { AnimColor { type: Anim.fast } }
                                     }
                                     HoverHandler { id: trashHover; cursorShape: Qt.PointingHandCursor }
                                     TapHandler { onTapped: BtService.removeDevice(modelData.mac) }

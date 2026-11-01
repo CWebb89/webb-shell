@@ -93,8 +93,8 @@ PanelWindow {
         opacity: Popups.usbOpen ? 1 : 0
         y: root.place.y + (Popups.usbOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Flickable {
             id: flick
@@ -222,7 +222,7 @@ PanelWindow {
                                     anchors.bottom: usageTrack.bottom
                                     width: Math.max(2, usageTrack.width * Model.usedFraction(driveCard.part))
                                     color: Colors.accentBlue
-                                    Behavior on width { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+                                    Behavior on width { AnimNumber { type: Anim.emphasized } }
                                 }
                             }
 

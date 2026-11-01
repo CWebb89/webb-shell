@@ -47,7 +47,7 @@ Item {
             radius: height / 2
             color: sliderRoot.muted ? Colors.surfaceVariantText : Colors.accent
 
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { AnimColor { type: Anim.standard } }
         }
 
         Rectangle {
@@ -61,9 +61,9 @@ Item {
             border.width: 2
             border.color: sliderRoot.muted ? Colors.surfaceVariantText : Colors.accent
 
-            Behavior on border.color { ColorAnimation { duration: 150 } }
-            Behavior on x { enabled: !sliderRoot.dragging; NumberAnimation { duration: 60; easing.type: Easing.OutQuad } }
-            Behavior on width { NumberAnimation { duration: 120 } }
+            Behavior on border.color { AnimColor { type: Anim.standard } }
+            Behavior on x { enabled: !sliderRoot.dragging; AnimNumber { type: Anim.instant } }
+            Behavior on width { AnimNumber { type: Anim.fast } }
         }
 
         HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

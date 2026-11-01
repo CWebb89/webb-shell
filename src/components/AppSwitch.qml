@@ -14,7 +14,7 @@ Rectangle {
     border.width: Metrics.borderWidth
     border.color: checked ? Colors.accent : Colors.outlineVariant
 
-    Behavior on color { ColorAnimation { duration: 150 } }
+    Behavior on color { AnimColor { type: Anim.standard } }
 
     Rectangle {
         id: thumb
@@ -25,9 +25,9 @@ Rectangle {
         x: sw.checked ? parent.width - width - 4 : 3
         color: sw.checked ? Colors.primaryText : Colors.surfaceVariantText
 
-        Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-        Behavior on width { NumberAnimation { duration: 120 } }
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on x { AnimNumber { type: Anim.standard } }
+        Behavior on width { AnimNumber { type: Anim.fast } }
+        Behavior on color { AnimColor { type: Anim.standard } }
     }
 
     MouseArea {

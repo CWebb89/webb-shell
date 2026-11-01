@@ -147,8 +147,8 @@ PanelWindow {
         opacity: Popups.audioOpen ? 1 : 0
         y: root.place.y + (Popups.audioOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Flickable {
             id: flick
@@ -435,7 +435,7 @@ PanelWindow {
                     width: parent.width * Math.max(0, Math.min(1, ch.peakValue))
                     height: parent.height
                     color: ch.muted ? Colors.surfaceVariantText : Colors.accentBlue
-                    Behavior on width { NumberAnimation { duration: 70 } }
+                    Behavior on width { AnimNumber { type: Anim.instant } }
                 }
             }
 
@@ -479,7 +479,7 @@ PanelWindow {
               : (chipHover.hovered ? Colors.surfaceContainerHighest : Colors.surfaceContainerHigh)
         border.width: Metrics.borderWidth
         border.color: pchip.chipActive ? Colors.accent : Colors.outlineVariant
-        Behavior on color { ColorAnimation { duration: 130 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
 
         Row {
             anchors.centerIn: parent
@@ -528,7 +528,7 @@ PanelWindow {
               : (chipHov.hovered ? Colors.surfaceContainerHighest : Colors.surfaceContainerHigh)
         border.width: Metrics.borderWidth
         border.color: chip.chipActive ? Colors.accent : Colors.outlineVariant
-        Behavior on color { ColorAnimation { duration: 130 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
 
         AppText {
             id: txt
@@ -566,7 +566,7 @@ PanelWindow {
             anchors.fill: parent
             color: drow.active ? Colors.accentDim
                   : (rowHov.hovered ? Colors.surfaceContainerHigh : "transparent")
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { AnimColor { type: Anim.fast } }
         }
 
         Rectangle {

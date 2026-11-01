@@ -1038,7 +1038,7 @@ PanelWindow {
         opacity: Popups.schemeOpen ? 1 : 0
 
         Behavior on opacity {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
 
         Item {
@@ -1048,7 +1048,7 @@ PanelWindow {
             visible: opacity > 0
 
             Behavior on opacity {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                AnimNumber { type: Anim.standard }
             }
 
             Column {
@@ -1214,7 +1214,7 @@ PanelWindow {
             visible: opacity > 0
 
             Behavior on opacity {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                AnimNumber { type: Anim.standard }
             }
 
             Column {
@@ -1375,7 +1375,7 @@ PanelWindow {
             visible: opacity > 0
 
             Behavior on opacity {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                AnimNumber { type: Anim.standard }
             }
 
             Column {
@@ -1652,7 +1652,7 @@ PanelWindow {
             visible: opacity > 0
 
             Behavior on opacity {
-                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                AnimNumber { type: Anim.standard }
             }
 
             // Blocks the click that would otherwise reach the scrim and close

@@ -61,7 +61,7 @@ Row {
                 radius: Metrics.radiusSmall
                 color: trayHover.hovered ? Colors.surfaceContainerHigh : "transparent"
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { AnimColor { type: Anim.fast } }
             }
 
             Image {

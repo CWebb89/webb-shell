@@ -80,7 +80,7 @@ PanelWindow {
         color: Colors.surfaceContainerLow
 
         Behavior on anchors.rightMargin {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
 
         HoverHandler {
@@ -161,7 +161,7 @@ PanelWindow {
             font.bold: true
             opacity: col.readoutVisible ? 1 : 0
 
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            Behavior on opacity { AnimNumber { type: Anim.standard } }
         }
 
         VerticalSlider {

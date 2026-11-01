@@ -21,8 +21,8 @@ Rectangle {
     border.width: Metrics.borderWidth
     opacity: rowEnabled ? 1 : 0.45
 
-    Behavior on color { ColorAnimation { duration: 130 } }
-    Behavior on border.color { ColorAnimation { duration: 150 } }
+    Behavior on color { AnimColor { type: Anim.fast } }
+    Behavior on border.color { AnimColor { type: Anim.standard } }
 
     Item {
         visible: row.glyph !== ""

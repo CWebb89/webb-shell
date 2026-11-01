@@ -128,8 +128,8 @@ PanelWindow {
         opacity: Popups.glanceOpen ? 1 : 0
         y: root.place.y + (Popups.glanceOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Column {
             id: content

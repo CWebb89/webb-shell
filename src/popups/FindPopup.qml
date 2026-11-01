@@ -548,13 +548,13 @@ PanelWindow {
         scale: Popups.findOpen ? 1 : 0.96
 
         Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
         Behavior on scale {
-            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
         Behavior on height {
-            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
 
         MouseArea {
@@ -783,7 +783,7 @@ PanelWindow {
                                        : (chipMouse.containsMouse ? Colors.surfaceContainerHigh : "transparent")
 
                                 Behavior on color {
-                                    ColorAnimation { duration: 120 }
+                                    AnimColor { type: Anim.fast }
                                 }
 
                                 Row {
@@ -835,7 +835,7 @@ PanelWindow {
                            : (keybindMouse.containsMouse ? Colors.surfaceContainerHigh : "transparent")
 
                     Behavior on color {
-                        ColorAnimation { duration: 120 }
+                        AnimColor { type: Anim.fast }
                     }
 
                     Row {
@@ -952,7 +952,7 @@ PanelWindow {
                         color: hasCursor ? root.dimColor(rowRoot.typeColor) : "transparent"
 
                         Behavior on color {
-                            ColorAnimation { duration: 100 }
+                            AnimColor { type: Anim.fast }
                         }
 
                         Rectangle {

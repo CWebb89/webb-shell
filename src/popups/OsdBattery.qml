@@ -54,15 +54,15 @@ PanelWindow {
         opacity: Popups.batteryOpen ? 1.0 : 0.0
 
         Behavior on opacity {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.emphasized }
         }
 
         // Flash accent while the battery is low.
         SequentialAnimation {
             running: root.low && Popups.batteryOpen
             loops: Animation.Infinite
-            NumberAnimation { target: flash; property: "opacity"; to: 0.15; duration: 500; easing.type: Easing.InOutQuad }
-            NumberAnimation { target: flash; property: "opacity"; to: 1.0; duration: 500; easing.type: Easing.InOutQuad }
+            AnimNumber { target: flash; property: "opacity"; to: 0.15; type: Anim.decelerate }
+            AnimNumber { target: flash; property: "opacity"; to: 1.0; type: Anim.decelerate }
         }
 
         MouseArea {

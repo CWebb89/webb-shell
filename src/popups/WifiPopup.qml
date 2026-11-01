@@ -112,8 +112,8 @@ PanelWindow {
         opacity: Popups.wifiOpen ? 1 : 0
         y: root.place.y + (Popups.wifiOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Column {
             id: contentCol
@@ -318,7 +318,7 @@ PanelWindow {
                                 radius: 0
                                 color: modelData.inUse ? Qt.rgba(Colors.accentBlue.r, Colors.accentBlue.g, Colors.accentBlue.b, 0.14)
                                                        : (netMa.containsMouse ? Colors.rowHover : "transparent")
-                                Behavior on color { ColorAnimation { duration: 130 } }
+                                Behavior on color { AnimColor { type: Anim.fast } }
                             }
 
                             // signal mini-bar
@@ -403,7 +403,7 @@ PanelWindow {
                     border.color: Colors.accentBlue
                     border.width: Metrics.borderWidth
 
-                    Behavior on height { NumberAnimation { duration: 120 } }
+                    Behavior on height { AnimNumber { type: Anim.fast } }
 
                     property string ssid: NmcliService._pendingSsid || ""
 
@@ -442,7 +442,7 @@ PanelWindow {
                         border.color: passField.activeFocus ? Colors.accentBlue : Colors.outlineVariant
                         border.width: Metrics.borderWidth
 
-                        Behavior on border.color { ColorAnimation { duration: 150 } }
+                        Behavior on border.color { AnimColor { type: Anim.standard } }
 
                         TextInput {
                             id: passField
@@ -526,7 +526,7 @@ PanelWindow {
                         border.color: Colors.outlineVariant
                         border.width: Metrics.borderWidth
 
-                        Behavior on color { ColorAnimation { duration: 130 } }
+                        Behavior on color { AnimColor { type: Anim.fast } }
 
                         Item {
                             width: 26; height: 26
@@ -556,7 +556,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 24; height: 24
                             opacity: savedMa.containsMouse ? 1 : 0.35
-                            Behavior on opacity { NumberAnimation { duration: 130 } }
+                            Behavior on opacity { AnimNumber { type: Anim.fast } }
                             AppIcon {
                                 anchors.centerIn: parent
                                 font.pixelSize: 12

@@ -174,8 +174,8 @@ PanelWindow {
 
         readonly property int listH: Math.min(listCol.implicitHeight, root.listCapH)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Item {
             id: header
@@ -229,7 +229,7 @@ PanelWindow {
                 border.color: composerField.activeFocus ? Colors.accentBlue : Colors.outlineVariant
                 border.width: Metrics.borderWidth
 
-                Behavior on border.color { ColorAnimation { duration: 150 } }
+                Behavior on border.color { AnimColor { type: Anim.standard } }
 
                 TextEdit {
                     id: composerField
@@ -286,7 +286,7 @@ PanelWindow {
                     border.color: composerSub.activeFocus ? Colors.accentBlue : Colors.outlineVariant
                     border.width: Metrics.borderWidth
 
-                    Behavior on border.color { ColorAnimation { duration: 150 } }
+                    Behavior on border.color { AnimColor { type: Anim.standard } }
 
                     TextInput {
                         id: composerSub
@@ -435,7 +435,7 @@ PanelWindow {
                                     font.pixelSize: 12
                                     text: "\uf044"
                                     color: editAction.hovered ? Colors.accentBlue : Colors.surfaceVariantText
-                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                    Behavior on color { AnimColor { type: Anim.fast } }
                                 }
 
                                 HoverHandler { id: editAction; cursorShape: Qt.PointingHandCursor }
@@ -450,7 +450,7 @@ PanelWindow {
                                     font.pixelSize: 12
                                     text: noteRow.justCopied ? "\uf00c" : "\uf0c5"
                                     color: noteRow.justCopied || copyAction.hovered ? Colors.accentBlue : Colors.surfaceVariantText
-                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                    Behavior on color { AnimColor { type: Anim.fast } }
                                 }
 
                                 HoverHandler { id: copyAction; cursorShape: Qt.PointingHandCursor }
@@ -465,7 +465,7 @@ PanelWindow {
                                     font.pixelSize: 12
                                     text: "\uf00d"
                                     color: deleteAction.hovered ? Colors.error : Colors.surfaceVariantText
-                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                    Behavior on color { AnimColor { type: Anim.fast } }
                                 }
 
                                 HoverHandler { id: deleteAction; cursorShape: Qt.PointingHandCursor }

@@ -72,7 +72,7 @@ PanelWindow {
         opacity: Popups.wallpaperOpen ? 1 : 0
 
         Behavior on opacity {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.standard }
         }
 
         readonly property int cardWidth: Math.min(750, Math.round(width * 0.45))

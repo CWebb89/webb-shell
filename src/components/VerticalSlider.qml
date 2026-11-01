@@ -73,9 +73,9 @@ Item {
         // Animate only external updates; follow the pointer instantly while dragging.
         Behavior on y {
             enabled: !root.dragging
-            NumberAnimation { duration: 80; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.instant }
         }
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { AnimColor { type: Anim.standard } }
 
         AppIcon {
             anchors.centerIn: parent

@@ -221,8 +221,8 @@ PanelWindow {
         opacity: Popups.agentsOpen ? 1 : 0
         y: root.place.y + (Popups.agentsOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Flickable {
             id: flick
@@ -701,7 +701,7 @@ PanelWindow {
                                 border.color: modelBlock.expanded ? Colors.accentBlue : Colors.outlineVariant
                                 border.width: Metrics.borderWidth
 
-                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on color { AnimColor { type: Anim.fast } }
 
                                 Row {
                                     anchors.fill: parent

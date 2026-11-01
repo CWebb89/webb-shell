@@ -27,7 +27,7 @@ the four are one-off systems rather than surfaces.
 
 | # | Item | Effort | Status |
 |---|---|---|---|
-| 1 | Motion tokens | ½ day | planned |
+| 1 | Motion tokens | ½ day | shipped |
 | 2 | Popup chrome + card elevation | 1 day | planned |
 | 3 | Interaction polish set | 1 day | planned |
 | 4 | Type scale + Material Symbols | 1 day | planned |

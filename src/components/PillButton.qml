@@ -29,7 +29,7 @@ Rectangle {
     border.color: variant === "danger" ? Colors.error : Colors.outlineVariant
     opacity: enabled ? 1 : 0.45
 
-    Behavior on color { ColorAnimation { duration: 130 } }
+    Behavior on color { AnimColor { type: Anim.fast } }
 
     Row {
         id: contentRow

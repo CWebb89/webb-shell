@@ -84,8 +84,8 @@ PanelWindow {
         opacity: Popups.systemMonitorOpen ? 1 : 0
         y: root.place.y + (Popups.systemMonitorOpen ? 0 : root.place.dy)
 
-        Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+        Behavior on opacity { AnimNumber { type: Anim.standard } }
+        Behavior on y { AnimNumber { type: Anim.standard } }
 
         Column {
             anchors.fill: parent
@@ -274,7 +274,7 @@ PanelWindow {
                 anchors.baselineOffset: 48
                 font.pixelSize: 36; font.bold: true
                 color: tcard.tempColor; text: Math.round(tcard.temp) + "°"
-                Behavior on color { ColorAnimation { duration: 300 } }
+                Behavior on color { AnimColor { type: Anim.emphasized } }
             }
             AppText {
                 id: cText
@@ -291,7 +291,7 @@ PanelWindow {
                 anchors.baseline: tempText.baseline
                 font.pixelSize: 36; font.bold: true
                 color: tcard.tempColor; text: tcard.usageLabel
-                Behavior on color { ColorAnimation { duration: 300 } }
+                Behavior on color { AnimColor { type: Anim.emphasized } }
             }
         }
 
@@ -431,13 +431,12 @@ PanelWindow {
                 }
             }
 
-            NumberAnimation {
+            AnimNumber {
                 id: growAnim
                 target: spark
                 property: "progress"
                 from: 0; to: 1
-                duration: 450
-                easing.type: Easing.OutCubic
+                type: Anim.decelerate
             }
 
             // gentle breathing pulse on the glow so the traces feel alive
@@ -496,7 +495,7 @@ PanelWindow {
                     width: 24; height: 5; radius: 2.5
                     anchors.verticalCenter: parent.verticalCenter
                     color: tcard.tempColor
-                    Behavior on color { ColorAnimation { duration: 300 } }
+                    Behavior on color { AnimColor { type: Anim.emphasized } }
                 }
                 AppText {
                     anchors.verticalCenter: parent.verticalCenter
@@ -550,7 +549,7 @@ PanelWindow {
                 anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
                 width: parent.width * ucard.pct
                 color: ucard.valColor
-                Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                Behavior on width { AnimNumber { type: Anim.emphasized } }
             }
         }
     }

@@ -8,8 +8,11 @@ the sections below.
 
 ### Theme
 
-- UI colors come from `Colors`, sizes from `Metrics`, and fonts from `Type`.
+- UI colors come from `Colors`, sizes from `Metrics`, fonts from `Type`, and timings from `Anim`.
 - Hardcoded palette hex values belong only in `Colors.qml`; elsewhere only transparent/shadow/scrim values are acceptable. Add a semantic token instead of inlining a UI value.
+- Animation timing comes from `Anim`, never from a literal. An animated property is `AnimColor { type: Anim.fast }` or `AnimNumber { type: Anim.standard }`; `Anim.duration(type)` / `Anim.easing(type)` exist for anything those two cannot express. The five types are intents (`instant`, `fast`, `standard`, `emphasized`, `decelerate`), not sizes, and a new animation picks the intent it reads as rather than inventing a sixth.
+- Literal durations that survive on purpose, and why: the loop timings in `RecordingDot` and the Bluetooth scan spinner (a pulse and a rotation are not transitions), the three-step `PolkitPopup` shake (its rhythm is the message), and `PrintOverlay`'s computed `totalMs` with its `Easing.Linear`. Anything else with a literal is a regression.
+- A file that animates needs `import "../theme"` even when it already imported `state` or `components` — the sweep that introduced `Anim` failed to load `DimOverlay` for exactly that reason, and Quickshell reported it as `Type DimOverlay unavailable` rather than naming the missing import.
 - `AppText` owns the `variant → pixelSize` ladder. `AppIcon` inherits it and adds Nerd Font rendering; do not duplicate the ladder.
 
 ### Decoded-media budget

@@ -49,7 +49,7 @@ PanelWindow {
         opacity: Popups.clockOpen ? 1.0 : 0.0
 
         Behavior on opacity {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+            AnimNumber { type: Anim.emphasized }
         }
 
         MouseArea {

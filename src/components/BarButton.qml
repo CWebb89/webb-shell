@@ -35,7 +35,7 @@ Item {
         radius: Metrics.radiusSmall
         color: btnHover.hovered ? Colors.surfaceContainerHigh : "transparent"
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
     }
 
     AppIcon {
@@ -45,7 +45,7 @@ Item {
         text: btn.glyph
         color: btnHover.hovered ? Colors.textPrimary : Colors.tertiary
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
     }
 
     AppText {

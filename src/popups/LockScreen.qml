@@ -961,7 +961,7 @@ PanelWindow {
             font.bold: true
             color: Colors.tempColorAt(trow.temp)
             text: Math.round(trow.temp) + "\u00b0C"
-            Behavior on color { ColorAnimation { duration: 300 } }
+            Behavior on color { AnimColor { type: Anim.emphasized } }
         }
 
         AppText {

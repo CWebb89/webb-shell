@@ -18,7 +18,7 @@ Item {
         radius: Metrics.radiusSmall
         color: fanHover.hovered ? Colors.surfaceContainerHigh : "transparent"
 
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { AnimColor { type: Anim.fast } }
     }
 
     AppIcon {
