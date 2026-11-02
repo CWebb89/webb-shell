@@ -183,8 +183,6 @@ Item {
                 playing: !panel.coverRequested
                 fillMode: Image.PreserveAspectCrop
                 cache: false
-                sourceSize.width: panel.width
-                sourceSize.height: panel.height
             }
 
             Item {
