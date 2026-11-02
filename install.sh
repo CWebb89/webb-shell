@@ -20,6 +20,14 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
+
+# A checkout at $HOME/dev/webb-shell renders as %h/dev/webb-shell, the same
+# string the dotfiles copy of the unit carries. Without that, every install
+# rewrites the stowed unit with an absolute path and dirties the dotfiles repo.
+case "$REPO" in
+  "$HOME"/*) REPO_IN_UNIT="%h/${REPO#"$HOME"/}" ;;
+  *)          REPO_IN_UNIT="$REPO" ;;
+esac
 CFG_DIR="$HOME/.config/webb-shell"
 CFG_FILE="$CFG_DIR/config.json"
 INSTALL_PACKAGES=0
@@ -235,7 +243,7 @@ QS_BIN="$(command -v qs || command -v quickshell || echo /usr/bin/quickshell)"
 # Writes only when the rendering differs, so a re-run does not restart the
 # shell by touching its unit.
 render_unit() {
-  sed -e "s|@QS@|$QS_BIN|g" -e "s|@REPO@|$REPO|g" "$1" > "$2.new"
+  sed -e "s|@QS@|$QS_BIN|g" -e "s|@REPO@|$REPO_IN_UNIT|g" "$1" > "$2.new"
   if [ -f "$2" ] && cmp -s "$2.new" "$2"; then
     rm -f "$2.new"
     return 1
